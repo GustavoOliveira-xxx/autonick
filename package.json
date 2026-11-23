@@ -1,0 +1,33 @@
+{
+  "name": "autonick-app",
+  "version": "0.3.0",
+  "private": true,
+  "description": "AutoniCK (CK Group): PWA de gestão para pequenos negócios e área de clientes, com API Java (Spring Boot) e PostgreSQL.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/servidor-local.mjs",
+    "test": "npm run test:unit && npm run test:db && npm run test:e2e",
+    "test:unit": "node --test \"tests/unit/**/*.test.mjs\"",
+    "test:db": "node --test \"tests/db/**/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "test:e2e:webkit": "WEBKIT=1 playwright test --project=webkit --project=webkit-iphone",
+    "icones": "node scripts/gerar-icones.mjs",
+    "capturas": "node scripts/gerar-capturas-manifesto.mjs",
+    "demo:publica:montar": "node scripts/montar-demo-publica.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.56.1",
+    "pdfjs-dist": "4.10.38"
+  },
+  "overrides": {
+    "playwright-core": "1.56.1"
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1"
+  }
+}

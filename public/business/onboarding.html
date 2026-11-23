@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro da empresa | AutoniCK Business</title>
+  <meta name="description" content="Cadastro da empresa em quatro etapas curtas. A vitrine só aparece ao público depois da revisão da CK.">
+  <meta name="theme-color" content="#17121f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/icons/icone-180.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/componentes.css">
+  <script type="module" src="/js/features/business/onboarding.js"></script>
+</head>
+<body data-area="business">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <p class="faixa-demo"><strong>VERSÃO DE DESENVOLVIMENTO</strong>: use apenas dados de teste.</p>
+  <header id="cabecalho" class="area-escura"></header>
+  <main id="conteudo" tabindex="-1">
+    <div class="largura">
+    <div class="pilha-grande">
+      <div class="pilha introducao">
+        <h1>Cadastro da empresa</h1>
+        <p>São quatro etapas curtas. CNPJ não é obrigatório. Os campos com “obrigatório” precisam ser preenchidos. Ao terminar, a empresa é criada e o sistema já pode ser usado; a vitrine só aparece ao público depois da revisão da CK.</p>
+        <div id="acesso-onboarding"></div>
+      </div>
+      <ol id="etapas" class="etapas" aria-label="Etapas do cadastro">
+        <li>Sobre a empresa</li>
+        <li>Como atende</li>
+        <li>Região e contato</li>
+        <li>Revisão</li>
+      </ol>
+      <div id="resumo-erros"></div>
+      <form id="form-onboarding" class="cartao" method="post" novalidate>
+        <fieldset class="pilha" data-protegido disabled>
+          <fieldset data-etapa="1" class="pilha">
+            <h2 tabindex="-1">Sobre a empresa</h2>
+            <div class="campo">
+              <label for="nome">Nome do negócio <span class="obrigatorio">(obrigatório)</span></label>
+              <input id="nome" name="nome" type="text" autocomplete="organization" aria-describedby="erro-nome">
+              <span id="erro-nome" class="campo__erro"></span>
+            </div>
+            <div class="campo">
+              <label for="categoria">Categoria <span class="obrigatorio">(obrigatório)</span></label>
+              <select id="categoria" name="categoria" aria-describedby="erro-categoria"><option value="">Escolha uma categoria</option></select>
+              <span id="erro-categoria" class="campo__erro"></span>
+            </div>
+          </fieldset>
+          <fieldset data-etapa="2" class="pilha" hidden>
+            <h2 tabindex="-1">Como atende</h2>
+            <div class="campo" role="radiogroup" aria-labelledby="rotulo-modalidade" aria-describedby="erro-modalidade">
+              <p id="rotulo-modalidade"><strong>O negócio trabalha com</strong> <span class="obrigatorio">(obrigatório)</span></p>
+              <label><input type="radio" id="modalidade-comercio" name="modalidade" value="comercio"> Comércio (vende produtos)</label>
+              <label><input type="radio" id="modalidade-servicos" name="modalidade" value="servicos"> Serviços</label>
+              <label><input type="radio" id="modalidade-ambos" name="modalidade" value="ambos"> Os dois</label>
+              <span id="erro-modalidade" class="campo__erro"></span>
+            </div>
+          </fieldset>
+          <fieldset data-etapa="3" class="pilha" hidden>
+            <h2 tabindex="-1">Região e contato</h2>
+            <div class="campo">
+              <label for="cidade">Cidade <span class="obrigatorio">(obrigatório)</span></label>
+              <input id="cidade" name="cidade" type="text" autocomplete="address-level2" aria-describedby="erro-cidade">
+              <span id="erro-cidade" class="campo__erro"></span>
+            </div>
+            <p class="campo__ajuda">Estado: São Paulo (SP). Nesta fase, o AutoniCK atende apenas SP.</p>
+            <div class="campo">
+              <label for="bairro-empresa">Bairro (opcional)</label>
+              <input id="bairro-empresa" name="bairro" type="text" aria-describedby="ajuda-bairro">
+              <span id="ajuda-bairro" class="campo__ajuda">Seu endereço residencial nunca é publicado.</span>
+            </div>
+            <div class="campo">
+              <label for="email">E-mail de contato da empresa <span class="obrigatorio">(obrigatório)</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" aria-describedby="ajuda-email erro-email">
+              <span id="ajuda-email" class="campo__ajuda">Privado: usado pela CK para falar com você. Não aparece na vitrine.</span>
+              <span id="erro-email" class="campo__erro"></span>
+            </div>
+          </fieldset>
+          <fieldset data-etapa="4" class="pilha" hidden>
+            <h2 tabindex="-1">Revisão</h2>
+            <p>Confira os dados. Ao cadastrar, a empresa já pode usar o sistema. Para aparecer na vitrine, complete-a e envie para a CK depois.</p>
+            <div id="revisao"></div>
+          </fieldset>
+          <div class="grupo-botoes">
+            <button id="voltar" class="botao botao--secundario" type="button">Voltar</button>
+            <button id="avancar" class="botao" type="submit">Continuar</button>
+          </div>
+        </fieldset>
+        <p class="campo__ajuda formulario-aguardando" data-aguardando>Formulário indisponível até a página terminar de carregar. Sem o JavaScript do AutoniCK ele não funciona, e nada do que for digitado é enviado.</p>
+      </form>
+    </div>
+    </div>
+  </main>
+  <footer id="rodape" class="rodape"></footer>
+  <noscript><p class="faixa-demo">O AutoniCK precisa de JavaScript habilitado para funcionar.</p></noscript>
+</body>
+</html>

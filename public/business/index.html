@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoniCK Business | Entrada</title>
+  <meta name="description" content="Entrada do AutoniCK Business para gestores e funcionários. Versão de demonstração.">
+  <meta name="theme-color" content="#17121f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/icons/icone-180.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/componentes.css">
+  <script type="module" src="/js/features/inicio.js"></script>
+</head>
+<body data-area="business">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <p class="faixa-demo"><strong>VERSÃO DE DESENVOLVIMENTO</strong>: use apenas dados de teste. As telas com login gravam o que você envia no banco de dados de desenvolvimento; a área de demonstração mostra só empresas fictícias, para contas autorizadas.</p>
+  <header id="cabecalho" class="area-escura"></header>
+  <main id="conteudo" tabindex="-1">
+  <section class="heroi area-escura" aria-labelledby="titulo-pagina">
+    <div class="heroi__interno">
+      <picture>
+        <source type="image/webp" srcset="/assets/brand/autonick-empresarial-320.webp 320w, /assets/brand/autonick-empresarial-640.webp 640w" sizes="(min-width: 48rem) 16rem, 70vw">
+        <img class="heroi__logo" src="/assets/brand/autonick-empresarial-320.png" srcset="/assets/brand/autonick-empresarial-320.png 320w, /assets/brand/autonick-empresarial-640.png 640w" sizes="(min-width: 48rem) 16rem, 70vw" width="320" height="320" alt="Logotipo do AutoniCK Empresarial">
+      </picture>
+      <div class="heroi__texto">
+        <h1 id="titulo-pagina">AutoniCK Business</h1>
+        <p>Organize produtos, estoque, vendas, serviços e finanças do seu negócio.</p>
+      </div>
+    </div>
+  </section>
+    <div class="largura">
+    <div class="pilha-grande">
+      <div class="aviso aviso--info">
+        <span class="aviso__icone" aria-hidden="true">i</span>
+        <div class="aviso__corpo">
+          <p><strong>Informação:</strong> já tem conta? <a href="/business/entrar.html">Entre ou crie sua conta Business</a>.</p>
+          <p>A conta empresarial é separada da conta de cliente: cada uma tem sua própria entrada.</p>
+        </div>
+      </div>
+      <div class="escolhas">
+        <article class="cartao escolha">
+          <h2 class="cartao__titulo">Minhas empresas</h2>
+          <p>Abra o painel, os produtos, as vendas, os serviços e o financeiro das empresas de que você participa.</p>
+          <a class="botao" href="/business/minhas-empresas.html">Ver minhas empresas</a>
+        </article>
+        <article class="cartao escolha">
+          <h2 class="cartao__titulo">Cadastrar meu negócio</h2>
+          <p>Cadastro em quatro etapas curtas. CNPJ não é obrigatório. O sistema já pode ser usado logo depois.</p>
+          <a class="botao botao--secundario" href="/business/onboarding.html">Cadastrar minha empresa</a>
+        </article>
+      </div>
+    </div>
+    </div>
+  </main>
+  <footer id="rodape" class="rodape"></footer>
+  <noscript><p class="faixa-demo">O AutoniCK precisa de JavaScript habilitado para funcionar.</p></noscript>
+</body>
+</html>

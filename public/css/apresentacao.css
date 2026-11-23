@@ -1,0 +1,88 @@
+/*
+ * Página de apresentação (início): herói com o sino HQ 3D, cena "Quem tocou?" em laço.
+ * Só a página inicial carrega este arquivo. Usa os tokens e o herói de capa de revista de componentes.css.
+ *
+ * Celular: título e sino lado a lado, depois o resumo e as duas entradas (Cliente e Business); o sino não empurra
+ * as ações para baixo. Computador: texto e ações à esquerda, sino à direita.
+ * O espaço do sino é reservado desde o início (quadrado), então a troca da imagem estática pelo 3D não mexe no layout.
+ */
+.heroi.apresentacao { padding-block: var(--esp-4) var(--esp-6); }
+
+.apresentacao__interno {
+  max-width: var(--largura-conteudo);
+  margin: 0 auto;
+  display: grid;
+  gap: var(--esp-3) var(--esp-4);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) clamp(7.5rem, 36vw, 12rem);
+  grid-template-areas:
+    "titulo sino"
+    "resumo resumo"
+    "perfis perfis";
+}
+.apresentacao__texto { display: contents; }
+.apresentacao h1 { grid-area: titulo; margin: 0; }
+.apresentacao__resumo {
+  grid-area: resumo; margin: 0; max-width: 40rem;
+  color: #fff; font-weight: 500; font-size: 1.05rem; text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
+.apresentacao__perfis { grid-area: perfis; display: grid; gap: var(--esp-3); }
+.heroi-sino { grid-area: sino; }
+
+/* Duas entradas reais, separadas como no resto do app: Cliente e Business */
+.perfil-acesso {
+  display: grid; gap: var(--esp-2); padding: var(--esp-3);
+  background: rgb(22 17 31 / 0.66); border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--tinta);
+}
+.perfil-acesso__titulo { margin: 0; color: var(--texto-sobre-escuro); font-size: 0.98rem; line-height: 1.3; }
+.perfil-acesso__titulo b {
+  display: block; color: var(--ouro-claro);
+  font: 800 italic 1.3rem/1 var(--fonte-titulo); text-transform: uppercase; letter-spacing: 0.02em;
+}
+.perfil-acesso__titulo span { color: var(--texto-sobre-escuro-suave); }
+.perfil-acesso__acoes { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.perfil-acesso__acoes .botao { margin: 0; }
+
+/* Sino: palco quadrado reservado desde o início */
+.heroi-sino { position: relative; width: 100%; max-width: 30rem; justify-self: center; }
+.heroi-sino__palco { position: relative; width: 100%; aspect-ratio: 1 / 1; }
+/* a imagem estática ocupa o mesmo lugar do sino no primeiro quadro 3D (medido no GLB: 16–67% × 19–78% do quadrado) */
+.heroi-sino__poster {
+  position: absolute; left: 7.9%; top: 14.2%; width: 67%; height: auto;
+  transition: opacity 0.45s ease;
+}
+.heroi-sino__cena, .heroi-sino__hq {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  opacity: 0; transition: opacity 0.45s ease; pointer-events: none;
+}
+.heroi-sino--3d .heroi-sino__cena, .heroi-sino--3d .heroi-sino__hq { opacity: 1; }
+.heroi-sino--3d .heroi-sino__poster { opacity: 0; }
+/* movimento reduzido: o sino é tocável (toca a cena uma vez) */
+.heroi-sino[data-toque="sim"] .heroi-sino__palco { cursor: pointer; }
+.heroi-sino__palco:focus-visible { outline: 3px solid var(--ouro-claro); outline-offset: 4px; }
+
+/* celular: espaçamento mais justo para as duas entradas caberem na primeira tela */
+@media (max-width: 47.99rem) {
+  .heroi.apresentacao { padding-block: var(--esp-3) var(--esp-5); }
+  .apresentacao__interno { gap: var(--esp-2) var(--esp-3); }
+  .apresentacao__resumo { font-size: 1rem; }
+  .perfil-acesso { padding: var(--esp-2) var(--esp-3) var(--esp-3); }
+}
+
+@media (min-width: 48rem) {
+  .heroi.apresentacao { padding-block: var(--esp-6) var(--esp-7); }
+  .apresentacao__interno {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas: "texto sino";
+    gap: var(--esp-5) var(--esp-6);
+  }
+  .apresentacao__texto { display: grid; gap: var(--esp-4); grid-area: texto; align-content: center; }
+  .apresentacao h1, .apresentacao__resumo, .apresentacao__perfis { grid-area: auto; }
+}
+@media (min-width: 72rem) {
+  .apresentacao__perfis { grid-template-columns: 1fr 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroi-sino__poster, .heroi-sino__cena, .heroi-sino__hq { transition: none; }
+}

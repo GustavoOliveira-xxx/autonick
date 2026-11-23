@@ -1,0 +1,13 @@
+node_modules/
+test-results/
+playwright-report/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.demo-publica/
+target/
+.idea/
+*.iml
+.vscode/

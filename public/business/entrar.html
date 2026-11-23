@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar | AutoniCK Business</title>
+  <meta name="description" content="Entrada da conta Business do AutoniCK.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#17121f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/icons/icone-180.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/componentes.css">
+  <script type="module" src="/js/features/conta/entrar.js"></script>
+</head>
+<body data-area="business" data-tipo-conta="business">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <p class="faixa-demo"><strong>VERSÃO DE DESENVOLVIMENTO</strong>: use apenas contas e dados de teste. O cadastro, a entrada e o que você enviar depois de entrar ficam gravados no banco de dados de desenvolvimento do projeto. Não use dados pessoais reais.</p>
+  <header id="cabecalho" class="area-escura"></header>
+  <main id="conteudo" tabindex="-1">
+    <div class="largura">
+    <div class="pilha-grande">
+      <div class="pilha introducao">
+        <h1>Entrar no AutoniCK Business</h1>
+        <p>Esta é a entrada Business. Os perfis Cliente e Business são separados e cada um tem sua própria entrada.</p>
+      </div>
+      <div id="avisos"></div>
+      <div class="grade-2">
+        <section class="cartao pilha" aria-labelledby="titulo-entrar">
+          <h2 id="titulo-entrar">Já tenho conta</h2>
+          <form id="form-entrar" class="pilha" method="post" novalidate>
+            <fieldset class="pilha" data-protegido disabled>
+              <div class="campo">
+                <label for="entrar-email">E-mail</label>
+                <input id="entrar-email" name="email" type="email" autocomplete="username" data-regra="email" aria-describedby="entrar-email-erro">
+                <span id="entrar-email-erro" class="campo__erro"></span>
+              </div>
+              <div class="campo">
+                <label for="entrar-senha">Senha</label>
+                <input id="entrar-senha" name="senha" type="password" autocomplete="current-password" data-regra="senha-atual" aria-describedby="entrar-senha-erro">
+                <span id="entrar-senha-erro" class="campo__erro"></span>
+                <label class="campo__ajuda"><input type="checkbox" data-mostrar-senha="entrar-senha"> Mostrar senha</label>
+              </div>
+              <button class="botao" type="submit">Entrar</button>
+            </fieldset>
+            <p class="campo__ajuda formulario-aguardando" data-aguardando>Formulário indisponível até a página terminar de carregar. Sem o JavaScript do AutoniCK ele não funciona, e nada do que for digitado é enviado.</p>
+          </form>
+          <details>
+            <summary>Esqueci minha senha</summary>
+            <p class="campo__ajuda">Enviaremos um código para o e-mail da conta. Com ele, você cria uma nova senha aqui mesmo. Nunca informe o código ou a senha a outra pessoa.</p>
+            <form id="form-senha" class="pilha" method="post" novalidate>
+              <fieldset class="pilha" data-protegido disabled>
+                <div class="campo">
+                  <label for="senha-email">E-mail da conta</label>
+                  <input id="senha-email" name="email" type="email" autocomplete="email" data-regra="email" aria-describedby="senha-email-erro">
+                  <span id="senha-email-erro" class="campo__erro"></span>
+                </div>
+                <button class="botao botao--secundario" type="submit">Enviar código</button>
+              </fieldset>
+              <p class="campo__ajuda formulario-aguardando" data-aguardando>Formulário indisponível até a página terminar de carregar. Sem o JavaScript do AutoniCK ele não funciona, e nada do que for digitado é enviado.</p>
+            </form>
+            <div id="redefinir-senha"></div>
+          </details>
+        </section>
+        <section class="cartao pilha" aria-labelledby="titulo-criar">
+          <h2 id="titulo-criar">Criar conta Business</h2>
+          <form id="form-criar" class="pilha" method="post" novalidate>
+            <fieldset class="pilha" data-protegido disabled>
+              <div class="campo">
+                <label for="criar-nome">Nome</label>
+                <input id="criar-nome" name="nome" type="text" autocomplete="name" data-regra="nome" aria-describedby="criar-nome-erro">
+                <span id="criar-nome-erro" class="campo__erro"></span>
+              </div>
+              <div class="campo">
+                <label for="criar-email">E-mail</label>
+                <input id="criar-email" name="email" type="email" autocomplete="email" data-regra="email" aria-describedby="criar-email-erro">
+                <span id="criar-email-erro" class="campo__erro"></span>
+              </div>
+              <div class="campo">
+                <label for="criar-senha">Senha</label>
+                <input id="criar-senha" name="senha" type="password" autocomplete="new-password" data-regra="senha" aria-describedby="criar-senha-ajuda criar-senha-erro">
+                <span id="criar-senha-ajuda" class="campo__ajuda">Pelo menos 8 caracteres.</span>
+                <span id="criar-senha-erro" class="campo__erro"></span>
+                <label class="campo__ajuda"><input type="checkbox" data-mostrar-senha="criar-senha"> Mostrar senha</label>
+              </div>
+              <button class="botao" type="submit">Criar conta</button>
+            </fieldset>
+            <p class="campo__ajuda formulario-aguardando" data-aguardando>Formulário indisponível até a página terminar de carregar. Sem o JavaScript do AutoniCK ele não funciona, e nada do que for digitado é enviado.</p>
+          </form>
+        </section>
+      </div>
+    </div>
+    </div>
+  </main>
+  <footer id="rodape" class="rodape"></footer>
+  <noscript><p class="faixa-demo">O AutoniCK precisa de JavaScript habilitado para funcionar.</p></noscript>
+</body>
+</html>

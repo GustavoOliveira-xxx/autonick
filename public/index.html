@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoniCK | Gestão para pequenos negócios e serviços perto de você</title>
+  <meta name="description" content="AutoniCK, da CK Group: encontre produtos e serviços locais ou gerencie seu negócio. Versão de demonstração.">
+  <meta name="theme-color" content="#17121f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/icons/icone-180.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/componentes.css">
+  <link rel="stylesheet" href="/css/apresentacao.css">
+  <script type="module" src="/js/features/inicio.js"></script>
+</head>
+<body data-area="publico">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <p class="faixa-demo"><strong>VERSÃO DE DESENVOLVIMENTO</strong>: use apenas dados de teste. As telas com login gravam o que você envia no banco de dados de desenvolvimento; a área de demonstração mostra só empresas fictícias, para contas autorizadas.</p>
+  <header id="cabecalho" class="area-escura"></header>
+  <main id="conteudo" tabindex="-1">
+  <section class="heroi apresentacao area-escura" aria-labelledby="titulo-pagina">
+    <div class="apresentacao__interno">
+      <div class="apresentacao__texto">
+        <h1 id="titulo-pagina">Bem-vindo ao AutoniCK</h1>
+        <p class="apresentacao__resumo">Encontre negócios e serviços perto de você ou organize as vendas, o estoque e o atendimento do seu negócio.</p>
+        <div class="apresentacao__perfis">
+          <div class="perfil-acesso" role="group" aria-labelledby="perfil-cliente">
+            <p class="perfil-acesso__titulo" id="perfil-cliente"><b>Sou cliente</b> <span>encontrar negócios e serviços</span></p>
+            <div class="perfil-acesso__acoes">
+              <a class="botao botao--orbe" href="/cliente/entrar.html#titulo-criar">Criar conta<span class="visualmente-oculto"> de cliente</span></a>
+              <a class="botao botao--secundario" href="/cliente/entrar.html">Entrar<span class="visualmente-oculto"> como cliente</span></a>
+            </div>
+          </div>
+          <div class="perfil-acesso" role="group" aria-labelledby="perfil-negocio">
+            <p class="perfil-acesso__titulo" id="perfil-negocio"><b>Tenho um negócio</b> <span>organizar vendas, estoque e atendimento</span></p>
+            <div class="perfil-acesso__acoes">
+              <a class="botao botao--orbe" href="/business/entrar.html#titulo-criar">Criar conta<span class="visualmente-oculto"> Business</span></a>
+              <a class="botao botao--secundario" href="/business/entrar.html">Entrar<span class="visualmente-oculto"> no Business</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="heroi-sino" data-heroi-sino data-modelo="/assets/sino/autonick-sino-hq.glb">
+        <div class="heroi-sino__palco">
+          <img class="heroi-sino__poster" src="/assets/sino/autonick-sino-hq-poster.webp" width="600" height="600" alt="Sino do AutoniCK em traço de quadrinho, com cara de durão e visores verdes." decoding="async">
+        </div>
+      </div>
+    </div>
+  </section>
+    <div class="largura">
+    <div class="pilha-grande">
+      <section aria-labelledby="titulo-escolha" class="pilha">
+        <h2 id="titulo-escolha">O que você quer fazer?</h2>
+        <div class="escolhas">
+          <article class="cartao escolha">
+            <h3 class="cartao__titulo">Encontrar produtos e serviços</h3>
+            <p>Pesquise por nome, serviço, cidade ou bairro. Não precisa criar conta para olhar.</p>
+            <a class="botao" href="/cliente/">Começar a busca</a>
+          </article>
+          <article class="cartao escolha">
+            <h3 class="cartao__titulo">Gerenciar meu negócio</h3>
+            <p>Produtos, estoque, vendas e serviços da sua empresa em um só lugar.</p>
+            <a class="botao" href="/business/">Ir para o AutoniCK Business</a>
+          </article>
+        </div>
+      </section>
+      <section aria-labelledby="titulo-sobre-demo" class="pilha introducao">
+        <h2 id="titulo-sobre-demo">Sobre esta versão</h2>
+        <p>Versão de desenvolvimento: tudo funciona de verdade, mas só com dados de teste. Não use dados reais. <a href="/ajuda.html">Saiba mais na Ajuda</a>.</p>
+      </section>
+    </div>
+    </div>
+  </main>
+  <footer id="rodape" class="rodape"></footer>
+  <noscript><p class="faixa-demo">O AutoniCK precisa de JavaScript habilitado para funcionar.</p></noscript>
+</body>
+</html>

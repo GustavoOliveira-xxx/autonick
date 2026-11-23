@@ -1,0 +1,138 @@
+/*
+ * Tokens visuais do AutoniCK (M13b, direção de arte aprovada na Etapa 1: ADR-G13b D13b-05 a D13b-08).
+ * Universo comum: HQ Heroica (base), Forja Dourada (destaques), Noite Elétrica (CK Admin).
+ * Os nomes antigos de variáveis continuam valendo (as telas já os usam); os valores seguem a nova direção.
+ * Fontes locais com licença OFL: IBM Plex Sans (corpo), Barlow Condensed (títulos), IBM Plex Mono (códigos) e
+ * Atkinson Hyperlegible (leitura ampliada; o navegador só baixa a fonte quando a opção é ligada).
+ * Estados sempre com ícone e texto, nunca só cor.
+ */
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url("/assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url("/assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 700; font-display: swap; src: url("/assets/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 800; font-display: swap; src: url("/assets/fonts/barlow-condensed-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 800; font-style: italic; font-display: swap; src: url("/assets/fonts/barlow-condensed-latin-800-italic.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-display: swap; src: url("/assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-display: swap; src: url("/assets/fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-display: swap; src: url("/assets/fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2"); }
+
+:root {
+  /* Universo */
+  --tinta: #16111f;
+  --tinta-2: #2c2339;
+  --tinta-3: #4b4158;
+  --papel: #fbf5e9;
+  --papel-2: #f3e7cf;
+  --papel-3: #fffdf8;
+  --linha: #d9cbb0;
+  --capa: #c3161e;
+  --capa-escura: #8c0d13;
+  --capa-funda: #5a070b;
+  --ouro: #f5b70a;
+  --ouro-claro: #ffdf7e;
+  --ouro-palido: #fff3c9;
+  --ouro-texto: #774600;
+  --metal: linear-gradient(180deg, #fff8dc 0%, #ffe07f 30%, #f1ad0b 50%, #b97813 58%, #f6c43b 82%, #fff0b3 100%);
+  --metal-escovado: linear-gradient(100deg, #f7c84a 0%, #fff1b8 22%, #e9a512 46%, #ffe48f 70%, #c98a14 100%);
+  --orbe: radial-gradient(circle at 32% 28%, #fffbe8 0%, #ffd56a 22%, #ff9a2e 52%, #e2431b 82%, #a3160f 100%);
+  --orbe-brilho: #ffb547;
+  --noite-0: #0b0719;
+  --noite-1: #140c2e;
+  --noite-2: #1e1445;
+  --noite-3: #2d2063;
+  --noite-linha: #3b2f78;
+  --aco: #9fbde8;
+  --aco-claro: #d6e4f8;
+  --eletrico: #6fd8ff;
+  --meio-tom: radial-gradient(circle, rgb(22 17 31 / 0.15) 1.1px, transparent 1.7px);
+  --meio-tom-claro: radial-gradient(circle, rgb(255 255 255 / 0.22) 1.15px, transparent 1.7px);
+  --chanfro: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  --chanfro-p: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  --impressao: 5px 5px 0 var(--tinta);
+  --impressao-p: 3px 3px 0 var(--tinta);
+
+  /* Nomes usados pelas telas (valores da nova direção) */
+  --marca-escuro: var(--tinta);
+  --marca-escuro-2: #241b33;
+  --marca-vermelho: var(--capa);
+  --marca-dourado: var(--ouro);
+  --marca-roxo: var(--capa-escura);
+  --marca-roxo-hover: var(--capa-funda);
+  --fundo: var(--papel);
+  --superficie: var(--papel-3);
+  --superficie-2: var(--papel-2);
+  --texto: var(--tinta);
+  --texto-suave: var(--tinta-3);
+  --borda: #6f6578;
+  --borda-suave: var(--linha);
+  --texto-sobre-escuro: #fbf5e9;
+  --texto-sobre-escuro-suave: #ddd2c2;
+  --sucesso: #13703a; --sucesso-fundo: #dcf2e3;
+  --alerta: #774600; --alerta-fundo: #fff0c2;
+  --erro: #ad1119; --erro-fundo: #fde4e1;
+  --info: #1e4d8c; --info-fundo: #e2ecfa;
+  --foco: var(--tinta);
+  --foco-anel: var(--ouro);
+  --foco-sobre-escuro: var(--ouro);
+  --link: var(--capa-escura);
+  --link-hover: var(--capa-funda);
+
+  /* Tipografia */
+  --fonte: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --fonte-titulo: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --fonte-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --tamanho-base: 1.125rem;     /* 18 px: regra 60+ mantida */
+  --tamanho-dados: 1rem;        /* tabelas densas do Business e do CK */
+  --tamanho-pequeno: 1rem;
+  --tamanho-h1: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+  --tamanho-h2: clamp(1.5rem, 1.3rem + 0.9vw, 1.95rem);
+  --tamanho-h3: 1.2rem;
+  --altura-linha: 1.55;
+
+  /* Espaçamento e forma */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+  --esp-7: 3rem;
+  --raio: 0.5rem;
+  --raio-grande: 0.75rem;
+  --sombra: var(--impressao-p);
+  --largura-conteudo: 76rem;
+  --alvo-toque: 2.75rem;
+  --duracao: 160ms;
+}
+html[data-leitura="ampliada"] {
+  --fonte: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --tamanho-base: 1.25rem;
+  --tamanho-dados: 1.125rem;
+}
+
+/* CK Admin: Noite Elétrica (D13b-07 = B). Os mesmos nomes, valores noturnos com contraste AA. */
+body[data-area="ck"] {
+  --fundo: var(--noite-0);
+  --superficie: #170f35;
+  --superficie-2: #22184b;
+  --texto: #e7eefb;
+  --texto-suave: var(--aco);
+  --borda: #7f8fc9;
+  --borda-suave: var(--noite-linha);
+  --sucesso: #8ee6b0; --sucesso-fundo: rgb(126 226 168 / 0.12);
+  --alerta: #ffe08a; --alerta-fundo: rgb(245 183 10 / 0.14);
+  --erro: #ffaaa6; --erro-fundo: rgb(255 107 107 / 0.14);
+  --info: #a9d8ff; --info-fundo: rgb(111 216 255 / 0.12);
+  --link: var(--eletrico);
+  --link-hover: #b8ecff;
+  --marca-roxo: var(--eletrico);
+  --marca-roxo-hover: #b8ecff;
+  --foco: var(--eletrico);
+  --foco-anel: rgb(111 216 255 / 0.35);
+  --sombra: 0 10px 30px rgb(0 0 0 / 0.35);
+}
+/* Business: papel mais quente para longas jornadas de trabalho */
+body[data-area="business"] { --fundo: #f6efe1; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duracao: 0ms; }
+}

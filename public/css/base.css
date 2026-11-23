@@ -1,0 +1,234 @@
+/* Base e casca do AutoniCK (M13b, direção aprovada na Etapa 1). Depende de tokens.css e reset.css. */
+
+body {
+  font-family: var(--fonte);
+  font-size: var(--tamanho-base);
+  line-height: var(--altura-linha);
+  color: var(--texto);
+  background: var(--fundo);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: break-word;
+}
+body[data-area="cliente"], body[data-area="publico"] {
+  background-color: var(--papel);
+  background-image: var(--meio-tom);
+  background-size: 9px 9px;
+}
+body[data-area="ck"] {
+  background-color: var(--noite-0);
+  background-image:
+    radial-gradient(circle at 12% -10%, rgb(111 216 255 / 0.16), transparent 40%),
+    radial-gradient(circle at 105% 30%, rgb(255 154 46 / 0.1), transparent 35%),
+    linear-gradient(rgb(159 189 232 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(159 189 232 / 0.05) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-attachment: fixed;
+}
+
+h1, h2, h3 { line-height: 1.05; font-weight: 800; font-family: var(--fonte-titulo); letter-spacing: 0.005em; }
+h1 { font-size: var(--tamanho-h1); }
+h2 { font-size: var(--tamanho-h2); text-transform: uppercase; }
+h3 { font-size: var(--tamanho-h3); font-family: var(--fonte); font-weight: 700; line-height: 1.3; }
+.mono, code, kbd { font-family: var(--fonte-mono); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Título da página em placa metálica (Forja Dourada) */
+main h1 {
+  display: inline-block;
+  padding: 0.3rem 1.05rem 0.22rem;
+  background: var(--metal);
+  color: var(--tinta);
+  border: 2px solid var(--tinta);
+  clip-path: var(--chanfro-p);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
+  box-shadow: inset 0 -3px 0 rgb(122 70 0 / 0.35);
+  max-width: 100%;
+}
+main h1 .placa { all: unset; }
+body[data-area="ck"] main h1 {
+  background: none; border: 0; clip-path: none; box-shadow: none; padding: 0;
+  color: #fff; text-shadow: 0 0 18px rgb(111 216 255 / 0.45); letter-spacing: 0.03em;
+}
+/* Títulos de seção com o traço vermelho inclinado */
+main section > h2:first-child, .bloco__cab h2 { display: flex; align-items: center; gap: 0.5rem; }
+main section > h2:first-child::before, .bloco__cab h2::before {
+  content: ""; flex: none; width: 0.55rem; height: 1.35rem; background: var(--capa); border: 2px solid var(--tinta); transform: skewX(-12deg);
+}
+body[data-area="ck"] main section > h2:first-child::before, body[data-area="ck"] .bloco__cab h2::before { background: var(--eletrico); border-color: var(--eletrico); box-shadow: 0 0 10px rgb(111 216 255 / 0.6); }
+
+a { color: var(--link); text-underline-offset: 0.18em; text-decoration-thickness: 2px; }
+a:hover { color: var(--link-hover); }
+
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; box-shadow: 0 0 0 6px var(--foco-anel); border-radius: 3px; }
+.area-escura :focus-visible { outline-color: var(--ouro); box-shadow: 0 0 0 6px rgb(245 183 10 / 0.35); }
+
+.visualmente-oculto, .so-leitor {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.icone { width: 1.2em; height: 1.2em; flex: none; display: inline-block; vertical-align: -0.2em; }
+
+.pular-conteudo {
+  position: absolute; left: var(--esp-4); top: -10rem; z-index: 100; padding: var(--esp-3) var(--esp-4);
+  background: var(--ouro); color: var(--tinta); font-weight: 700; border: 2px solid var(--tinta); text-decoration: none;
+}
+.pular-conteudo:focus { top: var(--esp-2); }
+
+/* Faixa de versão / demonstração (fita listrada de HQ) */
+.faixa-demo {
+  background: repeating-linear-gradient(-45deg, var(--ouro) 0 14px, var(--ouro-claro) 14px 28px);
+  color: var(--tinta); font-size: 0.875rem; font-weight: 600; text-align: center; padding: 0.35rem var(--esp-4);
+  border-bottom: 2px solid var(--tinta);
+}
+.faixa-demo strong { letter-spacing: 0.06em; }
+
+/* Superfícies escuras (cabeçalhos) */
+.area-escura { background: var(--tinta); color: var(--texto-sobre-escuro); }
+.area-escura a { color: var(--texto-sobre-escuro); }
+.area-escura a.botao:not(.botao--texto) { color: var(--tinta); }
+.filete-marca { height: 4px; background: linear-gradient(90deg, var(--capa), var(--ouro)); }
+
+/* ---------- Marca ---------- */
+.marca { display: inline-flex; align-items: center; gap: 0.55rem; text-decoration: none; color: inherit; min-height: var(--alvo-toque); }
+.marca__logo { width: 3rem; height: auto; aspect-ratio: 320 / 313; filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.55)); }
+.marca__texto { font: 800 italic 1.55rem/0.95 var(--fonte-titulo); letter-spacing: 0.02em; color: #fff; }
+.marca__texto b { color: var(--ouro); font-weight: 800; }
+.marca__texto small { display: block; font: 700 0.6875rem/1.3 var(--fonte); letter-spacing: 0.18em; text-transform: uppercase; font-style: normal; color: var(--ouro-claro); }
+
+/* ---------- Botão de leitura ampliada ---------- */
+.leitura {
+  display: inline-flex; align-items: center; gap: 0.4rem; min-height: var(--alvo-toque); padding: 0.3rem 0.7rem; border-radius: var(--raio);
+  border: 2px solid currentColor; background: transparent; color: inherit; cursor: pointer; font: 700 0.875rem/1.2 var(--fonte);
+}
+.leitura b { font: 800 1.15rem/1 var(--fonte-titulo); }
+.leitura[aria-pressed="true"] { background: var(--ouro); color: var(--tinta); border-color: var(--tinta); }
+
+/* ---------- Cabeçalho Cliente, público e CK ---------- */
+/* O cabeçalho rola com a página: um cabeçalho fixo cobre botões e o foco ao rolar (WCAG 2.4.11 e 2.5.8).
+   No Business em tela larga, a barra lateral fica fixa na própria coluna, sem cobrir o conteúdo. */
+#cabecalho { position: relative; z-index: 30; }
+:root:has(body.com-barra-celular) { scroll-padding-bottom: 5rem; }
+body:not([data-area="business"]) #cabecalho { border-bottom: 4px solid var(--capa); box-shadow: 0 3px 0 var(--ouro); }
+.cabecalho__interno {
+  max-width: var(--largura-conteudo); margin: 0 auto; padding: 0.4rem var(--esp-4);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2) var(--esp-4);
+}
+.navegacao ul { display: flex; flex-wrap: wrap; gap: 0 var(--esp-1); }
+.navegacao a {
+  display: inline-flex; align-items: center; min-height: var(--alvo-toque); padding: 0 0.65rem; white-space: nowrap;
+  text-decoration: none; color: var(--texto-sobre-escuro); font-weight: 600;
+}
+.navegacao a:hover { color: var(--ouro-claro); background: rgb(255 255 255 / 0.06); }
+.navegacao a[aria-current="page"] { color: var(--ouro); box-shadow: inset 0 -3px 0 var(--ouro); }
+.cabecalho__nav { margin-left: auto; }
+.botao--entrar { min-height: 2.6rem; }
+.ambiente { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.2rem 0.6rem; border: 1px solid var(--ouro); border-radius: 0.3rem;
+  font: 400 0.8125rem/1.3 var(--fonte-mono); color: var(--ouro-claro); }
+.ambiente::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 8px var(--ouro); }
+body[data-area="ck"] #cabecalho { background: linear-gradient(180deg, rgb(20 12 46 / 0.97), rgb(11 7 25 / 0.94)); border-bottom: 1px solid var(--noite-linha);
+  box-shadow: 0 1px 0 rgb(111 216 255 / 0.25), 0 8px 24px rgb(0 0 0 / 0.35); }
+body[data-area="ck"] .marca__texto small { color: var(--aco); font-family: var(--fonte-mono); font-weight: 400; letter-spacing: 0.1em; }
+body[data-area="ck"] .navegacao a[aria-current="page"] { color: var(--eletrico); box-shadow: inset 0 -3px 0 var(--eletrico); }
+
+/* Barra de atalhos do Cliente no celular */
+.barra-celular { display: none; }
+@media (max-width: 47.99rem) {
+  body[data-area="cliente"] .cabecalho__nav { display: none; }
+  .leitura .leitura__rotulo { display: none; }
+  .barra-celular {
+    position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--tinta); border-top: 3px solid var(--ouro); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .barra-celular a { display: grid; justify-items: center; align-content: center; gap: 0.15rem; min-height: 3.5rem; padding: 0.35rem 0.15rem;
+    color: var(--texto-sobre-escuro); text-decoration: none; font-size: 0.75rem; font-weight: 600; text-align: center; line-height: 1.15; }
+  .barra-celular .icone { width: 1.4rem; height: 1.4rem; }
+  .barra-celular a[aria-current="page"] { color: var(--ouro); background: linear-gradient(180deg, rgb(245 183 10 / 0.18), transparent); }
+  body.com-barra-celular { padding-bottom: calc(3.8rem + env(safe-area-inset-bottom)); }
+}
+
+/* ---------- Business: quartel-general com barra lateral ---------- */
+body[data-area="business"] #cabecalho {
+  color: var(--texto-sobre-escuro);
+  background: linear-gradient(180deg, #1d1529 0%, var(--tinta) 45%, #0f0b16 100%);
+  border-bottom: 4px solid var(--capa); box-shadow: 0 3px 0 var(--ouro);
+}
+body[data-area="business"] .cabecalho__interno { display: block; max-width: none; padding: 0; }
+.cabecalho__topo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); padding: 0.4rem var(--esp-4); }
+.cabecalho__topo .marca { margin-right: auto; }
+.botao-menu {
+  display: inline-flex; align-items: center; gap: 0.4rem; min-height: var(--alvo-toque); padding: 0.3rem 0.75rem;
+  background: var(--ouro); color: var(--tinta); border: 2px solid var(--tinta); border-radius: var(--raio); font-weight: 700; cursor: pointer; box-shadow: 2px 2px 0 #000;
+}
+.empresa-ativa { display: none; margin: 0 var(--esp-4) var(--esp-3); padding: 0.55rem 0.7rem; border: 2px solid var(--ouro); border-radius: var(--raio); background: rgb(255 255 255 / 0.05); }
+.empresa-ativa__rotulo { display: block; font: 700 0.6875rem/1.3 var(--fonte); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ouro-claro); }
+.empresa-ativa strong { display: block; color: #fff; font-size: 1rem; line-height: 1.3; }
+.empresa-ativa a { font-size: 0.875rem; color: var(--ouro-claro); }
+.menu-lateral { display: none; padding: 0 0.6rem 1rem; }
+.menu-grupo + .menu-grupo { margin-top: 0.9rem; }
+.menu-grupo__titulo { padding: 0 0.6rem; margin-bottom: 0.3rem; font: 700 0.6875rem/1 var(--fonte) !important; letter-spacing: 0.18em; text-transform: uppercase; color: #c9bcd9; }
+.menu-grupo__titulo::before { display: none !important; }
+.menu-lateral ul { display: grid; gap: 0.1rem; }
+.menu-lateral a, .menu-sair {
+  position: relative; display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: 2.6rem; padding: 0.4rem 0.6rem;
+  border-radius: var(--raio); color: #efe7f8; text-decoration: none; font: 600 1rem/1.2 var(--fonte); background: none; border: 0; cursor: pointer; text-align: left;
+}
+.menu-lateral .icone { width: 1.25rem; height: 1.25rem; color: var(--ouro-claro); }
+.menu-lateral a:hover, .menu-sair:hover { background: rgb(255 255 255 / 0.07); color: #fff; }
+.menu-lateral a[aria-current="page"] { color: var(--tinta); background: var(--metal); clip-path: var(--chanfro-p); font-weight: 800; }
+.menu-lateral a[aria-current="page"] .icone { color: var(--tinta); }
+.menu-grupo--rodape { border-top: 1px solid rgb(255 255 255 / 0.14); padding-top: 0.75rem; }
+.contador { margin-left: auto; min-width: 1.6rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--capa); color: #fff; font: 700 0.75rem/1.5 var(--fonte); text-align: center; border: 1.5px solid #fff; }
+body.menu-aberto .empresa-ativa, body.menu-aberto .menu-lateral { display: block; }
+body.menu-aberto #cabecalho { max-height: 100vh; overflow-y: auto; }
+
+@media (min-width: 64rem) {
+  body[data-area="business"] {
+    display: grid; grid-template-columns: 17.5rem minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; align-items: start;
+  }
+  body[data-area="business"] > .faixa-demo, body[data-area="business"] > .faixa-conexao { grid-column: 1 / -1; }
+  body[data-area="business"] #cabecalho {
+    grid-column: 1; grid-row: 2 / span 3; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    border-bottom: 0; border-right: 4px solid var(--capa); box-shadow: 4px 0 0 var(--ouro);
+  }
+  body[data-area="business"] > main { grid-column: 2; grid-row: 2 / span 2; min-width: 0; }
+  body[data-area="business"] > footer { grid-column: 2; grid-row: 4; }
+  body[data-area="business"] .cabecalho__topo { padding: 1rem 1rem 0.75rem; }
+  body[data-area="business"] .cabecalho__topo .marca { flex: 1 0 100%; }
+  body[data-area="business"] .cabecalho__topo .leitura { flex: 1 0 100%; justify-content: center; border-color: rgb(255 255 255 / 0.35); }
+  body[data-area="business"] .marca__logo { width: 3.6rem; }
+  .botao-menu { display: none; }
+  .empresa-ativa, .menu-lateral { display: block; }
+}
+
+/* ---------- Conteúdo ---------- */
+main { flex: 1; width: 100%; }
+.largura { max-width: var(--largura-conteudo); margin: 0 auto; padding: var(--esp-5) var(--esp-4) var(--esp-7); }
+body[data-area="business"] .largura { max-width: 84rem; }
+main:focus { outline: none; box-shadow: none; }
+.pilha > * + * { margin-top: var(--esp-4); }
+.pilha-grande > * + * { margin-top: var(--esp-6); }
+.texto-suave { color: var(--texto-suave); }
+.introducao { max-width: 50rem; }
+.introducao > p { color: var(--texto-suave); }
+
+/* ---------- Rodapé ---------- */
+.rodape { padding: var(--esp-5) var(--esp-4); font-size: 0.9375rem; background: var(--tinta); color: var(--texto-sobre-escuro); border-top: 4px solid var(--ouro); }
+.rodape a { color: var(--ouro-claro); }
+body[data-area="ck"] .rodape { background: rgb(11 7 25 / 0.9); border-top-color: var(--noite-linha); }
+.rodape__interno { max-width: var(--largura-conteudo); margin: 0 auto; display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-5); justify-content: space-between; }
+.rodape ul { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-4); }
+
+/* ---------- Grades ---------- */
+.grade { display: grid; gap: var(--esp-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); }
+.grade-2 { display: grid; gap: var(--esp-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+
+@media (max-width: 40rem) {
+  .cabecalho__nav { margin-left: 0; width: 100%; }
+  body[data-area="publico"] .navegacao a { padding: 0 0.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

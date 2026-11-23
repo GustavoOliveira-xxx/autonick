@@ -1,0 +1,5 @@
+# Fins de linha estáveis em qualquer sistema: scripts do Windows com CRLF e scripts do Linux com LF.
+* text=auto
+*.cmd text eol=crlf
+*.sh text eol=lf
+mvnw text eol=lf
