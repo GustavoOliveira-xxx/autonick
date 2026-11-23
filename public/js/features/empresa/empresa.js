@@ -250,7 +250,7 @@ function blocoVitrine(card, cats) {
       ...linha('E-mail', card.email_publico),
       ...linha('Descrição', card.descricao_publica),
       ...linha('Horário', card.horario_funcionamento)),
-    el('p', { class: 'campo__ajuda' }, 'Nesta fase, a vitrine ainda não aparece na busca pública.'));
+    el('p', { class: 'campo__ajuda' }, 'Esta é a versão aprovada pela CK. Ela aparece na busca pública enquanto a vitrine estiver publicada e a empresa ativa; empresas de teste aparecem só na área de demonstração.'));
 }
 
 /** Papel, perfil, atalho para a equipe e saída voluntária (D4-4). */

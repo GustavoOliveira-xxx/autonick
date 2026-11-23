@@ -1,4 +1,4 @@
-# AutoniCK API Java (Spring Boot) para a demonstração pública em contêiner (Vercel Container Runtime ou similar).
+# AutoniCK API Java (Spring Boot) em contêiner, para uma futura demonstração pública (hospedagem ainda não escolhida).
 # Contexto de build: esta pasta (java/os-api). A PWA fica na hospedagem estática; a API atende só /api.
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /src

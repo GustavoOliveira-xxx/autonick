@@ -2,13 +2,14 @@
  * Montagem do FRONTEND da demonstração pública com a API Java (só arquivos estáticos).
  *
  * Copia `public/` para a pasta de saída, grava `js/config/public-config.js` com o backend `java-online` (caminhos /api
- * na mesma origem, demonstração pública ativa) e gera o `vercel.json` com a mesma política de segurança do servidor
+ * na mesma origem, demonstração pública ativa) e gera um `vercel.json` (formato de configuração de uma das hospedagens
+ * estáticas possíveis; a hospedagem ainda não foi escolhida) com a mesma política de segurança do servidor
  * local e a reescrita `/api/*` para a API Java publicada (o navegador só fala com a própria origem: sem CORS e com o
  * cookie da demonstração restrito ao site).
  *
  * Falha fechada: a URL da API precisa ser https, sem usuário, senha, caminho ou parâmetros, e nunca do Neon.
  *
- * Uso: node scripts/montar-demo-publica.mjs --api=https://autonick-api.vercel.app [--saida=.demo-publica]
+ * Uso: node scripts/montar-demo-publica.mjs --api=https://api.exemplo.com.br [--saida=.demo-publica]
  */
 import { writeFile, mkdir, rm, cp } from 'node:fs/promises';
 import path from 'node:path';

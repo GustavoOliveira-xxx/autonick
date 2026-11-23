@@ -6,6 +6,8 @@ name: CI
 on:
   push:
   pull_request:
+  # Execução manual pela aba Actions (por exemplo, para conferir a versão atual sem um novo envio).
+  workflow_dispatch:
 
 permissions:
   contents: read

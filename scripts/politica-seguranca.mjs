@@ -1,7 +1,7 @@
 /**
- * Política de segurança dos cabeçalhos HTTP, compartilhada pelo servidor local e pela prévia protegida (M13b, Etapa 5).
- * Uma só fonte: a prévia na Vercel usa exatamente a mesma CSP já testada localmente, só com as origens públicas do
- * Neon do ambiente escolhido.
+ * Política de segurança dos cabeçalhos HTTP, compartilhada pelo servidor local e pelas montagens estáticas da PWA.
+ * Uma só fonte: qualquer montagem usa exatamente a mesma CSP já testada localmente, só com as origens públicas do
+ * provedor de autenticação e dados do ambiente escolhido.
  */
 
 /** CSP com as origens públicas do Neon (Auth e Data API) do ambiente; `extra` só para testes locais. */
