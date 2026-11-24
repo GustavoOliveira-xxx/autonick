@@ -26,7 +26,7 @@ export function desenharMatcap(cor, modo = 'hq', luz = 'frontal', tam = 96) {
   const cv = document.createElement('canvas'); cv.width = cv.height = tam;
   const ctx = cv.getContext('2d'); const img = ctx.createImageData(tam, tam); const d = img.data;
   const base = hex(PALETA[cor] ?? cor);
-  const sombraTinta = luz === 'quente' ? [120, 20, 24] : [58, 34, 70];
+  const sombraTinta = luz === 'quente' ? [120, 20, 24] : luz === 'forja' ? [44, 22, 62] : [58, 34, 70];
   const L = luz === 'recorte' ? [-0.2, 0.35, 0.92] : [-0.45, 0.6, 0.66];
   const nl = Math.hypot(...L); const l = L.map((v) => v / nl);
   const ehMetal = modo === 'metal' || cor === 'ouro' && modo === 'hq-metal';
@@ -54,6 +54,12 @@ export function desenharMatcap(cor, modo = 'hq', luz = 'frontal', tam = 96) {
     if (luz === 'recorte' && modo !== 'chapado') {
       const aro = Math.pow(1 - nz, 2.2) * Math.max(0, 0.4 + ny * 0.6 + nx * 0.2);
       c = lerp3(c, [255, 214, 106], Math.min(1, aro * 1.6));
+    }
+    if (luz === 'forja' && modo !== 'chapado') {
+      // Forja Noturna: luz-chave quente de cima, contraluz dourado à direita e reflexo vinho embaixo (separa do fundo escuro)
+      const aro = Math.pow(1 - nz, 2.4); const dir = Math.max(0, 0.25 + nx * 0.75 + ny * 0.35);
+      c = lerp3(c, [255, 206, 96], Math.min(0.85, aro * dir * 1.7));
+      const baixo = Math.max(0, -ny) * aro; c = lerp3(c, [150, 30, 52], Math.min(0.45, baixo * 0.9));
     }
     if (luz === 'quente' && modo !== 'chapado') {
       const aro = Math.pow(1 - nz, 2) * Math.max(0, -nx * 0.6 - ny * 0.2 + 0.3);

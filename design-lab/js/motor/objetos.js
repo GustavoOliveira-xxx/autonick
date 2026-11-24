@@ -148,7 +148,7 @@ export const OBJETOS = {
       raiz.add(g1, g2);
       return { raiz, partes: { g1, g2 } };
     },
-    aplicar(p, e) { const g = (e.giro || 0) * G; p.g1.rotation.z = g; p.g2.rotation.z = -g * 1.5 + 0.2; },
+    aplicar(p, e) { const g = (e.giro || 0) * G; p.g1.rotation.z = g; p.g2.rotation.z = -g * 1.5 + 0.2; const k = e.encaixe ?? 1; p.g2.position.set(0.56 + (1 - k) * 0.9, -0.42 - (1 - k) * 0.35, -0.04); },
     dur: { entrada: 0.7, ocioso: 2.4, interacao: 2.6, saida: 0.5 },
     entrada(t) { const k = clamp(t / 0.7); return est([this.pouso[0] - 1.8 * (1 - CURVAS.sai(k)), this.pouso[1], this.pouso[2]], [0, 18, 0], 1, { giro: -260 * (1 - CURVAS.sai(k)) }); },
     ocioso(t) { return est(this.pouso, [0, 18, 0], 1, { giro: t * 25 }); },
@@ -345,7 +345,7 @@ export const OBJETOS = {
     entrada(t) { return quedaEntrada(t, 0.7, this.pouso, [0, -20, 0], { saida: 0 }, 1.4); },
     ocioso(t) { return est(this.pouso, [0, -20, 0], 1, { saida: 0 }); },
     interacao(t, p) {
-      const passos = Math.floor(clamp((t - 0.1) / 1.3) * 9) / 9; const saida = t < 1.9 ? passos : 1 - clamp((t - 1.9) / 0.5);
+      const corre = CURVAS.suave(clamp((t - 0.1) / 1.3)); const saida = t < 1.9 ? corre : 1 - CURVAS.suave(clamp((t - 1.9) / 0.5));
       if (t > 0.1 && t < 1.4) { p.hq.push({ tipo: 'texto', texto: 'trrr', vida: ((t - 0.1) % 0.65) / 0.65, em: [2.35, 0.55, 0.35], pequeno: true }); p.sino.rz += 0.6 * Math.sin(t * 60); }
       reagirGolpe(p, t, 1.5, { forca: 0.6, lado: -1, texto: 'TRIM!', alvo: 'topo' });
       const k = trilha([[0.1, 0], [0.5, 1], [1.4, 1], [1.8, 0]])(t); olhar(p, 1.8, k * 0.7, -0.5);
@@ -552,7 +552,7 @@ export const OBJETOS = {
     },
     aplicar(p, e) {
       const modo = e.modo ?? 'digitando'; const t = e.t ?? 0;
-      p.pontos.forEach((m, i) => { m.visible = modo === 'digitando'; m.position.y = 0.05 * Math.max(0, Math.sin(t * 7 - i * 0.9)); });
+      p.pontos.forEach((m, i) => { m.visible = modo === 'digitando'; m.position.y = e.parado ? 0 : 0.05 * Math.max(0, Math.sin(t * 7 - i * 0.9)); m.scale.setScalar(e.parado ? 0.8 : 1); });
       p.exc.visible = modo === 'alerta'; p.exc.scale.setScalar(modo === 'alerta' ? CURVAS.volta(clamp(e.pop ?? 1)) : 1);
     },
     dur: { entrada: 0.5, ocioso: 2.4, interacao: 2.4, saida: 0.4 },
@@ -670,6 +670,7 @@ export function criarBiblioteca(THREE, mats, mergeVertices) {
     THREE,
     basico(cor) { const m = new THREE.MeshBasicMaterial({ color: PALETA[cor] ?? cor }); m.toneMapped = false; return m; },
     contornoMaterial: (e) => mats.contorno(e),
+    matcapDe: (cor, modo = 'metal') => mats.obter(cor, modo, luzAtual).matcap,
     malha(geom, cor, { contorno = true, metalico = false, espessura = 0.022, faces = null, duplo = false } = {}) {
       const mat = mats.obter(cor, modoAtual, luzAtual, { metalico });
       const m = new THREE.Mesh(geom, faces ? [mat, faces, faces] : mat);

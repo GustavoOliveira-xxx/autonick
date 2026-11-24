@@ -60,7 +60,7 @@ public class Servidor {
             String nome = alvo.getFileName().toString(); String ext = nome.contains(".") ? nome.substring(nome.lastIndexOf('.') + 1).toLowerCase() : "";
             byte[] corpo = Files.readAllBytes(alvo);
             // a página é escrita no formato de artefato (sem doctype); aqui ganha o esqueleto mínimo
-            if (base == pastaLab && "index.html".equals(nome)) {
+            if (base == pastaLab && nome.endsWith(".html") && !new String(corpo, 0, Math.min(corpo.length, 15), StandardCharsets.UTF_8).toLowerCase().startsWith("<!doctype")) {
                 String pagina = "<!doctype html>\n<html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
                         + new String(corpo, StandardCharsets.UTF_8) + "\n</html>";
                 corpo = pagina.getBytes(StandardCharsets.UTF_8);

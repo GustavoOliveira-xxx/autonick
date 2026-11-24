@@ -116,11 +116,14 @@
 .fb-F12[data-fb="sucesso"] .fb-ico svg { animation: fb-pop 320ms cubic-bezier(.3, 1.7, .5, 1); }
 /* F13 · Combinado recomendado: prensa + barra + texto */
 .fb-F13[data-fb="pressionado"], .fb-F13[data-fb="recebido"], .fb-F13[data-fb="processando"] { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--tinta), inset 0 2px 0 rgb(0 0 0 / 0.15); transition-duration: 0ms; }
-/* F14 · Contorno que corre */
-.fb-F14 .fb-onda { inset: -5px; border-radius: calc(var(--raio, 0.5rem) + 4px); background: conic-gradient(from var(--ang), transparent 0 60%, var(--ouro, #f5b70a) 75%, #fff8dc 80%, transparent 85%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); padding: 3px; }
-.fb-F14[data-fb="processando"] .fb-onda { opacity: 1; animation: fb-volta 1s linear infinite; }
-@keyframes fb-volta { to { --ang: 360deg; } }
+/* F14 · Contorno que corre (refinado: SVG com o mesmo raio do botão, velocidade constante no perímetro) */
+.fb .fb-contorno { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); z-index: 3; pointer-events: none; overflow: visible; opacity: 0; transition: opacity 160ms; }
+.fb .fb-contorno rect { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: 11px; ry: 11px; fill: none; stroke: #f5b70a; stroke-width: 3px; stroke-linecap: round; stroke-dasharray: 24 76; filter: drop-shadow(0 0 3px rgb(255 213 103 / 0.9)); }
+.fb-F14[data-fb="processando"] .fb-contorno { opacity: 1; }
+.fb-F14[data-fb="processando"] .fb-contorno rect { animation: fb-percorre 1.15s linear infinite; }
+@keyframes fb-percorre { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 .fb-F14[data-fb="pressionado"] { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--tinta); }
+.lab[data-reduzido] .fb-F14[data-fb="processando"] .fb-contorno rect { stroke-dasharray: none; }
 
 /* ======================================================================
    G · LOADERS

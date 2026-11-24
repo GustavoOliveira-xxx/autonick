@@ -37,6 +37,13 @@ Abrir o `index.html` direto pelo Explorer não funciona: os módulos JavaScript 
 | J · Direções | 6 direções na home e no painel Business |
 | Combinador, Combinações (6) e Minhas escolhas | montagem livre, presets e exportação em texto e JSON |
 
+## Prévia do site inteiro: CK Forja Noturna
+
+`http://127.0.0.1:8091/forja.html` mostra o AutoniCK inteiro na direção aprovada (Noite da Forja + Empresarial Premium + HQ Cinematográfica):
+home com palco em perspectiva (A05), cúpula de raios girando à parte (E01), Chamado da Forja refinado (B12F) no ritmo C04,
+feedback F14 + H02, loaders por contexto e os 20 conceitos da categoria I nas telas de Business, Cliente e CK Admin.
+Cada animação da categoria I só acontece depois de um evento (use os botões "Simular eventos desta tela").
+
 ## Estrutura
 
 ```
@@ -47,6 +54,7 @@ design-lab/
   js/motor/             motor 3D compartilhado (um contexto WebGL), rig do sino, objetos e animações
   js/paginas/           uma página por categoria
   js/replica.js         réplica funcional da home e do painel
+  forja.html, css/forja.css, js/forja/   prévia do site inteiro na direção CK Forja Noturna
 ```
 
 Medidas de desempenho nas fichas são estimativas técnicas. A única medição real é a do topo da bancada

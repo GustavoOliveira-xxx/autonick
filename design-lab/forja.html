@@ -1,0 +1,24 @@
+<title>AutoniCK Forja Noturna</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Prévia navegável do site inteiro do AutoniCK na direção CK Forja Noturna.">
+<meta name="theme-color" content="#120c1b">
+<link rel="icon" href="public/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="css/interacoes.css">
+<link rel="stylesheet" href="css/forja.css">
+<div class="fl-barra" id="barra" role="group" aria-label="Controles da prévia">
+  <div class="fl-marca"><img src="public/assets/brand/autonick-geral-320.webp" alt="" width="34" height="33"><div><b>Forja <i>Noturna</i></b><small>Prévia do site inteiro · AutoniCK</small></div></div>
+  <div class="fl-grupo" data-areas aria-label="Área"></div>
+  <label class="fl-campo">Tela <select id="sel-tela" aria-label="Tela"></select></label>
+  <div class="fl-grupo" aria-label="Dispositivo"><button type="button" data-disp="desktop" aria-pressed="true">Desktop</button><button type="button" data-disp="celular" aria-pressed="false">Celular</button></div>
+  <div class="fl-grupo" aria-label="Tema"><button type="button" data-tema="escuro" aria-pressed="true">Escuro</button><button type="button" data-tema="claro" aria-pressed="false">Claro</button></div>
+  <label class="fl-campo">Resposta <input id="lat" type="range" min="50" max="4000" step="50" value="900"><output id="lat-v">900 ms</output></label>
+  <label class="fl-campo">Resultado <select id="res"><option value="sucesso">Sucesso</option><option value="erro">Erro do servidor</option><option value="conexao">Sem conexão</option></select></label>
+  <button type="button" class="fl-bt" id="bt-red" aria-pressed="false">Movimento reduzido</button>
+  <button type="button" class="fl-bt" id="bt-abertura">Rever abertura</button>
+</div>
+<div class="fl-palco">
+  <p class="fl-nota"><span><b>Prévia navegável:</b> clique nos menus, botões e links como no app.</span><span>Dados fictícios da demonstração. Nada é gravado.</span></p>
+  <div class="fl-ctl-tela" id="ctl-tela" aria-live="polite"></div>
+  <div class="fl-quadro" id="quadro" data-dispositivo="desktop"></div>
+</div>
+<script type="module" src="js/forja/app.js"></script>

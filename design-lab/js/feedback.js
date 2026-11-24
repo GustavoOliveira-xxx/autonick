@@ -50,7 +50,7 @@ export function ligarBotao(btn, op = {}) {
   const original = rot.textContent;
   const rotulos = { processando: 'Salvando…', sucesso: 'Salvo', erro: 'Tentar de novo', indisponivel: 'Indisponível', conexao: 'Sem conexão', ...op.rotulos };
   btn.classList.add('fb');
-  if (!btn.querySelector('.fb-ico')) btn.insertAdjacentHTML('beforeend', '<span class="fb-ico" aria-hidden="true"></span><span class="fb-barra" aria-hidden="true"></span><span class="fb-onda" aria-hidden="true"></span><span class="fb-carimbo" aria-hidden="true">OK</span><span class="fb-msg" aria-hidden="true"></span>');
+  if (!btn.querySelector('.fb-ico')) btn.insertAdjacentHTML('beforeend', '<span class="fb-ico" aria-hidden="true"></span><span class="fb-barra" aria-hidden="true"></span><span class="fb-onda" aria-hidden="true"></span><span class="fb-carimbo" aria-hidden="true">OK</span><span class="fb-msg" aria-hidden="true"></span><svg class="fb-contorno" aria-hidden="true" focusable="false"><rect pathLength="100"></rect></svg>');
   const ico = btn.querySelector('.fb-ico'); const msg = btn.querySelector('.fb-msg');
   let ocupado = false, t0 = 0, timers = [];
   aplicarEstilo(estilo);
@@ -93,13 +93,13 @@ export function ligarBotao(btn, op = {}) {
     timers.push(setTimeout(() => { if (ocupado) { estado('processando'); ev(`indicador de processamento (passou do limiar de ${sim.limiar} ms)`); } }, sim.limiar));
     timers.push(setTimeout(() => { if (ocupado) { msg.textContent = 'Ainda trabalhando…'; ev('aviso de demora: a operação continua'); } }, 4000));
     try {
-      await simularRequisicao(sim);
+      const resposta = await (op.executar ? op.executar() : simularRequisicao(sim));
       limpar(); estado('sucesso'); msg.textContent = ''; btn.removeAttribute('aria-busy'); anunciar(rotulos.sucesso + '.');
-      ev('resposta do servidor: sucesso confirmado → sucesso exibido', 'ok'); op.aoFim?.('sucesso');
+      ev('resposta do servidor: sucesso confirmado → sucesso exibido', 'ok'); op.aoFim?.('sucesso', resposta);
       timers.push(setTimeout(() => { ocupado = false; estado(''); }, 1700));
     } catch (erro) {
       limpar(); estado('erro'); msg.textContent = erro.message; btn.removeAttribute('aria-busy'); anunciar('Não deu certo. ' + erro.message);
-      ev('resposta do servidor: erro → erro exibido com o motivo', 'falha'); op.aoFim?.('erro');
+      ev('resposta do servidor: erro → erro exibido com o motivo', 'falha'); op.aoFim?.('erro', erro);
       timers.push(setTimeout(() => { ocupado = false; estado(''); msg.textContent = ''; }, 3200));
     }
   };

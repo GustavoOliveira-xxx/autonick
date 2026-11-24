@@ -68,8 +68,8 @@ async function criarMotor() {
 
   function desenhar(v) {
     if (perdido) return;
-    const r = v.canvas.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = v.tamanho ?? v.canvas.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return;
+    const dpr = v.tamanho ? 1 : Math.min(window.devicePixelRatio || 1, 2);
     let w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
     const max = v.miniatura ? 260000 : 1800000; if (w * h > max) { const k = Math.sqrt(max / (w * h)); w = Math.round(w * k); h = Math.round(h * k); }
     if (v.canvas.width !== w || v.canvas.height !== h) { v.canvas.width = w; v.canvas.height = h; }
@@ -97,7 +97,7 @@ async function criarMotor() {
     const ms = performance.now() - t0; medicao.amostras.push(ms); if (medicao.amostras.length > 90) medicao.amostras.shift();
     medicao.msPorQuadro = medicao.amostras.reduce((a, b) => a + b, 0) / medicao.amostras.length;
     v.ultimoInfo = info;
-    v.aoQuadro?.({ info, pose, sino: { x: pontos.centro.x / w, y: pontos.centro.y / h, topo: pontos.topo.y / h }, impacto: pose.impacto, rz: pose.sino.rz, vista: v });
+    v.aoQuadro?.({ info, pose, sino: { x: pontos.centro.x / w, y: pontos.centro.y / h, topo: pontos.topo.y / h, base: pontos.base.y / h, baseX: pontos.base.x / w }, impacto: pose.impacto, rz: pose.sino.rz, vista: v });
   }
 
   function pontosHq(w, h) {
@@ -125,7 +125,7 @@ async function criarMotor() {
   function laco(agora) {
     raf = 0;
     if (document.hidden) { ultimo = 0; return; }
-    const dt = ultimo ? Math.min(0.05, (agora - ultimo) / 1000) : 0; ultimo = agora;
+    const dt = ultimo ? Math.min(0.1, (agora - ultimo) / 1000) : 0; ultimo = agora; // tempo real até 10 fps; abaixo disso desacelera em vez de saltar
     let continuar = false; let desenhadas = 0;
     for (const v of vistas) {
       const anima = v.visivel && v.tocando && !config.pausado && (!config.reduzido || v.umaVez);
@@ -175,6 +175,34 @@ async function criarMotor() {
       return v;
     },
     agendar,
+    /**
+     * Enquadramento que contém a trajetória inteira: aplica cada amostra de pose, mede as caixas dos objetos
+     * (e do sino, se visível) e devolve meia altura, meia largura e deslocamentos com margem.
+     */
+    enquadrarTrajetoria(poses, { comSino = false, margem = 1.14, minimo = 0.6 } = {}) {
+      const caixa = new THREE.Box3(); const b = new THREE.Box3();
+      for (const pose of poses) {
+        for (const e of pose.objetos ?? []) {
+          const o = biblioteca.obter(e.id); if (!o) continue;
+          if (!naCena.has(o)) { cena.add(o.ancora); naCena.add(o); }
+          biblioteca.aplicar(o, e); o.ancora.updateMatrixWorld(true);
+          if (o.ancora.visible) o.ancora.traverse((m) => { if (m.isMesh && m.visible && !m.userData.semCaixa && !m.userData.casco && m.parent?.visible !== false) { b.setFromObject(m); if (!b.isEmpty()) caixa.union(b); } });
+          o.ancora.visible = false;
+        }
+        if (comSino) { rig.aplicarPose(pose); b.setFromObject(rig.n.sino); caixa.union(b); }
+      }
+      if (caixa.isEmpty()) return { meiaAltura: 1.62, meiaLargura: 2.05, deslocX: 0.35 };
+      const c = caixa.getCenter(new THREE.Vector3()); const t = caixa.getSize(new THREE.Vector3());
+      const prof = t.z * 0.25; // objetos mais perto da câmera parecem maiores
+      return { meiaAltura: Math.max(minimo, (t.y / 2 + prof) * margem), meiaLargura: Math.max(minimo, (t.x / 2 + prof) * margem), deslocX: c.x, deslocY: c.y - rig.centroY };
+    },
+    /** Desenha uma única pose num canvas de tamanho fixo e devolve a imagem (para listas com muitos itens). */
+    fotografar({ fonte, enquadramento, sino = false, largura = 256, altura = 256, estilo, t = 0, hq = false }) {
+      const canvas = document.createElement('canvas');
+      const v = { canvas, ctx2d: canvas.getContext('2d'), tamanho: { width: largura, height: altura }, fonte, enquadramento, sino, estilo: estilo ?? { modo: 'hq', luz: 'forja', contorno: true }, zoom: 1, t, hq, ctx: { memoria: {}, ponteiro: { x: 0, y: 0, ativo: false } }, ultimoDt: 0 };
+      desenhar(v);
+      return canvas.toDataURL('image/png');
+    },
     redesenharTodas() { for (const v of vistas) v.sujo = true; agendar(); },
     encerrar() { cancelAnimationFrame(raf); io.disconnect(); for (const v of [...vistas]) v.liberar(); gltf.scene.traverse((o) => { if (o.isMesh) { o.geometry?.dispose(); for (const m of [].concat(o.material)) m?.dispose(); } }); mats.liberar(); renderer.dispose(); renderer.forceContextLoss?.(); },
   };

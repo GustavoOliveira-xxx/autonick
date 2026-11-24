@@ -111,6 +111,7 @@ export const F = [
   P('F14', 'Contorno que corre', 'Sutil', 'Média', 'Um traço dourado percorre a borda do botão enquanto processa.', 'Progresso elegante, sem esconder o texto.', 'Dourado da forja.', 'Bonito em botões grandes.', 'Usa @property e máscara (navegadores atuais).', 'Uma animação de conic-gradient.', 'Igual.', 'Ações longas.'),
 ];
 
+const NOMES_G = { G01: 'Fio dourado no topo', G02: 'Sininho', G03: 'Engrenagem CK', G04: 'Linhas de velocidade', G05: 'Barra forjada', G06: 'Esqueleto com retícula', G07: 'Card carregando', G08: 'Sino 3D', G09: 'Etapas reais', G10: 'Linha de estoque', G11: 'Abertura do app', G12: 'Orbe pulsante', G13: 'No próprio botão' };
 export const G = [
   ['G01', 'Sutil', 'Fio dourado no topo da página, avança devagar e completa quando a página chega.', 'Navegação entre páginas.'],
   ['G02', 'Equilibrado', 'Sininho 2D balançando, com o badalo em contratempo.', 'Esperas curtas em qualquer área.'],
@@ -125,7 +126,7 @@ export const G = [
   ['G11', 'Equilibrado', 'Logo com anel de progresso.', 'Inicialização do app (PWA).'],
   ['G12', 'Sutil', 'Orbe pulsante.', 'Esperas mínimas.'],
   ['G13', 'Sutil', 'Indicador no próprio botão (ver categoria F).', 'Salvamento de formulário.'],
-].map(([id, intensidade, resumo, uso]) => ({ id, intensidade, resumo, uso }));
+].map(([id, intensidade, resumo, uso]) => ({ id, nome: NOMES_G[id], intensidade, resumo, uso }));
 
 export const H = [
   P('H01', 'Prensa', 'Sutil', 'Baixa', 'Física de impressão: tudo responde em 90 ms, sobe e desce na sombra deslocada, nada desfoca.', 'Rapidez e firmeza para uso diário.', 'Sombra de impressão e tinta.', 'A mais rápida e previsível; ótima para Business.', 'Menos "encanto" que as outras.', 'Só transform e box-shadow.', 'Igual.', 'Business e CK Admin.'),
