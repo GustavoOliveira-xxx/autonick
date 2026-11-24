@@ -23,7 +23,8 @@ public enum Dominio {
             "horarios_empresa", "salvar_horarios_empresa", "equipe_membros", "equipe_historico", "convidar_funcionario",
             "cancelar_convite", "desligar_membro", "alterar_perfil_do_membro", "criar_perfil_permissao",
             "alterar_perfil_permissao", "desativar_perfil_permissao", "definir_desconto_maximo", "meu_limite_desconto",
-            "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa"),
+            "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa",
+            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro"),
 
     PRODUTOS_ESTOQUE(false, "produtos_da_empresa", "criar_produto", "alterar_produto", "definir_produto_ativo",
             "adicionar_variacao", "alterar_variacao", "definir_variacao_ativa", "alterar_preco", "alterar_custo",
@@ -31,7 +32,7 @@ public enum Dominio {
             "historico_movimentacoes", "registrar_movimentacao", "propor_movimentacao", "aprovar_proposta",
             "decidir_proposta_sem_aplicar", "propostas_da_empresa", "estornar_movimentacao", "criar_fornecedor",
             "alterar_fornecedor", "compras_da_empresa", "criar_compra", "registrar_compra", "cancelar_compra",
-            "compras_para_conta_pagar", "gerar_titulo_compra"),
+            "compras_para_conta_pagar", "gerar_titulo_compra", "definir_imagem_produto", "imagens_de_produtos"),
 
     VENDAS_PEDIDOS(false, "clientes_da_empresa", "criar_cliente", "alterar_cliente", "definir_cliente_ativo",
             "historico_do_cliente", "catalogo_para_venda", "vendas_da_empresa", "venda_detalhe", "criar_venda",
@@ -71,7 +72,7 @@ public enum Dominio {
             "avaliacoes_da_empresa", "denunciar", "minhas_denuncias", "registrar_exportacao_pdf"),
 
     /** Únicas funções do visitante sem login (papel anonymous). */
-    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica"),
+    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica", "logos_publicos"),
 
     VITRINE_DEMONSTRACAO(false, "filtros_demonstracao", "buscar_demonstracao", "vitrine_demonstracao"),
 

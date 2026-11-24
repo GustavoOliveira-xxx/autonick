@@ -1,0 +1,32 @@
+-- Desfaz 202611250001_arquivos_logos (os bytes no armazenamento local não são apagados por SQL).
+BEGIN;
+DROP FUNCTION IF EXISTS manutencao.arquivos_com_metadados(uuid[]);
+DROP FUNCTION IF EXISTS manutencao.arquivo_registrar(uuid, text, text, integer, integer, integer, text, text, text, uuid, text);
+DROP FUNCTION IF EXISTS manutencao.arquivo_para_leitura(uuid);
+DROP SCHEMA IF EXISTS manutencao;
+DROP FUNCTION IF EXISTS public.arquivos_do_registro(text, uuid);
+DROP FUNCTION IF EXISTS public.imagens_de_produtos(uuid);
+DROP FUNCTION IF EXISTS public.definir_imagem_produto(uuid, uuid, text);
+DROP FUNCTION IF EXISTS public.logos_publicos(uuid[]);
+DROP FUNCTION IF EXISTS public.logos_das_minhas_empresas();
+DROP FUNCTION IF EXISTS public.definir_logo_empresa(uuid, uuid, text);
+DROP FUNCTION IF EXISTS app_private.logo_da_empresa(uuid);
+DROP FUNCTION IF EXISTS public.arquivo_remover(uuid, text);
+DROP FUNCTION IF EXISTS app_private.arquivo_json(public.arquivos);
+DROP FUNCTION IF EXISTS app_private.pode_ler_arquivo(public.arquivos, text);
+DROP FUNCTION IF EXISTS app_private.permissao_arquivo(text);
+DROP TRIGGER IF EXISTS cartao_logo_aprovada ON public.public_empresa_cards;
+DROP FUNCTION IF EXISTS app_private.cartao_logo_aprovada();
+DROP TRIGGER IF EXISTS solicitacao_logo_congelada ON public.solicitacoes_publicacao;
+DROP FUNCTION IF EXISTS app_private.solicitacao_logo_congelada();
+DROP TRIGGER IF EXISTS solicitacao_copia_logo ON public.solicitacoes_publicacao;
+DROP FUNCTION IF EXISTS app_private.solicitacao_copiar_logo();
+ALTER TABLE public.produtos DROP COLUMN IF EXISTS imagem_arquivo_id;
+ALTER TABLE public.public_empresa_cards DROP COLUMN IF EXISTS logo_arquivo_id;
+ALTER TABLE public.solicitacoes_publicacao DROP COLUMN IF EXISTS logo_arquivo_id;
+ALTER TABLE public.empresas DROP COLUMN IF EXISTS logo_arquivo_id;
+DROP TABLE IF EXISTS public.arquivos;
+DELETE FROM app_private.limites_plataforma WHERE chave IN ('arquivos_imagem_max_kb', 'arquivos_documento_max_kb', 'arquivos_dimensao_max_px', 'arquivos_cota_empresa_mb');
+ALTER TABLE app_private.limites_plataforma DROP COLUMN IF EXISTS versao, DROP COLUMN IF EXISTS valor_padrao, DROP COLUMN IF EXISTS unidade,
+  DROP COLUMN IF EXISTS nome, DROP COLUMN IF EXISTS categoria;
+COMMIT;

@@ -11,7 +11,7 @@
  *    (texto fixo, sem dado de ninguém); conversas, dados privados, relatórios
  *    e PDFs nunca entram no cache.
  */
-const VERSAO = 'autonick-estatico-v0.15.0';  // CK Forja Noturna: tema escuro, camada forja e imagens do sino
+const VERSAO = 'autonick-estatico-v0.16.0';  // Evolução integrada: navegação viva, tema claro revisado e símbolo capacete-sino
 
 // Páginas que abrem sem conexão (a rede tem prioridade; o cache é só reserva).
 const PAGINAS_SEM_CONEXAO = ['/ajuda.html'];
@@ -31,6 +31,9 @@ const ARQUIVOS = [
   '/css/forja.css',
   '/js/features/offline.js',
   '/js/ui/layout.js',
+  '/js/ui/navegacao-viva.js',
+  '/js/tema-inicial.js',
+  '/assets/brand/autonick-capacete-sino.svg',
   '/js/ui/dom.js',
   '/js/ui/notificacoes.js',
   '/js/ui/sw-registro.js',

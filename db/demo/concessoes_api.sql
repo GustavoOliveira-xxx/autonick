@@ -7,3 +7,7 @@ GRANT authenticated, anonymous TO __PAPEL_API__;
 GRANT USAGE ON SCHEMA demo_auth TO __PAPEL_API__;
 GRANT SELECT ON demo_auth.contas, demo_auth.cenarios, demo_auth.config, demo_auth.empresas_cenario TO __PAPEL_API__;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA demo_auth TO __PAPEL_API__;
+-- Arquivos (E03): só a API Java registra e lê metadados de arquivos (depois de validar o conteúdo real).
+GRANT USAGE ON SCHEMA manutencao TO __PAPEL_API__;
+GRANT EXECUTE ON FUNCTION manutencao.arquivo_registrar(uuid, text, text, integer, integer, integer, text, text, text, uuid, text),
+  manutencao.arquivo_para_leitura(uuid), manutencao.arquivos_com_metadados(uuid[]) TO __PAPEL_API__;

@@ -255,3 +255,113 @@ body .aviso .aviso__icone, body .aviso .aviso__icone * { color: inherit; }
 body .aviso .aviso__icone { background: transparent; border-color: currentColor; }
 /* o botão de tema mostra só o símbolo até telas bem largas, para o cabeçalho não quebrar linha (o nome continua para leitores de tela) */
 @media (max-width: 99.99rem) { .tema .leitura__rotulo { display: none; } }
+
+/* ======================================================================================================
+   EVOLUÇÃO INTEGRADA · sistema de interação comum aos dois temas
+   Clique Forja (H02), fio de navegação (G01), entrada de página, View Transitions, abas e menu lateral.
+   ====================================================================================================== */
+:root { --mov-rapido: 90ms; --mov-medio: 200ms; --mov-lento: 380ms; --curva-saida: cubic-bezier(0.2, 0.8, 0.2, 1); --curva-mola: cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Clique Forja: o controle afunda e acende no toque; a onda nasce do ponto tocado (camada própria, recortada) */
+.botao, button, .menu-lateral a, .navegacao-local a, .barra-celular a, .cartao-acao, [data-clique] {
+  transition: transform var(--mov-rapido) var(--curva-saida), filter var(--mov-medio), box-shadow var(--mov-medio), background-color var(--mov-medio), color var(--mov-medio);
+}
+.pressionado { transform: translateY(1px) scale(0.975) !important; }
+.botao.pressionado { box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.28) !important; }
+.pressionado .icone { transform: scale(0.9); transition: transform var(--mov-rapido); }
+.lampejo { animation: forja-lampejo 520ms var(--curva-saida); }
+@keyframes forja-lampejo { 0% { filter: brightness(1.22) saturate(1.1); } 100% { filter: none; } }
+.camada-onda { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; z-index: 0; }
+.onda-forja { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgb(255 250 225 / 0.8) 0%, rgb(255 213 103 / 0.5) 40%, rgb(255 180 40 / 0) 70%);
+  animation: forja-onda 560ms var(--curva-saida) forwards; }
+@keyframes forja-onda { from { transform: scale(0); opacity: 1; } to { transform: scale(var(--onda-escala, 20)); opacity: 0; } }
+.menu-lateral a, .navegacao-local a, .barra-celular a { position: relative; }
+
+/* G01 · fio dourado de navegação: aparece no clique do link, some no pageshow ou se a navegação for cancelada */
+.fio-navegacao { position: fixed; z-index: 9999; inset: 0 0 auto; height: 3px; overflow: hidden; background: rgb(245 183 10 / 0.14); pointer-events: none; }
+.fio-navegacao::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 38%; background: linear-gradient(90deg, transparent, #f5b70a 55%, #fff3c4); box-shadow: 0 0 10px #f5b70a;
+  animation: fio-cometa 1s var(--curva-saida) infinite; }
+@keyframes fio-cometa { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
+html.navegando, html.navegando a { cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .fio-navegacao::before { animation: none; width: 100%; } .lampejo { animation: none; } .onda-forja { display: none; } }
+
+/* Entrada de página: deslize curto do conteúdo (sem opacidade, para não afetar leitura nem contraste medido) */
+.pagina-entrando main { animation: pagina-entra var(--mov-lento) var(--curva-saida); }
+@keyframes pagina-entra { from { transform: translateY(8px); } }
+/* View Transitions entre páginas (navegadores compatíveis): o menu fica parado, o conteúdo troca com um corte curto */
+@view-transition { navigation: auto; }
+#cabecalho { view-transition-name: cabecalho; }
+::view-transition-old(root) { animation: vt-sai 140ms ease-in both; }
+::view-transition-new(root) { animation: vt-entra 220ms var(--curva-saida) both; }
+@keyframes vt-sai { to { opacity: 0.6; transform: translateY(-4px); } }
+@keyframes vt-entra { from { opacity: 0.4; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* Abas de verdade para as seções locais (antes: links sublinhados) */
+.navegacao-local { overflow-x: auto; scrollbar-width: thin; margin-inline: -2px; padding: 2px; }
+.navegacao-local ul { display: inline-flex; flex-wrap: nowrap; gap: 4px; padding: 4px; border-radius: 12px; background: var(--superficie-2); border: 1px solid var(--borda-suave); }
+.navegacao-local li { flex: none; }
+.navegacao-local a, .navegacao-local a.botao { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 9px; border: 0; box-shadow: none; clip-path: none;
+  background: none; color: var(--texto-suave); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.navegacao-local a::after { display: none; }
+.navegacao-local a:hover { color: var(--texto); background: rgb(127 127 127 / 0.12); }
+.navegacao-local a[aria-current="page"], .navegacao-local a.botao[aria-current="page"] { position: relative; color: var(--texto); background: var(--superficie); font-weight: 700; clip-path: none;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 2px 8px rgb(0 0 0 / 0.22), 0 0 0 1px rgb(245 183 10 / 0.5); }
+.navegacao-local a[aria-current="page"]::before { content: ""; position: absolute; left: 14px; right: 14px; bottom: 5px; height: 2px; border-radius: 2px; background: #f5b70a; }
+
+/* Títulos de seção sem o marcador inclinado (o "!" fica para avisos de verdade) */
+main section > h2:first-child::before, .bloco__cab h2::before { display: none !important; }
+
+/* Menu lateral do Business: trilho escuro de altura total e item ativo inequívoco */
+@media (min-width: 64rem) {
+  body[data-area="business"]::before { content: ""; position: fixed; inset: 0 auto 0 0; width: 17.5rem; z-index: -1; background: #0c0714; border-right: 4px solid var(--capa); box-shadow: 4px 0 0 var(--ouro); }
+  body[data-area="business"] #cabecalho { height: 100dvh; }
+}
+.menu-lateral a[aria-current="page"], html .menu-lateral a[aria-current="page"] { color: #ffe7a6 !important; background: linear-gradient(90deg, rgb(245 183 10 / 0.22), rgb(245 183 10 / 0.05)) !important;
+  clip-path: none !important; box-shadow: inset 4px 0 0 #f5b70a !important; font-weight: 700; }
+.menu-lateral a[aria-current="page"] .icone { color: #ffd567 !important; }
+
+/* Bloco "Empresa ativa": o bloco inteiro é o botão de troca */
+a.empresa-ativa { display: none; grid-template-columns: 40px minmax(0, 1fr) 18px; gap: 10px; align-items: center; text-decoration: none; color: inherit; cursor: pointer; }
+a.empresa-ativa:hover { border-color: #ffd567; background: rgb(255 255 255 / 0.08); }
+body.menu-aberto a.empresa-ativa { display: grid; }
+@media (min-width: 64rem) { a.empresa-ativa { display: grid; } }
+.empresa-ativa__logo { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, #7c1b30, #3a0e1d); color: #ffe08a; font: 800 italic 1rem/1 var(--fonte-titulo); border: 1px solid rgb(255 213 103 / 0.4); }
+.empresa-ativa__logo img { width: 100%; height: 100%; object-fit: cover; }
+.empresa-ativa__texto { min-width: 0; display: grid; }
+.empresa-ativa__texto strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empresa-ativa__acao { font-size: 0.8125rem; color: var(--ouro-claro); font-weight: 600; }
+.empresa-ativa__icone { width: 18px; height: 18px; color: #c9b5e6; }
+.marca__logo { object-fit: contain; }
+
+/* ======================================================================================================
+   TEMA CLARO REVISADO (aprovado no lab): papel quente, superfícies brancas, ouro escuro para texto,
+   trilho lateral escuro preservado como identidade CK. Contraste AA conferido nos pares abaixo.
+   ====================================================================================================== */
+html[data-tema="claro"] {
+  --fundo: #f5efe4; --superficie: #ffffff; --superficie-2: #fbf7ef; --texto: #1c1520; --texto-suave: #574b5c;
+  --borda: #a8957a; --borda-suave: #e7dcc8; --ouro-texto: #8a5600; --link: #8c1b33; --link-hover: #5e0f20;
+  --sucesso: #116b3c; --sucesso-fundo: #e4f6ea; --alerta: #7a4b00; --alerta-fundo: #fff2d4; --erro: #a3161e; --erro-fundo: #fde9e7; --info: #124f8c; --info-fundo: #e5f0fc;
+  --foco: #8a5600; --sombra: 0 1px 2px rgb(60 40 10 / 0.06), 0 4px 14px rgb(60 40 10 / 0.07);
+  & body { background: var(--fundo) radial-gradient(circle, rgb(138 86 0 / 0.07) 1px, transparent 1.4px) 0 0 / 10px 10px; color: var(--texto); }
+  & .cartao, & .bloco, & .estado-vazio, & .tabela-container, & .dialogo__caixa { background: var(--superficie); border-color: var(--borda-suave); box-shadow: var(--sombra); }
+  & .tabela thead th { background: var(--superficie-2); color: var(--texto-suave); border-bottom: 1px solid var(--borda-suave); }
+  & .tabela td { border-bottom-color: var(--borda-suave); }
+  & .tabela tbody tr:hover td { background: #fff7e0; }
+  & input:not([type="checkbox"]):not([type="radio"]), & select, & textarea { background: #fff; border-color: #c4b190; color: var(--texto); }
+  & input:focus, & select:focus, & textarea:focus { border-color: #e3a008; box-shadow: 0 0 0 3px rgb(227 160 8 / 0.28); outline: none; }
+  & .botao--secundario, & .botao--secundario:hover { background: #fff; color: #6b4300; border-color: #cfb27a; box-shadow: 0 2px 0 rgb(60 40 10 / 0.15); }
+  & .botao--secundario:hover { background: #fff3cf; border-color: #e3a008; }
+  & .navegacao-local ul { background: #f2e9d8; border-color: var(--borda-suave); }
+  & .navegacao-local a[aria-current="page"] { background: #fff; color: var(--texto); box-shadow: 0 1px 2px rgb(60 40 10 / 0.12), 0 0 0 1px #e3b440; }
+  & .navegacao-local a[aria-current="page"]::before { background: #e3a008; }
+  & .chip { border-color: transparent; }
+  & main h1, & main h2, & main h3 { color: var(--texto); }
+  & main h1 { background: none; border: 0; clip-path: none; box-shadow: none; padding: 0; color: #1c1520; text-shadow: 2px 2px 0 #f2cf72; }
+  & .introducao > p, & .texto-suave, & .campo__ajuda { color: var(--texto-suave); }
+  & .fio-navegacao { background: rgb(227 160 8 / 0.18); }
+  & #cabecalho.area-escura { background: #120b1a; }
+}
+@media (min-width: 64rem) { html[data-tema="claro"] body[data-area="business"]::before { background: #120b1a; } }

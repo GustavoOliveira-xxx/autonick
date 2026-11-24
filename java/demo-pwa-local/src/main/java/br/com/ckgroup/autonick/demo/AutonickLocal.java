@@ -11,6 +11,7 @@ import java.util.List;
  * <pre>
  *   AutoniCK-local.cmd             abre (os dados ficam entre execuções)
  *   AutoniCK-local.cmd --restaurar apaga os dados da demonstração e volta ao cenário fictício inicial
+ *   AutoniCK-local.cmd --backup    copia banco e arquivos para backups/AAAAMMDD-HHMMSS (com o AutoniCK fechado) e sai
  * </pre>
  *
  * Passos: sobe o PostgreSQL (pasta da demonstração), garante o banco e as migrations, gera a configuração da API (senha
@@ -27,10 +28,20 @@ public final class AutonickLocal {
     public static void main(String[] args) throws Exception {
         List<String> opcoes = Arrays.asList(args);
         boolean restaurar = opcoes.contains("--restaurar");
+        boolean backup = opcoes.contains("--backup");
         Path raiz = Path.of(System.getProperty("autonick.raiz", "../..")).toAbsolutePath().normalize();
         int porta = Integer.parseInt(env("AUTONICK_LOCAL_PORTA", "8080"));
         Path base = BancoPersistente.pastaBase();
         Files.createDirectories(base);
+        Path arquivos = base.resolve("arquivos");
+        Files.createDirectories(arquivos);
+        if (backup) {
+            if (ApiJavaLocal.portaAberta(porta)) sair("Feche o AutoniCK antes do backup (a porta " + porta + " está em uso).");
+            Path destino = CopiaSeguranca.copiar(base);
+            System.out.println("[autonick] backup pronto em " + destino);
+            System.out.println("[autonick] Para recuperar: feche o AutoniCK e copie as pastas 'dados' e 'arquivos' desse backup de volta para " + base);
+            return;
+        }
         Path log = base.resolve("api-java.log");
         ApiJavaLocal api = new ApiJavaLocal(raiz.resolve("java/os-api"), base.resolve("api.properties"), log, porta);
         api.encerrarSobras();
@@ -47,7 +58,10 @@ public final class AutonickLocal {
                     ? " Se faltar VCRUNTIME140.dll, instale o Visual C++ Redistributable (x64) da Microsoft." : ""));
             return;
         }
-        if (restaurar) System.out.println("[autonick] restaurando o cenário fictício inicial (os dados da demonstração serão apagados)...");
+        if (restaurar) {
+            System.out.println("[autonick] restaurando o cenário fictício inicial (os dados da demonstração serão apagados)...");
+            CopiaSeguranca.esvaziar(arquivos);
+        }
         boolean novo = banco.preparar(raiz, restaurar);
         System.out.println(novo ? "[autonick] banco da demonstração criado." : "[autonick] banco da demonstração existente preservado.");
 
@@ -62,7 +76,8 @@ public final class AutonickLocal {
                 "autonick.auth.cadastro-aberto=true",
                 "autonick.demo.montar-cenario=true",
                 "autonick.pwa.pasta=" + valorDePropriedade(raiz.resolve("public").toString().replace('\\', '/')),
-                "autonick.pwa.backend=java-local", ""));
+                "autonick.pwa.backend=java-local",
+                "autonick.arquivos.pasta=" + valorDePropriedade(arquivos.toString().replace('\\', '/')), ""));
         try {
             Files.setPosixFilePermissions(base.resolve("api.properties"), java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
         } catch (UnsupportedOperationException semPosix) {

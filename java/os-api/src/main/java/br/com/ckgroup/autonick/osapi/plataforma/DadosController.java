@@ -42,7 +42,7 @@ public class DadosController {
     static final Set<String> CODIGOS_DE_REGRA = Set.of("AUTH_REQUIRED", "FORBIDDEN_ACTION", "TENANT_FORBIDDEN",
             "VALIDATION_ERROR", "STATE_CONFLICT", "VERSION_CONFLICT", "IDEMPOTENCY_CONFLICT", "NOT_FOUND",
             "INSUFFICIENT_STOCK", "DISCOUNT_EXCEEDS_LIMIT", "PAYMENT_EXCEEDS_BALANCE", "PRODUCT_PAUSED",
-            "INSUFFICIENT_FUNDS", "PERIOD_LOCKED", "QUOTE_EXPIRED", "QUOTE_VERSION_STALE", "RATE_LIMITED");
+            "INSUFFICIENT_FUNDS", "PERIOD_LOCKED", "QUOTE_EXPIRED", "QUOTE_VERSION_STALE", "RATE_LIMITED", "LIMIT_REACHED");
 
     /** Números decimais como BigDecimal: valores em dinheiro não passam por double. */
     private final ObjectMapper leitor = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
@@ -106,6 +106,11 @@ public class DadosController {
         ErroDados traduzido = traduzir(erro);
         if (traduzido.status.is5xxServerError()) LOG.error("Falha do banco na camada de dados", erro);
         return recusa(traduzido);
+    }
+
+    /** Tradução compartilhada com outros controladores (arquivos). */
+    public static ErroDados traduzirErro(Throwable erro) {
+        return traduzir(erro);
     }
 
     /** Erro de regra (código no HINT) passa adiante; o resto vira resposta genérica, sem SQL nem detalhe interno. */

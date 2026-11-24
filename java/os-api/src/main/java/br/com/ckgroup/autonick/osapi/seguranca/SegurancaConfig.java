@@ -81,6 +81,10 @@ public class SegurancaConfig {
                     a.requestMatchers(HttpMethod.GET, "/api/saude").permitAll()
                             .requestMatchers("/api/auth/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/api/dados/rpc/*").authenticated()
+                            // Arquivos: o download decide no banco quem pode ler (visitante só vê arquivo público);
+                            // o envio exige pessoa autenticada.
+                            .requestMatchers(HttpMethod.GET, "/api/arquivos/*").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/api/arquivos").hasAuthority(PESSOA)
                             .requestMatchers(HttpMethod.GET, "/api/**").hasAuthority(PESSOA)
                             .requestMatchers(HttpMethod.POST, escritasOs).hasAuthority(PESSOA)
                             .requestMatchers("/api/**").denyAll();

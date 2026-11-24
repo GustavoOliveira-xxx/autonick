@@ -67,7 +67,7 @@ test('Ajuda: botão "Instalar o AutoniCK" quando o navegador oferece; sem convit
   await expect(page.locator('#instalacao-corpo')).toHaveAttribute('data-orientacao', 'computador');
   await expect(page.locator('#instalacao-orientacao')).toContainText('Chrome ou o Edge');
   await expect(page.getByRole('button', { name: 'Instalar o AutoniCK' })).toHaveCount(0);
-  await expect(page.locator('#versao-app')).toHaveText('Versão 0.15.0 (desenvolvimento).');
+  await expect(page.locator('#versao-app')).toHaveText('Versão 0.16.0 (desenvolvimento).');
   await page.evaluate(convite);
   const botao = page.getByRole('button', { name: 'Instalar o AutoniCK' });
   await expect(botao).toBeVisible();
@@ -120,7 +120,7 @@ test('sem conexão: só a página offline e a Ajuda abrem; nenhuma página com l
   await page.goto('/ajuda.html');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ajuda');
   await expect(page.locator('#instalacao')).toContainText('Instalar o aplicativo');
-  await expect(page.locator('#versao-app')).toHaveText('Versão 0.15.0 (desenvolvimento).');
+  await expect(page.locator('#versao-app')).toHaveText('Versão 0.16.0 (desenvolvimento).');
   for (const url of ['/', '/cliente/', '/cliente/conta.html', '/business/financeiro-relatorios.html?id=x', '/cliente/ordens.html', '/ck-admin/']) {
     await page.goto(url).catch(() => {});
     await expect(page.getByRole('heading', { level: 1 }), url).toHaveText('Sem conexão com a internet');
@@ -197,7 +197,7 @@ test('cache, localStorage e IndexedDB sem dados privados depois de percorrer tel
     const bancos = indexedDB.databases ? (await indexedDB.databases()).map((b) => b.name) : [];
     return { nomes: await caches.keys(), urls, locais: Object.keys(localStorage), bancos };
   });
-  expect(r.nomes).toEqual(['autonick-estatico-v0.15.0']);
+  expect(r.nomes).toEqual(['autonick-estatico-v0.16.0']);
   for (const url of r.urls) expect(url, url).toMatch(/^\/(offline\.html|ajuda\.html|manifest\.webmanifest|css\/.+\.css|js\/.+\.js|assets\/.+\.(woff2|png|svg|webp))$/);
   expect(r.urls.some((u) => u.includes('__neon_simulado') || u.endsWith('.pdf') || u.endsWith('.csv'))).toBe(false);
   expect(r.locais).toEqual([]);
@@ -208,7 +208,7 @@ test.describe('atualização (D13-03)', () => {
   async function servirVersao(context, rotulo) {
     await context.route('**/service-worker.js', async (rota) => {
       const original = await rota.fetch();
-      const texto = (await original.text()).replace("const VERSAO = 'autonick-estatico-v0.15.0'", `const VERSAO = 'autonick-estatico-v0.15.0-${rotulo}'`);
+      const texto = (await original.text()).replace("const VERSAO = 'autonick-estatico-v0.16.0'", `const VERSAO = 'autonick-estatico-v0.16.0-${rotulo}'`);
       await rota.fulfill({ response: original, body: texto, headers: { ...original.headers(), 'cache-control': 'no-store' } });
     });
   }

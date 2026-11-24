@@ -12,6 +12,7 @@ import { gruposDaEmpresa, chaveDaPagina } from './menu-empresa.js';
 import { registrarServiceWorker } from './sw-registro.js';
 import { iniciarConexao } from './conexao.js';
 import { capturarInstalacao, abertoComoApp } from './instalacao.js';
+import { iniciarNavegacaoViva } from './navegacao-viva.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** Ícone do conjunto próprio do AutoniCK (assets/icons/icones.svg), sempre decorativo. */
@@ -82,28 +83,13 @@ function botaoTema() {
   return b;
 }
 
-// ---- Navegação: o item clicado mostra que a próxima página está abrindo (só se a troca demorar) ----
-function sinalizarNavegacao() {
-  let timer = 0;
-  document.addEventListener('click', (e) => {
-    const a = e.target.closest?.('#cabecalho a[href], .barra-celular a[href]');
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
-    const url = new URL(a.href, location.href);
-    if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => a.classList.add('abrindo'), 120);
-  });
-  window.addEventListener('pageshow', () => { clearTimeout(timer); for (const a of document.querySelectorAll('.abrindo')) a.classList.remove('abrindo'); });
-}
-
 function marca(area) {
   const empresarial = area === 'business';
   return el('a', { href: empresarial ? '/business/' : area === 'ck' ? '/ck-admin/' : '/', class: 'marca',
     'aria-label': `AutoniCK${empresarial ? ' Business' : area === 'ck' ? ' Admin' : ''}, página inicial` },
-  el('img', { class: 'marca__logo', src: empresarial ? '/assets/brand/autonick-empresarial-320.webp' : '/assets/brand/autonick-geral-320.webp',
-    width: '320', height: '313', alt: '', decoding: 'async' }),
+  el('img', { class: 'marca__logo', src: '/assets/brand/autonick-capacete-sino.svg', width: '256', height: '256', alt: '', decoding: 'async' }),
   el('span', { class: 'marca__texto', 'aria-hidden': 'true' }, 'Autoni', el('b', {}, 'CK'),
-    empresarial ? el('small', {}, 'Empresarial') : area === 'ck' ? el('small', {}, 'Admin · sala de controle') : null));
+    empresarial ? el('small', {}, 'Business') : area === 'ck' ? el('small', {}, 'Admin · sala de controle') : null));
 }
 
 function navSimples(area) {
@@ -130,6 +116,7 @@ async function sair(botao) {
 
 function menuBusiness() {
   const ativa = obterEmpresaAtiva();
+  const sessaoConfirmada = Boolean(ativa) || sessaoAtiva;
   const atual = caminhoAtual();
   const chave = chaveDaPagina();
   const item = (href, rotulo, nomeIcone, marcado, extra = null) => el('li', {},
@@ -148,18 +135,28 @@ function menuBusiness() {
     el('div', { class: 'menu-grupo menu-grupo--rodape' }, el('ul', { role: 'list' },
       ativa ? item('/business/minhas-empresas.html', 'Minhas empresas', 'i-vitrine', atual === '/business/minhas-empresas.html') : null,
       item('/business/conta.html', 'Minha conta', 'i-pessoa', atual === '/business/conta.html'),
-      item('/business/entrar.html', 'Entrar', 'i-seta', atual === '/business/entrar.html'),
+      sessaoConfirmada ? null : item('/business/entrar.html', 'Entrar', 'i-seta', atual === '/business/entrar.html'),
       item('/ajuda.html', 'Ajuda', 'i-balao', false),
       el('li', {}, botaoSair))));
 }
 
 function blocoEmpresaAtiva() {
   const ativa = obterEmpresaAtiva();
-  return el('div', { class: 'empresa-ativa', id: 'empresa-ativa' },
+  const bloco = el('a', { class: 'empresa-ativa', id: 'empresa-ativa', href: '/business/minhas-empresas.html', 'data-trocar-empresa': '',
+    'aria-label': ativa ? `Empresa ativa: ${ativa.nome}. Trocar de empresa` : 'Escolher empresa' },
+  el('span', { class: 'empresa-ativa__logo', 'aria-hidden': 'true' }, iniciaisDe(ativa?.nome)),
+  el('span', { class: 'empresa-ativa__texto' },
     el('span', { class: 'empresa-ativa__rotulo' }, 'Empresa ativa'),
-    el('strong', {}, ativa?.nome ?? 'nenhuma selecionada'),
-    el('a', { href: '/business/minhas-empresas.html' }, ativa ? 'Trocar de empresa' : 'Escolher empresa'));
+    el('strong', {}, ativa?.nome ?? 'Nenhuma selecionada'),
+    el('span', { class: 'empresa-ativa__acao' }, ativa ? 'Trocar de empresa' : 'Escolher empresa')),
+  icone('i-seta', 'icone empresa-ativa__icone'));
+  if (ativa?.logo) {
+    const logo = bloco.querySelector('.empresa-ativa__logo');
+    logo.replaceChildren(el('img', { src: ativa.logo, alt: '', width: '40', height: '40', decoding: 'async' }));
+  }
+  return bloco;
 }
+const iniciaisDe = (nome) => String(nome ?? '').replace(/\[[^\]]*\]/g, '').split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || 'CK';
 
 function montarCabecalho(area) {
   if (area === 'business') {
@@ -199,6 +196,17 @@ function montarRodape() {
       el('li', {}, el('a', { href: '/ajuda.html#privacidade' }, 'Privacidade nesta versão')))));
 }
 
+let sessaoAtiva = false;
+/** Business: com sessão confirmada, o menu não oferece mais "Entrar". */
+function acompanharSessaoNoMenu() {
+  document.addEventListener('autonick:sessao', (e) => {
+    const confirmada = Boolean(e.detail?.autenticado);
+    if (confirmada === sessaoAtiva) return;
+    sessaoAtiva = confirmada;
+    document.getElementById('menu-principal')?.replaceWith(menuBusiness());
+  });
+}
+
 /** Cliente com sessão confirmada pela própria tela não vê mais "Entrar" (a conta já está no menu e na barra do celular). */
 function acompanharSessaoNoCabecalho() {
   document.addEventListener('autonick:sessao', (e) => {
@@ -226,7 +234,8 @@ export function iniciarLayout() {
   aplicarLeitura(lerPreferencia());
   aplicarTema(lerTemaClaro());
   if (area === 'cliente') acompanharSessaoNoCabecalho();
-  sinalizarNavegacao();
+  if (area === 'business') acompanharSessaoNoMenu();
+  iniciarNavegacaoViva();
   document.getElementById('cabecalho')?.replaceChildren(...montarCabecalho(area));
   document.getElementById('rodape')?.replaceChildren(montarRodape());
   const atalhos = barraCelular(area);
