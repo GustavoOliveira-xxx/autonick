@@ -560,7 +560,8 @@ html[data-reduzido="sim"] .rf-onda, html[data-reduzido="sim"] .rf-faisca { displ
 .rf-paleta-busca { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--rf-linha); }
 .rf-paleta-busca svg { width: 20px; height: 20px; color: var(--rf-ouro-txt); }
 .rf-paleta-busca input { flex: 1; border: 0; background: none; font-size: 1.05rem; color: var(--rf-texto); outline: none; }
-span:has(> svg[viewBox="0 0 64 64"]) { display: inline-block; flex: none; }
+span:has(> .rf-svg-simbolo) { display: inline-block; flex: none; }
+.rf-simbolo--balanca, .rf-svg-simbolo { transform-origin: 50% 8%; }
 @container (max-width: 1100px) { .rf-dia--cab { display: none !important; } }
 .rf-turno input { width: 58px; text-align: center; font-variant-numeric: tabular-nums; }
 .rf-rolagem-x > .rf-abas { flex-wrap: nowrap; }

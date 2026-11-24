@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="ak-frontal-title ak-frontal-desc">
+  <title id="ak-frontal-title">AutoniCK — Capacete Sino frontal</title>
+  <desc id="ak-frontal-desc">Capacete em forma de sino, visto de frente, com pino dourado, rosto anguloso e visor verde, em traço de história em quadrinhos.</desc>
+
+  <g id="capacete" stroke="#191418" stroke-linecap="round" stroke-linejoin="round">
+    <g id="pino">
+      <path fill="#F4AE32" stroke-width="5" d="M122 17h12l3 30c.7 5 4.5 9 8 14h-34c3.5-5 7.3-9 8-14Z"/>
+      <path fill="#FFDA59" stroke-width="4" d="M107 68v-5c0-6 9-10 21-10s21 4 21 10v5Z"/>
+    </g>
+
+    <g id="casco">
+      <path fill="#FFC63D" stroke-width="6" d="M29 198c0-11 5-19 11-28 9-13 14-29 20-50 8-36 31-58 68-58s60 22 68 58c6 21 11 37 20 50 6 9 11 17 11 28v8H29Z"/>
+      <path fill="none" stroke-width="3.5" d="M67 126c-4 20-10 38-19 51m141-51c4 20 10 38 19 51"/>
+    </g>
+
+    <g id="face">
+      <path fill="#FFDC62" stroke-width="3.5" d="M57 191l16-33 5-42c5-18 16-31 31-38l19-5 19 5c15 7 26 20 31 38l5 42 16 33-19 17H76Z"/>
+      <path fill="none" stroke-width="3.5" d="m94 105 9-13 13 4 12-15 12 15 13-4 9 13"/>
+      <path fill="#EFA529" stroke-width="3.5" d="m77 149 22 10-8 10v18l-24 5 7-17Zm102 0-22 10 8 10v18l24 5-7-17Z"/>
+      <path fill="#FFCA42" stroke-width="4.5" d="M66 115c21-10 42-13 62-13s41 3 62 13l-4 11c-21-9-40-12-58-12s-37 3-58 12Z"/>
+
+      <g id="olhos">
+        <g id="olho-esquerdo">
+          <path fill="#191418" stroke-width="2.5" d="m77 128 37 11-10 13-20-5Z"/>
+          <path fill="#AAE75A" stroke="none" d="m84 133 24 8-6 7-15-5Z"/>
+        </g>
+        <g id="olho-direito">
+          <path fill="#191418" stroke-width="2.5" d="m179 128-37 11 10 13 20-5Z"/>
+          <path fill="#AAE75A" stroke="none" d="m172 133-24 8 6 7 15-5Z"/>
+        </g>
+      </g>
+
+      <path fill="#FFDC62" stroke-width="4" d="M121 114c0-4 2-7 7-7s7 3 7 7l2 23 9 15-18 9-18-9 9-15Z"/>
+      <circle cx="128" cy="114" r="2.4" fill="#191418" stroke="none"/>
+      <path fill="none" stroke-width="4.5" d="m106 178 8-7 14 2 14-2 8 7"/>
+    </g>
+
+    <g id="aro">
+      <path fill="#F3A92A" stroke-width="5.5" d="M30 200c0-8 5-15 14-21 12 12 45 20 84 20s72-8 84-20c9 6 14 13 14 21v12c0 15-44 27-98 27s-98-12-98-27Z"/>
+      <path fill="#FFCA42" stroke-width="4.5" d="M30 200c0-8 5-15 14-21 12 12 45 20 84 20s72-8 84-20c9 6 14 13 14 21 0 15-44 27-98 27s-98-12-98-27Z"/>
+      <path fill="none" stroke="#FFF0A0" stroke-width="3" d="M43 198c13 11 46 18 85 18s72-7 85-18"/>
+    </g>
+  </g>
+</svg>

@@ -59,7 +59,7 @@ Cada animação da categoria I só acontece depois de um evento (use os botões 
 | Financeiro | ações grandes, modais curtos e livro-caixa com filtros compactos |
 | CK Admin | fila com aprovação em um clique |
 | Tema claro | escuro, claro revisado e claro de hoje lado a lado |
-| Marca | logo completa, símbolo simplificado em SVG (provisório) e onde usar cada um |
+| Marca | logo completa, símbolo capacete-sino em SVG (img/marca) e onde usar cada um |
 
 No topo: tema, computador/celular, estilo do clique, tempo de resposta e resultado simulados e movimento reduzido.
 As imagens "Hoje no app" (`img/antes/`) são capturas das telas atuais com dados de teste.
