@@ -8,7 +8,7 @@ Serve para experimentar alternativas visuais **antes** de qualquer mudança na i
 
 ## Como abrir no Windows
 
-1. Atualize a branch: `git fetch origin` e `git checkout claude/clever-albattani-hxpp8k` (depois, `git pull` para receber atualizações).
+1. Atualize a branch: `git fetch origin` e `git checkout feature/ux-dinamismo-refino-geral` (depois, `git pull` para receber atualizações).
 2. Dê dois cliques em `design-lab\Abrir-Design-Lab.cmd`.
 3. O navegador abre em `http://127.0.0.1:8091/`. Para encerrar, feche a janela do terminal.
 
@@ -44,6 +44,33 @@ home com palco em perspectiva (A05), cúpula de raios girando à parte (E01), Ch
 feedback F14 + H02, loaders por contexto e os 20 conceitos da categoria I nas telas de Business, Cliente e CK Admin.
 Cada animação da categoria I só acontece depois de um evento (use os botões "Simular eventos desta tela").
 
+## Lab de refino de UX (proposta para aprovação)
+
+`http://127.0.0.1:8091/refino.html` reúne a rodada de refino de UX, dinamismo e marca. Nada foi aplicado ao app.
+
+| Seção | O que mostrar |
+|---|---|
+| Visão geral | diretriz "tarefa primeiro", objetivos reais antes e depois e a paleta "Ir para…" (Ctrl K) |
+| Clique e carregamento | 3 estilos de clique (Forja, Prensa, Faísca) e 9 indicadores por contexto |
+| Navegação e legibilidade | menu lateral, abas e 11 problemas encontrados com a correção |
+| Central de empresas | troca rápida pelo menu e modal completo de cadastro com logo |
+| Equipe | lista simples, convite, troca de perfil, encerrar acesso e perfis por nível |
+| Agenda | grade semanal com régua de 24 h, modelos, folgas e exceções e visão da semana |
+| Financeiro | ações grandes, modais curtos e livro-caixa com filtros compactos |
+| CK Admin | fila com aprovação em um clique |
+| Tema claro | escuro, claro revisado e claro de hoje lado a lado |
+| Marca | logo completa, símbolo simplificado em SVG (provisório) e onde usar cada um |
+
+No topo: tema, computador/celular, estilo do clique, tempo de resposta e resultado simulados e movimento reduzido.
+As imagens "Hoje no app" (`img/antes/`) são capturas das telas atuais com dados de teste.
+
+## Lab de animações
+
+`http://127.0.0.1:8091/animacoes.html` tem o palco com comparação lado a lado (linha do tempo, fases e laço),
+o estúdio da mãozinha 3D (gestos, poses, acabamentos e giro) e a galeria com as 22 animações: a do app (B12F),
+6 novas com a mãozinha (N01 a N06, sendo a N02 o refinamento da B04) e as 15 do lab anterior.
+A mão é procedural (`js/motor/mao.js`): nenhum modelo, textura ou biblioteca externa.
+
 ## Estrutura
 
 ```
@@ -55,6 +82,8 @@ design-lab/
   js/paginas/           uma página por categoria
   js/replica.js         réplica funcional da home e do painel
   forja.html, css/forja.css, js/forja/   prévia do site inteiro na direção CK Forja Noturna
+  refino.html, css/refino.css, js/refino/, img/antes/   lab de refino de UX
+  animacoes.html, css/animacoes.css, js/animacoes/, js/motor/mao.js   lab de animações e mãozinha 3D
 ```
 
 Medidas de desempenho nas fichas são estimativas técnicas. A única medição real é a do topo da bancada

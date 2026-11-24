@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab de refino · AutoniCK</title>
+<meta name="description" content="Proposta de refino de UX, dinamismo, tema claro e marca do AutoniCK, para aprovação.">
+<link rel="icon" href="public/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="css/refino.css">
+</head>
+<body>
+<div class="lb-barra" role="group" aria-label="Controles do laboratório">
+  <div class="lb-marca"><img src="public/assets/brand/autonick-geral-320.webp" alt="" width="34" height="33"><div><b>Lab de <i>refino</i></b><small>UX, dinamismo e marca · proposta para aprovação</small></div></div>
+  <div class="lb-ctl">
+    <span class="lb-seg" data-ctl="tema" role="group" aria-label="Tema"><button type="button" data-v="escuro" aria-pressed="true">Escuro</button><button type="button" data-v="claro" aria-pressed="false">Claro</button></span>
+    <span class="lb-seg" data-ctl="disp" role="group" aria-label="Dispositivo"><button type="button" data-v="desktop" aria-pressed="true">Computador</button><button type="button" data-v="celular" aria-pressed="false">Celular</button></span>
+    <label>Clique <select id="estilo-clique" aria-label="Estilo do clique"><option value="forja">Forja</option><option value="prensa">Prensa</option><option value="faisca">Faísca</option></select></label>
+    <label>Resposta <input id="lat" type="range" min="50" max="4000" step="50" value="900" aria-label="Tempo de resposta simulado"><output id="lat-v">900 ms</output></label>
+    <label>Resultado <select id="res" aria-label="Resultado simulado"><option value="sucesso">Sucesso</option><option value="erro">Erro do servidor</option><option value="conexao">Sem conexão</option></select></label>
+    <span class="lb-seg"><button type="button" id="bt-red" aria-pressed="false">Movimento reduzido</button></span>
+  </div>
+</div>
+<nav class="lb-nav" id="nav" aria-label="Seções do laboratório"></nav>
+<main class="lb-conteudo lb-dispositivo" id="conteudo" data-disp="desktop"></main>
+<script type="module" src="js/refino/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab de animações · AutoniCK</title>
+<meta name="description" content="Animações do sino, objetos 3D e a nova mãozinha do AutoniCK, para comparação e aprovação.">
+<link rel="icon" href="public/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="css/refino.css">
+<link rel="stylesheet" href="css/animacoes.css">
+</head>
+<body>
+<div class="lb-barra" role="group" aria-label="Controles do laboratório">
+  <div class="lb-marca"><img src="public/assets/brand/autonick-geral-320.webp" alt="" width="34" height="33"><div><b>Lab de <i>animações</i></b><small>Sino, objetos 3D e mãozinha · proposta para aprovação</small></div></div>
+  <div class="lb-ctl">
+    <label>Mão <select id="variante" aria-label="Acabamento da mão"></select></label>
+    <label>Luz <select id="luz" aria-label="Luz"><option value="frontal">Frontal</option><option value="forja">Forja</option></select></label>
+    <label>Velocidade <select id="vel" aria-label="Velocidade"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option></select></label>
+    <label class="rf-chave"><input type="checkbox" id="contorno" checked><i></i>Contorno</label>
+    <label class="rf-chave"><input type="checkbox" id="efeitos" checked><i></i>Efeitos HQ</label>
+    <span class="lb-seg" id="tema" role="group" aria-label="Fundo"><button type="button" data-v="escuro" aria-pressed="true">Escuro</button><button type="button" data-v="claro" aria-pressed="false">Claro</button></span>
+    <span class="lb-seg"><button type="button" id="red" aria-pressed="false">Movimento reduzido</button></span>
+  </div>
+</div>
+<nav class="lb-nav" id="nav" aria-label="Seções do laboratório"></nav>
+<main class="lb-conteudo" id="conteudo"></main>
+<script type="module" src="js/animacoes/app.js"></script>
+</body>
+</html>
