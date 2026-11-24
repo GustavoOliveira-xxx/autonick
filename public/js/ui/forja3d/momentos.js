@@ -40,12 +40,16 @@ export function montarMomento(lugar, id, { tamanho = 'm', continua = false, inic
       if (reduzido()) { mem.inicio = v.t - (cena.dur + 0.5); v.redesenhar(); return; }
       mem.inicio = v.t; tocarPor(cena.dur + 0.8);
     },
-    /** Atualiza o estado (por exemplo, fase de uma operação em andamento). 'agora' marca o instante atual. */
-    async definir(campos = {}, { manter = false } = {}) {
+    /**
+     * Atualiza o estado (por exemplo, fase de uma operação em andamento). 'agora' marca o instante atual;
+     * uma função recebe o instante atual e devolve o valor (ex.: (t) => [t, t + 0.3]).
+     */
+    async definir(campos = {}, { manter = false, duracao = 1.6 } = {}) {
       await pronto; if (!v) return;
-      for (const [k, val] of Object.entries(campos)) mem[k] = val === 'agora' ? v.t : val;
+      const agora = reduzido() ? v.t - 60 : v.t;
+      for (const [k, val] of Object.entries(campos)) mem[k] = val === 'agora' ? agora : typeof val === 'function' ? val(agora) : val;
       if (reduzido()) { v.redesenhar(); return; }
-      if (manter) { clearTimeout(timer); v.tocar(); } else tocarPor(1.6);
+      if (manter) { clearTimeout(timer); v.tocar(); } else tocarPor(duracao);
     },
     destruir() { morto = true; clearTimeout(timer); v?.liberar(); el.remove(); },
   };

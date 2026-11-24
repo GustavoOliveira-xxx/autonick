@@ -77,11 +77,11 @@ Object.assign(OBJETOS, {
         c.fillStyle = '#191418'; c.fillRect(0, 0, w, 74); c.fillStyle = '#f5b70a'; c.fillRect(0, 74, w, 6);
         c.font = fonteTitulo(42); c.fillStyle = '#fff'; c.fillText('Autoni', 26, 52); c.fillStyle = '#f5b70a'; c.fillText('CK', 26 + c.measureText('Autoni').width, 52);
         c.fillStyle = '#4b4158'; c.font = fonteTexto(17, 600); c.fillText('REGISTRO DE VENDA', 26, 120);
-        c.fillStyle = '#191418'; c.font = fonteTitulo(46); c.fillText('Venda nº 18', 26, 166);
-        c.font = fonteTexto(18, 400); c.fillStyle = '#4b4158';
-        [['Cliente', 'Cida Ramos'], ['Pagamento', 'Pix'], ['Itens', '2']].forEach(([a, b], i) => { c.fillText(a, 26, 214 + i * 34); c.textAlign = 'right'; c.fillStyle = '#191418'; c.fillText(b, w - 26, 214 + i * 34); c.textAlign = 'left'; c.fillStyle = '#4b4158'; });
+        // linhas abstratas: os dados reais da venda ficam no texto da tela, nunca desenhados aqui
+        c.fillStyle = '#d9cbb0';
+        [[26, 150, 210], [26, 196, 150], [w - 116, 196, 90], [26, 236, 170], [w - 96, 236, 70], [26, 276, 130], [w - 106, 276, 80]].forEach(([x, y, l]) => c.fillRect(x, y, l, 12));
         c.setLineDash([7, 6]); c.strokeStyle = '#9d91ab'; c.lineWidth = 2; c.beginPath(); c.moveTo(26, 330); c.lineTo(w - 26, 330); c.stroke(); c.setLineDash([]);
-        c.font = fonteTitulo(40); c.fillStyle = '#191418'; c.fillText('TOTAL', 26, 378); c.textAlign = 'right'; c.fillStyle = '#c3161e'; c.fillText('R$ 69,90', w - 26, 378); c.textAlign = 'left';
+        c.font = fonteTitulo(40); c.fillStyle = '#191418'; c.fillText('TOTAL', 26, 378); c.fillStyle = '#c3161e'; c.fillRect(w - 156, 352, 130, 30);
         c.font = fonteTexto(14, 400); c.fillStyle = '#6b5f7a'; c.fillText('Registro interno do AutoniCK.', 26, 430); c.fillText('Não é documento fiscal.', 26, 452);
         c.restore();
       });

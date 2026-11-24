@@ -12,6 +12,7 @@ import { montarGrade, textoHorario } from '../../domain/servicos.js';
 import { salvarHorarios, DIAS, TURNO } from '../../data/servicos.js';
 import { agendaOperacional, ESTADO_OS } from '../../data/ordens.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, gradeTexto, dataDeHoje, somarDias, formatarData } from './comum.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -77,6 +78,31 @@ function cartaoCompromisso(x) {
     x.avisos?.length ? el('p', { class: 'campo__ajuda' }, `Confirmado com aviso: ${x.avisos.map((v) => v.mensagem).join(' ')}`) : null);
 }
 
+// IB07: a campainha só aparece para um horário confirmado de verdade que começa em até 15 minutos.
+const JANELA_LEMBRETE_MS = 15 * 60 * 1000;
+let relogioLembrete = 0;
+function acompanharLembrete(confirmados, lugar) {
+  clearTimeout(relogioLembrete);
+  const agora = Date.now();
+  const futuros = confirmados.map((x) => ({ x, ms: Date.parse(x.inicio) - agora })).filter((c) => Number.isFinite(c.ms) && c.ms > 0).sort((a, b) => a.ms - b.ms);
+  const proximo = futuros[0];
+  if (!proximo) { lugar.replaceChildren(); return; }
+  if (proximo.ms <= JANELA_LEMBRETE_MS) {
+    const minutos = Math.max(1, Math.round(proximo.ms / 60000));
+    const x = proximo.x;
+    const caixa = el('div', { class: 'cartao com-momento lembrete-agenda', role: 'status' },
+      el('p', {}, el('strong', {}, `Começa em ${minutos} minuto${minutos === 1 ? '' : 's'}: `), textoHorario(x.inicio, x.fim), ' · ',
+        x.os_id ? `OS nº ${x.os_numero} · ${x.servico} · ${x.cliente_nome}` : `Solicitação nº ${x.solicitacao_numero} · ${x.servico} · ${x.cliente_nome}`));
+    lugar.replaceChildren(caixa);
+    montarMomento(caixa, 'IB07', { tamanho: 'p' }).disparar();
+    relogioLembrete = setTimeout(() => acompanharLembrete(confirmados.filter((c) => c !== x), lugar), proximo.ms);
+    return;
+  }
+  lugar.replaceChildren();
+  const espera = proximo.ms - JANELA_LEMBRETE_MS;
+  if (espera < 6 * 60 * 60 * 1000) relogioLembrete = setTimeout(() => acompanharLembrete(confirmados, lugar), espera);
+}
+
 async function carregar() {
   mostrarCarregando(area, 'Carregando a agenda');
   try {
@@ -101,7 +127,10 @@ async function carregar() {
     const linkOs = (x) => el('a', { href: `/business/ordem.html?id=${encodeURIComponent(ctx.id)}&os=${encodeURIComponent(x.os_id)}` }, `OS nº ${x.os_numero} · ${x.servico} · ${x.cliente_nome}`);
     const linkSol = (x) => el('a', { href: `/business/solicitacao.html?id=${encodeURIComponent(ctx.id)}&solicitacao=${encodeURIComponent(x.solicitacao_id)}` },
       `Nº ${x.numero} · ${x.servico} · ${x.cliente_nome}`);
+    const lembrete = el('div', { id: 'lembrete-agenda' });
+    acompanharLembrete(a.confirmados, lembrete);
     area.replaceChildren(
+      lembrete,
       formPeriodo(a.equipe),
       el('p', { class: 'campo__ajuda' }, a.aviso),
       el('section', { class: 'pilha', 'aria-labelledby': 'titulo-confirmados', id: 'confirmados' },

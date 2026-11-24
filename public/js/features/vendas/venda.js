@@ -22,6 +22,7 @@ import { formatarDataHora } from '../empresa/comum.js';
 import { botaoPdf, nomeDeQuemGera } from '../../pdf/baixar.js';
 import { registrarExportacaoPdf } from '../../data/exportacao.js';
 import { comprovanteVenda } from '../../pdf/documentos.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -226,6 +227,19 @@ function secaoEventos() {
       e.detalhes?.motivo ? ` · ${e.detalhes.motivo}` : ''))));
 }
 
+/**
+ * IB03: logo depois de confirmar, a venda aparece com o comprovante CK e o selo "confirmada". Só quando o banco
+ * devolve a venda como confirmada; o comprovante 3D não diz que um documento foi impresso ou gerado (o PDF é outro botão).
+ */
+function confirmacaoRecente() {
+  if (parametro('confirmada') !== '1' || v.estado !== 'confirmada') return null;
+  try { const url = new URL(location.href); url.searchParams.delete('confirmada'); history.replaceState(null, '', url); } catch { /* segue sem limpar a URL */ }
+  const bloco = el('div', { class: 'com-momento', role: 'status' },
+    aviso('sucesso', `Venda nº ${v.numero} registrada.`, el('p', {}, `Total ${dinheiro(v.total_centavos)}. O comprovante em PDF pode ser baixado abaixo.`)));
+  montarMomento(bloco, 'IB03', { tamanho: 'g' }).disparar();
+  return bloco;
+}
+
 async function carregar() {
   mostrarCarregando(area, 'Carregando a venda');
   try {
@@ -246,7 +260,7 @@ async function carregar() {
       id: 'baixar-pdf-venda', anunciar,
       montar: async () => comprovanteVenda(v, { empresa: ctx.empresa?.nome_publico ?? 'Empresa', usuario: await nomeDeQuemGera(), agora: new Date() }),
       registrar: (chave) => registrarExportacaoPdf(ctx.id, 'venda', v.id, null, null, chave) })) : null;
-    area.append(...[secaoResumo(), pdf, secaoAcoes(), secaoItens(), secaoFinanceiro(), secaoEventos(),
+    area.append(...[confirmacaoRecente(), secaoResumo(), pdf, secaoAcoes(), secaoItens(), secaoFinanceiro(), secaoEventos(),
       el('p', {}, el('a', { href: `/business/vendas.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para as vendas'))].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {

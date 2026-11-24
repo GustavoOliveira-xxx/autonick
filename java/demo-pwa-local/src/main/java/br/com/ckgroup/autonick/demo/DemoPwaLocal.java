@@ -266,7 +266,7 @@ public final class DemoPwaLocal {
         StringBuilder h = new StringBuilder("<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Demonstração local J03</title>"
                 + "<link rel=\"stylesheet\" href=\"/css/tokens.css\"><link rel=\"stylesheet\" href=\"/css/reset.css\">"
-                + "<link rel=\"stylesheet\" href=\"/css/base.css\"><link rel=\"stylesheet\" href=\"/css/componentes.css\"></head>"
+                + "<link rel=\"stylesheet\" href=\"/css/base.css\"><link rel=\"stylesheet\" href=\"/css/componentes.css\"><link rel=\"stylesheet\" href=\"/css/forja.css\"></head>"
                 + "<body><main class=\"conteudo pilha\" style-free><h1>Demonstração local J03</h1>"
                 + "<p class=\"faixa-demo\"><strong>DEMONSTRAÇÃO LOCAL</strong>: dados fictícios, banco PostgreSQL local descartável. "
                 + "As listas e o detalhe das ordens de serviço vêm da API Java (J01 e J02); sessão, permissões e conversa são simuladas só aqui.</p>");

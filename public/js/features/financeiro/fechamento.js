@@ -11,6 +11,7 @@ import { campoTexto, erroNoCampo, limparErros, ocupado, valores } from '../../ui
 import { situacaoFechamento, fecharPeriodo, reabrirPeriodo } from '../../data/financeiro.js';
 import { mesPorExtenso } from '../../domain/financeiro.js';
 import { formatarDataHora } from '../empresa/comum.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import {
   carregarFinanceiro, criarAnunciador, criarExecutorFinanceiro, dinheiro, dialogoFormulario, ehProprietario, centavosDoCampo,
   avisoRegistro, erroDeCarga, dados,
@@ -66,8 +67,27 @@ function formFechar(s) {
         'Correções entram no mês aberto, com a data de hoje. Só o proprietário pode reabrir o último mês fechado.',
         diferencas.length ? `${diferencas.length} diferença(s) de caixa vão virar ajuste com o motivo informado.` : null].filter(Boolean) });
     if (!ok) return null;
-    return executar('fechar', form, (k) => fecharPeriodo(ctx.id, s.proximo_mes, conferencias, k),
-      () => anunciar('sucesso', `${mesPorExtenso(s.proximo_mes)} foi fechado.`));
+    const botao = form.querySelector('#fechar-mes');
+    return ocupado(botao, async () => {
+      // IB04: a calculadora só acompanha a operação real (uma chamada, sem etapas inventadas) e só mostra
+      // o total depois que o banco confirma o fechamento, com os saldos que ele devolveu.
+      let calculadora = null;
+      const sinal = setTimeout(() => {
+        calculadora = montarMomento(botao.parentElement, 'IB04', { tamanho: 'p' });
+        calculadora.definir({ fase: 'processando' }, { manter: true });
+      }, 120);
+      try {
+        return await executar('fechar', form, (k) => fecharPeriodo(ctx.id, s.proximo_mes, conferencias, k), (r) => {
+          const lugar = el('div', { class: 'aviso__momento' });
+          anunciar('sucesso', `${mesPorExtenso(s.proximo_mes)} foi fechado.`, lugar);
+          const total = Array.isArray(r?.saldos) ? r.saldos.reduce((a, x) => a + (Number(x.saldo_centavos) || 0), 0) : null;
+          montarMomento(lugar, 'IB04', { tamanho: 'p' }).definir({ fase: 'concluido', valor: total === null ? undefined : dinheiro(total), inicio: 'agora' });
+        });
+      } finally {
+        clearTimeout(sinal);
+        calculadora?.destruir();
+      }
+    });
   });
   return form;
 }

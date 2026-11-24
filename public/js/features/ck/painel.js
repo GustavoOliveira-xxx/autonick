@@ -18,6 +18,7 @@ import { abrirDialogo } from '../../ui/dialogo.js';
 import { ckLimites, ckDefinirLimite, ckHistoricoLimites, NOME_LIMITE } from '../../data/vitrine.js';
 import { ckFilaModeracao } from '../../data/comunicacao.js';
 import { secoesModeracao } from './moderacao.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 
 iniciarLayout();
 const painel = document.getElementById('painel');
@@ -46,7 +47,15 @@ const valorLegivel = (campo, valor) => {
  * Formulário de decisão com tratamento padrão: valida no cliente só o óbvio,
  * mostra o erro do banco ao lado do campo e recarrega o painel após sucesso.
  */
-function formDecisao({ item, titulo, campos, botao, validar, executar, sucesso }) {
+/** Momento 3D ao lado do aviso de sucesso, só depois que o banco confirmou a ação (IA01, IA02, IA06). */
+function anunciarComMomento(texto, id) {
+  if (!id) { anunciar('sucesso', texto); return; }
+  const lugar = el('div', { class: 'aviso__momento' });
+  anunciar('sucesso', texto, lugar);
+  montarMomento(lugar, id, { tamanho: 'p' }).disparar();
+}
+
+function formDecisao({ item, titulo, campos, botao, validar, executar, sucesso, momento = null }) {
   const enviar = el('button', { type: 'submit', class: 'botao' }, botao);
   const form = el('form', { class: 'pilha', novalidate: true, 'aria-label': titulo }, ...campos, el('div', { class: 'grupo-botoes' }, enviar));
   form.addEventListener('submit', (evento) => {
@@ -63,7 +72,7 @@ function formDecisao({ item, titulo, campos, botao, validar, executar, sucesso }
         await executar(dados, chave(item));
         chaves.delete(item);
         await carregar();
-        anunciar('sucesso', sucesso);
+        anunciarComMomento(sucesso, typeof momento === 'function' ? momento(dados) : momento);
       } catch (erro) {
         if (erro.codigo === 'VALIDATION_ERROR' && erroNoCampo(form, mapearCampo(erro.campo), erro.message)) return;
         if (erro.codigo !== 'NETWORK_UNKNOWN') chaves.delete(item);
@@ -108,6 +117,7 @@ function itemFila(s, publicados) {
       return null;
     },
     executar: (v, k) => ckDecidirSolicitacao(s.id, v.decisao, v.motivo, [].concat(v.campos ?? []), k),
+    momento: (v) => (v.decisao === 'aprovar' ? 'IA01' : null),
   });
   return el('li', { class: 'cartao pilha' },
     el('h3', { class: 'cartao__titulo' }, d.nome_publico),
@@ -210,6 +220,7 @@ function itemEmpresa(e) {
         return null;
       },
       executar: (v, k) => ckSuspender(e.id, v.motivo, v.gravidade, v.fundamento, k),
+      momento: 'IA02',
     }));
   }
   if (e.situacao_vitrine === 'suspensa') {
@@ -276,13 +287,23 @@ function secaoLimites(limites, historico) {
         const ok = await abrirDialogo({ titulo: 'Confirmar a mudança do limite?', rotuloConfirmar: 'Alterar limite', rotuloCancelar: 'Voltar',
           mensagens: [`${nome}: de ${l.valor} para ${valor}.`, 'Vale para todas as empresas a partir da próxima solicitação.', `Motivo: ${motivo}`] });
         if (!ok) return;
+        // IA03: a engrenagem gira só enquanto a gravação real acontece e desacelera quando ela termina.
+        let engrenagem = null;
+        const sinal = setTimeout(() => {
+          engrenagem = montarMomento(salvar.parentElement, 'IA03', { tamanho: 'p' });
+          engrenagem.definir({ fase: 'calculando' }, { manter: true });
+        }, 120);
         try {
           await ckDefinirLimite(l.chave, valor, motivo, chave(`limite-${l.chave}-${valor}-${motivo}`));
-          anunciar('sucesso', `Limite alterado: ${nome} agora é ${valor}.`);
+          clearTimeout(sinal); engrenagem?.destruir(); engrenagem = null;
           await carregar();
+          anunciarComMomento(`Limite alterado: ${nome} agora é ${valor}.`, 'IA06');
         } catch (erro) {
           if (erro.codigo === 'VALIDATION_ERROR' && erroNoCampo(form, erro.campo ?? 'valor', erro.message)) return;
           anunciar('erro', erro.message);
+        } finally {
+          clearTimeout(sinal);
+          engrenagem?.destruir();
         }
       });
     });

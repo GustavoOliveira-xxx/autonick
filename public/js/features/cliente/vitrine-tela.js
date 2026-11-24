@@ -15,6 +15,7 @@ import { entrarEVoltar } from '../../domain/retorno.js';
 import { neon } from '../../data/sessao.js';
 import { blocoAvaliacoesVitrine } from '../comunicacao/avaliacao.js';
 import { botaoDenunciar } from '../comunicacao/moderacao.js';
+import { montarMomento, vazioComMomento } from '../../ui/forja3d/momentos.js';
 import {
   filtrosVitrine, buscarVitrine, vitrinePublica, filtrosDemonstracao, buscarDemonstracao, vitrineDemonstracao,
   minhaAutorizacaoDemonstracao, POLITICA_VITRINE, MODALIDADE, FAIXA,
@@ -90,7 +91,7 @@ function cartaoResultado(i, modo) {
       el('h3', { class: 'cartao__titulo' }, el('a', { href }, i.nome_publico)),
       el('p', { class: 'cartao__meta' }, `${i.categoria ?? 'Sem categoria'} · ${i.bairro ? `${i.bairro}, ` : ''}${i.cidade} · ${MODALIDADE[i.modalidade] ?? i.modalidade}`),
       achados,
-      el('p', { class: 'opcoes' }, el('span', { class: 'chip chip--sucesso' }, el('span', { 'aria-hidden': 'true' }, '✓'), i.selo),
+      el('p', { class: 'opcoes' }, el('span', { class: 'chip chip--sucesso selo-verificada selo-verificada--chip' }, i.selo),
         modo === 'demonstracao' ? el('span', { class: 'chip chip--alerta' }, 'Demonstração') : null)));
 }
 
@@ -144,7 +145,8 @@ export async function iniciarBusca(modo) {
       const partes = [];
       if (modo === 'demonstracao') partes.push(faixaDemonstracao());
       if (!r.itens.length) {
-        partes.push(el('div', { class: 'estado-vazio' }, el('h3', {}, 'Nenhum estabelecimento com estes filtros.'),
+        // IC02: balão "pensando" ao lado do texto; o texto continua sendo a informação.
+        partes.push(vazioComMomento('IC02', {}, el('h3', {}, 'Nenhum estabelecimento com estes filtros.'),
           el('p', {}, estado.filtros.cidade ? 'Você pode ampliar a região ou mudar a busca.' : 'Tente outra palavra ou remova algum filtro.')));
       } else if (estado.filtros.ampliar) {
         // Depois da ação explícita, as faixas aparecem com títulos (nunca como distância).
@@ -247,9 +249,13 @@ export async function iniciarPerfil(modo) {
     'data-pedir': p.id, 'aria-label': `${logado ? 'Pedir' : 'Entrar para pedir'} ${p.nome}` }, logado ? 'Pedir' : 'Entrar para pedir');
   const partes = [];
   if (modo === 'demonstracao') partes.push(faixaDemonstracao());
+  // IC01: o escudo CK entra uma vez ao lado do selo que o banco devolveu para esta empresa publicada.
+  const seloPerfil = el('div', { class: 'com-momento selo-perfil' },
+    el('p', {}, el('span', { class: 'chip chip--sucesso' }, el('span', { 'aria-hidden': 'true' }, '✓'), e.selo)));
+  if (e.selo) montarMomento(seloPerfil, 'IC01', { tamanho: 'p' }).disparar();
   partes.push(el('div', { class: 'cartao-vitrine' }, monograma(e.nome_publico, e.categoria, true),
     el('div', { class: 'pilha' },
-      el('p', {}, el('span', { class: 'chip chip--sucesso' }, el('span', { 'aria-hidden': 'true' }, '✓'), e.selo)),
+      seloPerfil,
       el('p', { class: 'texto-suave' }, 'O selo indica que a CK revisou o cadastro para publicação. Não é verificação de CNPJ nem garantia comercial.'),
       e.descricao_publica ? el('p', {}, e.descricao_publica) : null,
       el('dl', { class: 'dados' },

@@ -14,6 +14,7 @@ import { minhasSolicitacoes, minhaSolicitacao, aceitarOrcamento, recusarOrcament
 import { novaChave } from '../../data/empresas.js';
 import { exigirSessao, formatarDataHora } from '../empresa/comum.js';
 import { avisoSuspensao } from './jornada.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { secaoConversa } from '../comunicacao/conversa.js';
 import { chipSolicitacao, cartaoVersao, linhaDoTempo, blocoRespostas, blocoEstimativa, blocoHorario, dinheiro, dataDeHoje, dialogoFormulario } from '../servicos/comum.js';
 
@@ -60,7 +61,12 @@ function acoesVigente(s, v) {
         el('label', { for: 'aceite-condicoes' }, 'Li e aceito o orçamento e as condições acima')), el('span', { class: 'campo__erro', 'data-grupo': 'condicoes' })],
       validar: (form) => (valores(form).condicoes ? {} : (erroNoCampo(form, 'condicoes', 'Marque para confirmar.') && null)) });
     if (!r) return;
-    await agir(`aceitar-${v.id}`, (k) => aceitarOrcamento(s.id, v.id, k), () => anunciar('sucesso', 'Orçamento aceito. A ordem de serviço foi criada; acompanhe em Meus serviços.'));
+    await agir(`aceitar-${v.id}`, (k) => aceitarOrcamento(s.id, v.id, k), () => {
+      // IC06: o carimbo bate só depois que o banco registrou o aceite.
+      const lugar = el('div', { class: 'aviso__momento' });
+      anunciar('sucesso', 'Orçamento aceito. A ordem de serviço foi criada; acompanhe em Meus serviços.', lugar);
+      montarMomento(lugar, 'IC06', { tamanho: 'p' }).disparar();
+    });
   }));
   const recusar = el('button', { type: 'button', class: 'botao botao--secundario', 'data-recusar': v.numero }, 'Recusar');
   recusar.addEventListener('click', () => ocupado(recusar, async () => {
@@ -84,6 +90,24 @@ function acoesVigente(s, v) {
   return [aceitar, revisar, recusar];
 }
 
+/**
+ * IC04: enquanto a empresa não respondeu, o balão fica parado (sem fingir que alguém está digitando).
+ * Quando existe um orçamento enviado esperando a resposta do cliente, ele vira alerta; o "PLIM" toca uma vez por versão.
+ */
+function balaoOrcamento(s, versoes) {
+  const aguardando = ['nova', 'em_analise'].includes(s.estado) && !versoes.length;
+  const vigente = ['orcamento_enviado', 'revisao_pedida'].includes(s.estado) ? versoes.find((v) => v.id === s.versao_vigente_id && v.estado === 'enviada') : null;
+  if (!aguardando && !vigente) return null;
+  const lugar = el('div', { class: 'balao-orcamento' });
+  const balao = montarMomento(lugar, 'IC04', { tamanho: 'p' });
+  if (aguardando) { balao.definir({ fase: 'aguardando' }); return lugar; }
+  const marca = `autonick:orcamento-visto:${vigente.id}`;
+  let visto = false;
+  try { visto = localStorage.getItem(marca) === '1'; localStorage.setItem(marca, '1'); } catch { visto = false; }
+  balao.definir({ fase: 'chegou', inicio: visto ? (t) => t - 60 : 'agora' });
+  return lugar;
+}
+
 function detalhe(s) {
   const hoje = dataDeHoje();
   const partes = [el('p', {}, el('a', { href: '/cliente/solicitacoes.html' }, 'Voltar às solicitações')),
@@ -97,6 +121,7 @@ function detalhe(s) {
   partes.push(blocoHorario(s.horario));
   const versoes = s.versoes.filter((v) => !['rascunho', 'aguardando_aprovacao'].includes(v.estado));
   partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-orcamentos' }, el('h2', { id: 'titulo-orcamentos' }, 'Orçamentos'),
+    balaoOrcamento(s, versoes),
     versoes.length ? el('div', { class: 'pilha', id: 'versoes' }, ...versoes.map((v) => cartaoVersao(v, hoje, acoesVigente(s, v))))
       : el('p', { id: 'versoes' }, 'A empresa ainda não enviou orçamento.')));
   partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-pedido' }, el('h2', { id: 'titulo-pedido' }, 'O que você pediu'), blocoRespostas(s),

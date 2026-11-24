@@ -39,6 +39,9 @@ export function botaoPdf({ rotulo, id, montar, registrar, anunciar }) {
   const b = el('button', { type: 'button', class: 'botao botao--secundario', id, 'data-pdf': id }, rotulo);
   b.addEventListener('click', () => ocupado(b, async () => {
     if (navigator.onLine === false) return anunciar('erro', 'Sem conexão. Nenhum PDF foi gerado.');
+    // G08 contextual: o sino do AutoniCK acompanha a geração enquanto ela acontece de verdade (sem porcentagem inventada)
+    const status = el('span', { class: 'gerando-documento', role: 'status' }, el('span', { class: 'sino-sprite', 'aria-hidden': 'true' }), 'Gerando o PDF…');
+    const sinal = setTimeout(() => b.after(status), 120);
     try {
       const descricao = await montar();
       const bytes = await gerarPdf(await carregarBiblioteca(), descricao);
@@ -51,6 +54,8 @@ export function botaoPdf({ rotulo, id, montar, registrar, anunciar }) {
       if (erro.codigo !== 'NETWORK_UNKNOWN') chave = null;
       anunciar('erro', erro.codigo ? erro.message : 'Não foi possível gerar o PDF. Tente de novo.',
         erro.codigo === 'NETWORK_UNKNOWN' ? el('p', {}, 'Nenhum arquivo foi entregue. Tente de novo quando a conexão voltar.') : null);
+    } finally {
+      clearTimeout(sinal); status.remove();
     }
   }));
   return b;

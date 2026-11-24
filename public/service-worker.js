@@ -11,7 +11,7 @@
  *    (texto fixo, sem dado de ninguém); conversas, dados privados, relatórios
  *    e PDFs nunca entram no cache.
  */
-const VERSAO = 'autonick-estatico-v0.14.0';  // M13b: nova identidade visual (fontes locais, ícones e logos)
+const VERSAO = 'autonick-estatico-v0.15.0';  // CK Forja Noturna: tema escuro, camada forja e imagens do sino
 
 // Páginas que abrem sem conexão (a rede tem prioridade; o cache é só reserva).
 const PAGINAS_SEM_CONEXAO = ['/ajuda.html'];
@@ -28,6 +28,7 @@ const ARQUIVOS = [
   '/css/reset.css',
   '/css/base.css',
   '/css/componentes.css',
+  '/css/forja.css',
   '/js/features/offline.js',
   '/js/ui/layout.js',
   '/js/ui/dom.js',
@@ -50,6 +51,9 @@ const ARQUIVOS = [
   '/assets/icons/icone-180.png',
   '/assets/icons/icone-192.png',
   '/assets/icons/icone-512.png',
+  '/assets/forja/sino-mini.webp',
+  '/assets/forja/etiqueta-ck.webp',
+  '/assets/forja/selo-ck.webp',
 ];
 
 self.addEventListener('install', (evento) => {

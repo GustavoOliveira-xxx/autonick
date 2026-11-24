@@ -16,6 +16,7 @@ import { minhasOrdens, minhaOrdem, responderReagendamento, pedirReagendamento, r
 import { novaChave } from '../../data/empresas.js';
 import { exigirSessao, formatarDataHora } from '../empresa/comum.js';
 import { avisoSuspensao } from './jornada.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { secaoConversa } from '../comunicacao/conversa.js';
 import { secaoAvaliacaoCliente } from '../comunicacao/avaliacao.js';
 import { dialogoFormulario } from '../servicos/comum.js';
@@ -145,7 +146,12 @@ function detalhe(o) {
     confirmar.addEventListener('click', () => ocupado(confirmar, async () => {
       const ok = await abrirDialogo({ titulo: 'Confirmar o recebimento?', rotuloConfirmar: 'Confirmar', rotuloCancelar: 'Voltar',
         mensagens: ['A OS é encerrada. Isso não elimina seus direitos de garantia ou reclamação previstos em lei.'] });
-      if (ok) await agir('confirmar', (k) => confirmarRecebimento(o.id, k, o.versao), () => anunciar('sucesso', 'Recebimento confirmado. Obrigado!'));
+      if (ok) await agir('confirmar', (k) => confirmarRecebimento(o.id, k, o.versao), () => {
+        // IC05: a chave toca o sino só depois que o banco registrou a confirmação do recebimento.
+        const lugar = el('div', { class: 'aviso__momento' });
+        anunciar('sucesso', 'Recebimento confirmado. Obrigado!', lugar);
+        montarMomento(lugar, 'IC05', { tamanho: 'm' }).disparar();
+      });
     }));
     if (!o.revisao_pendente) {
       const revisar = el('button', { type: 'button', class: 'botao botao--secundario', id: 'pedir-revisao' }, 'Pedir revisão');

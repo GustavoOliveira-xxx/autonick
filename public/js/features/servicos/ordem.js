@@ -22,6 +22,7 @@ import { chipOs, blocoValores, linhaDoTempoOs, blocoHorarioOs, itemReagendamento
 import { botaoPdf, nomeDeQuemGera } from '../../pdf/baixar.js';
 import { registrarExportacaoPdf } from '../../data/exportacao.js';
 import { resumoOs } from '../../pdf/documentos.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -71,7 +72,13 @@ function botoesEstado() {
               o.encerramento.aviso] });
         if (!ok) return;
       }
-      await executar(`estado-${acao}`, null, (k) => mudarEstado(o.id, acao, motivo, o.versao, k), () => anunciar('sucesso', `Ação registrada: ${ACAO_OS[acao].toLowerCase()}.`));
+      await executar(`estado-${acao}`, null, (k) => mudarEstado(o.id, acao, motivo, o.versao, k), () => {
+        if (acao !== 'concluir') { anunciar('sucesso', `Ação registrada: ${ACAO_OS[acao].toLowerCase()}.`); return; }
+        // IB06: a prancheta marca a conclusão confirmada pelo banco e o sino toca; nada aparece antes disso.
+        const lugar = el('div', { class: 'aviso__momento' });
+        anunciar('sucesso', `Ação registrada: ${ACAO_OS[acao].toLowerCase()}.`, lugar);
+        montarMomento(lugar, 'IB06', { tamanho: 'm' }).definir({ passos: (t) => [t], concluida: (t) => t + 0.35 }, { duracao: 3.2 });
+      });
     }));
     return b;
   });

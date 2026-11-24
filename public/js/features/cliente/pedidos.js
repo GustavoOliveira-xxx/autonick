@@ -10,6 +10,7 @@ import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { campoTexto, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { abrirDialogo } from '../../ui/dialogo.js';
 import { itensParaPedido, criarPedido, cancelarPedido, meusPedidos, ENTREGA } from '../../data/vendas.js';
 import { novaChave } from '../../data/empresas.js';
@@ -105,10 +106,27 @@ function secaoNovo() {
       }
     });
   });
-  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-pedido', id: 'novo-pedido' },
+  const topo = el('div', { class: 'com-momento' }, el('div', { class: 'pilha' },
     el('h2', { id: 'titulo-novo-pedido' }, 'Fazer um pedido'),
-    el('p', {}, el('a', { href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa')),
-    form);
+    el('p', {}, el('a', { href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa'))));
+  if (ordenados.length) acompanharCesta(topo, lista);
+  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-pedido', id: 'novo-pedido' }, topo, form);
+}
+
+/** IC03: cada produto que a pessoa passa a incluir no pedido cai na cesta (só a escolha dela; o envio continua dizendo o resultado). */
+function acompanharCesta(lugar, lista) {
+  const cesta = montarMomento(lugar, 'IC03', { tamanho: 'p' });
+  const incluidos = new Set();
+  const conferir = () => {
+    let novos = 0;
+    for (const entrada of lista.querySelectorAll('input[type="number"]')) {
+      const q = Number(entrada.value);
+      if (Number.isInteger(q) && q > 0) { if (!incluidos.has(entrada.id)) { incluidos.add(entrada.id); novos += 1; } } else incluidos.delete(entrada.id);
+    }
+    if (novos) cesta.definir({ itens: (t) => [...(cesta.mem.itens ?? []), ...Array.from({ length: novos }, (_, i) => t + i * 0.18)].slice(-3) }, { duracao: 1.4 + novos * 0.18 });
+  };
+  lista.addEventListener('change', conferir);
+  conferir();
 }
 
 function cartao(p) {

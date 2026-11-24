@@ -11,7 +11,7 @@ import { obterEmpresaAtiva, aoTrocarEmpresa } from '../core/contexto-empresa.js'
 import { gruposDaEmpresa, chaveDaPagina } from './menu-empresa.js';
 import { registrarServiceWorker } from './sw-registro.js';
 import { iniciarConexao } from './conexao.js';
-import { capturarInstalacao } from './instalacao.js';
+import { capturarInstalacao, abertoComoApp } from './instalacao.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** Ícone do conjunto próprio do AutoniCK (assets/icons/icones.svg), sempre decorativo. */
@@ -207,8 +207,22 @@ function acompanharSessaoNoCabecalho() {
   });
 }
 
+/**
+ * G08 expressivo: no app instalado, a primeira tela da sessão mostra o sino enquanto a página ainda carrega de verdade.
+ * Some no evento load (ou na hora, se a página já carregou). Nenhum atraso é inventado.
+ */
+function aberturaDoApp() {
+  if (!abertoComoApp() || document.readyState === 'complete') return;
+  try { if (sessionStorage.getItem('autonick:abertura') === '1') return; sessionStorage.setItem('autonick:abertura', '1'); } catch { return; }
+  const tela = el('div', { class: 'abertura-app', 'aria-hidden': 'true' }, el('span', { class: 'abertura-app__sino' }), el('span', { class: 'abertura-app__nome' }, 'AutoniCK'));
+  document.body.append(tela);
+  const sair = () => { tela.classList.add('abertura-app--saindo'); setTimeout(() => tela.remove(), 260); };
+  window.addEventListener('load', sair, { once: true });
+}
+
 export function iniciarLayout() {
   const area = document.body.dataset.area ?? 'publico';
+  aberturaDoApp();
   aplicarLeitura(lerPreferencia());
   aplicarTema(lerTemaClaro());
   if (area === 'cliente') acompanharSessaoNoCabecalho();

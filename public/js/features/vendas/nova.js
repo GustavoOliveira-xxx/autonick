@@ -29,7 +29,7 @@ let limite = null;
 const chaves = new Map();
 const chave = (acao) => { if (!chaves.has(acao)) chaves.set(acao, novaChave()); return chaves.get(acao); };
 
-const irParaVenda = (id) => { location.href = `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(id)}`; };
+const irParaVenda = (id, extra = '') => { location.href = `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(id)}${extra}`; };
 
 function secaoCatalogo(resumo) {
   const resultado = el('ul', { class: 'lista-simples', id: 'resultado-catalogo', 'aria-live': 'polite' });
@@ -232,7 +232,7 @@ function secaoCarrinho() {
           r = await registrarVendaDireta(ctx.id, m.dados, m.itens, pagamento, esperado, chave('confirmar'));
         }
         chaves.delete('confirmar');
-        irParaVenda(r.id);
+        irParaVenda(r.id, '&confirmada=1');
       } catch (erro) { tratarFalha('confirmar', erro); }
     });
   });

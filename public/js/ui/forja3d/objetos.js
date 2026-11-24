@@ -177,7 +177,7 @@ export const OBJETOS = {
       const rot = texturaCanvas(THREE, 256, 160, (c, w, h) => {
         c.fillStyle = '#fffdf8'; c.fillRect(0, 0, w, h); c.strokeStyle = '#191418'; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8);
         c.fillStyle = '#c3161e'; c.font = fonteTitulo(54); c.fillText('CK', 18, 62);
-        c.fillStyle = '#191418'; c.font = fonteTexto(22); c.fillText('PEDIDO 0142', 92, 52);
+        c.fillStyle = '#d9cbb0'; c.fillRect(92, 34, 130, 14);
         for (let i = 0; i < 26; i++) c.fillRect(20 + i * 8.5, 86, i % 3 ? 3 : 5, 52);
       });
       const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.21), new THREE.MeshBasicMaterial({ map: rot })); etiqueta.material.toneMapped = false;
@@ -254,8 +254,8 @@ export const OBJETOS = {
       const placa = f.malha(new THREE.BoxGeometry(0.62, 0.86, 0.04), 'vermelhoEscuro');
       const presilha = f.malha(new THREE.BoxGeometry(0.28, 0.09, 0.07), 'ouro', { metalico: true }); presilha.position.set(0, 0.41, 0.03);
       const tx = texturaCanvas(THREE, 256, 330, (c, w) => {
-        c.fillStyle = '#fffdf8'; c.fillRect(0, 0, w, 330); c.fillStyle = '#191418'; c.font = fonteTitulo(36); c.fillText('OS Nº 3', 16, 50);
-        c.font = fonteTexto(19, 600); ['Diagnóstico', 'Troca de tela', 'Teste final'].forEach((s, i) => { c.strokeStyle = '#191418'; c.lineWidth = 3; c.strokeRect(16, 92 + i * 72, 34, 34); c.fillText(s, 64, 116 + i * 72); });
+        c.fillStyle = '#fffdf8'; c.fillRect(0, 0, w, 330); c.fillStyle = '#191418'; c.font = fonteTitulo(30); c.fillText('ORDEM DE SERVIÇO', 16, 46);
+        [0, 1, 2].forEach((i) => { c.strokeStyle = '#191418'; c.lineWidth = 3; c.strokeRect(16, 92 + i * 72, 34, 34); c.fillStyle = '#d9cbb0'; c.fillRect(64, 102 + i * 72, 150 - i * 24, 14); });
       });
       const folha = new THREE.Mesh(new THREE.PlaneGeometry(0.54, 0.7), new THREE.MeshBasicMaterial({ map: tx })); folha.material.toneMapped = false; folha.position.set(0, -0.03, 0.022);
       const marcas = [0, 1, 2].map((i) => {
@@ -508,7 +508,10 @@ export const OBJETOS = {
 function desenharVisor(c, w, h, v) {
   c.fillStyle = '#aae75a'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(41,75,53,0.18)'; for (let x = 0; x < w; x += 6) c.fillRect(x, 0, 1, h);
   c.strokeStyle = '#191418'; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8);
-  c.fillStyle = '#21392a'; c.font = fonteTitulo(64); c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText(v, w - 18, h / 2 + 4);
+  c.fillStyle = '#21392a'; c.textAlign = 'right'; c.textBaseline = 'middle';
+  let tam = 64; c.font = fonteTitulo(tam);
+  while (tam > 22 && c.measureText(v).width > w - 36) { tam -= 4; c.font = fonteTitulo(tam); }
+  c.fillText(v, w - 18, h / 2 + 4);
 }
 
 /** Cria a biblioteca de objetos ligada ao THREE em uso (construção sob demanda, um exemplar por objeto). */

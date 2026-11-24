@@ -6,6 +6,7 @@
  */
 import { el } from '../../ui/dom.js';
 import { aviso } from '../../ui/estados.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { campoTexto, grupoOpcoes, ocupado } from '../../ui/formulario.js';
 import { formatarDataHora } from '../empresa/comum.js';
 import { CATEGORIAS_DENUNCIA, ckModerarPublicacao, ckAssumirDenuncia, ckDecidirDenuncia, ckAssumirContestacaoModeracao,
@@ -130,7 +131,23 @@ export function secoesModeracao(fila, ajuda) {
   return [
     secao('titulo-mod-avaliacoes', 'Avaliações aguardando análise', fila.avaliacoes.map((x) => itemPublicacao('avaliacao', x, ajuda)), 'Nenhuma avaliação aguardando análise.'),
     secao('titulo-mod-respostas', 'Respostas de empresas aguardando análise', fila.respostas.map((x) => itemPublicacao('resposta', x, ajuda)), 'Nenhuma resposta aguardando análise.'),
-    secao('titulo-mod-denuncias', 'Denúncias', fila.denuncias.map((d) => itemDenuncia(d, ajuda)), 'Nenhuma denúncia em aberto.'),
-    secao('titulo-mod-contestacoes', 'Contestações de moderação', fila.contestacoes.map((c) => itemContestacao(c, ajuda)), 'Nenhuma contestação de moderação em aberto.'),
+    // IA04: o balão com "!" só aparece quando há denúncia em aberto de verdade; sem ocorrência, nada.
+    comSinal(secao('titulo-mod-denuncias', 'Denúncias', fila.denuncias.map((d) => itemDenuncia(d, ajuda)), 'Nenhuma denúncia em aberto.'),
+      fila.denuncias.length ? 'IA04' : null),
+    // IA05: a manopla aponta para as contestações só quando existe alguma em aberto.
+    comSinal(secao('titulo-mod-contestacoes', 'Contestações de moderação', fila.contestacoes.map((c) => itemContestacao(c, ajuda)), 'Nenhuma contestação de moderação em aberto.'),
+      fila.contestacoes.length ? 'IA05' : null, { continua: true }),
   ];
+}
+
+function comSinal(secaoEl, id, opcoes = {}) {
+  if (!id) return secaoEl;
+  const titulo = secaoEl.querySelector(':scope > h2');
+  if (!titulo) return secaoEl;
+  const linha = el('div', { class: 'com-momento titulo-com-sinal' });
+  titulo.replaceWith(linha);
+  linha.append(titulo);
+  const m = montarMomento(linha, id, { tamanho: 'p', ...opcoes });
+  if (!opcoes.continua) m.disparar();
+  return secaoEl;
 }
