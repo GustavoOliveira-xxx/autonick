@@ -150,9 +150,14 @@ function blocoEmpresaAtiva() {
     el('strong', {}, ativa?.nome ?? 'Nenhuma selecionada'),
     el('span', { class: 'empresa-ativa__acao' }, ativa ? 'Trocar de empresa' : 'Escolher empresa')),
   icone('i-seta', 'icone empresa-ativa__icone'));
-  if (ativa?.logo) {
-    const logo = bloco.querySelector('.empresa-ativa__logo');
-    logo.replaceChildren(el('img', { src: ativa.logo, alt: '', width: '40', height: '40', decoding: 'async' }));
+  if (ativa) {
+    // Logo da empresa (se houver): lida com o token, sem atrasar o menu.
+    import('../data/arquivos.js').then(async ({ arquivosDisponiveis, logosDasMinhasEmpresas, urlDeImagem }) => {
+      if (!arquivosDisponiveis) return;
+      const logos = await logosDasMinhasEmpresas();
+      const src = await urlDeImagem(logos?.[ativa.id]?.logo_url);
+      if (src) bloco.querySelector('.empresa-ativa__logo')?.replaceChildren(el('img', { src, alt: '', width: '40', height: '40', decoding: 'async' }));
+    }).catch(() => {});
   }
   return bloco;
 }
@@ -240,7 +245,16 @@ export function iniciarLayout() {
   document.getElementById('rodape')?.replaceChildren(montarRodape());
   const atalhos = barraCelular(area);
   if (atalhos && !document.querySelector('.barra-celular')) { document.body.append(atalhos); document.body.classList.add('com-barra-celular'); }
-  if (area === 'business') aoTrocarEmpresa(() => atualizarEmpresaAtivaNoCabecalho());
+  if (area === 'business') {
+    aoTrocarEmpresa(() => atualizarEmpresaAtivaNoCabecalho());
+    // Troca rápida: o bloco "Empresa ativa" abre o seletor (sem JavaScript, o link leva a Minhas empresas).
+    document.addEventListener('click', (e) => {
+      const gatilho = e.target.closest?.('[data-trocar-empresa]');
+      if (!gatilho || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      import('./seletor-empresa.js').then((m) => m.abrirSeletorEmpresas()).catch(() => location.assign(gatilho.href));
+    });
+  }
   registrarServiceWorker();
   capturarInstalacao();
   iniciarConexao();

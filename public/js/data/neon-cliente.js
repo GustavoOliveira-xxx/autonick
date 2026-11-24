@@ -439,6 +439,22 @@ export class ClienteNeon {
     return this.#jwtAnonimo;
   }
 
+  /** Arquivos (API Java, E03): envio multipart autenticado; a resposta traz os metadados registrados no banco. */
+  async enviarArquivo(url, formulario) {
+    this.#exigirConfiguracao();
+    const token = await this.#token();
+    const r = await this.#requisitar(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, body: formulario });
+    return r.json();
+  }
+
+  /** Lê um arquivo protegido (imagem da equipe, anexo) com o token da sessão; sem sessão, só arquivos públicos. */
+  async lerArquivo(url) {
+    let token = null;
+    try { token = await this.#token(); } catch { token = null; }
+    const r = await this.#requisitar(url, { method: 'GET', headers: token ? { Authorization: `Bearer ${token}` } : {}, publica: !token });
+    return r.blob();
+  }
+
   async rpcPublica(nome, corpo = {}) {
     this.#exigirConfiguracao();
     const chamar = async (renovar) => {

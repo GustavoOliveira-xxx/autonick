@@ -40,7 +40,7 @@ public class SegurancaConfig {
     static final String ANONIMO = "ANONIMO";
 
     static final String CSP = String.join("; ", "default-src 'self'", "script-src 'self'", "style-src 'self'",
-            "img-src 'self' data:", "font-src 'self'", "connect-src 'self'", "manifest-src 'self'", "worker-src 'self'",
+            "img-src 'self' data: blob:", "font-src 'self'", "connect-src 'self'", "manifest-src 'self'", "worker-src 'self'",
             "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'");
 
     @Bean

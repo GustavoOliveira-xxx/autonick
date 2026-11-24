@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  */
 public enum Dominio {
 
-    IDENTIDADE(false, "garantir_perfil", "minhas_permissoes", "minhas_empresas", "meus_convites", "aceitar_convite",
+    IDENTIDADE(false, "garantir_perfil", "minhas_permissoes", "minhas_empresas", "meus_convites", "aceitar_convite", "meus_favoritos", "alternar_favorito",
             "recusar_convite", "sair_da_empresa", "minha_autorizacao_demonstracao"),
 
     EMPRESAS_EQUIPE(false, "criar_empresa", "atualizar_empresa", "empresa_dados_privados", "painel_empresa",
