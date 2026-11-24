@@ -92,6 +92,12 @@ async function simular(context, { permissoes = TODAS, tipo = 'business', erros =
           inicio: `${corpo.p_de}T12:00:00Z`, fim: `${corpo.p_de}T14:00:00Z`, avisos: [] }], propostos: [], os_sem_horario: [],
         solicitacoes_sem_horario: [{ solicitacao_id: 's2', numero: 8, servico: 'Pintura de parede', cliente_nome: 'Cliente César', estado: 'nova', preferencia: { datas: ['2099-01-12'], turno: 'tarde' } }] });
       case '/api/rpc/salvar_horarios_empresa': return json(200, { grade: corpo.p_grade });
+      case '/api/rpc/excecoes_agenda': return json(200, estado.excecoes ?? []);
+      case '/api/rpc/salvar_excecao_agenda': {
+        const x = { id: 'x1', data: corpo.p_data, tipo: corpo.p_tipo, intervalos: corpo.p_intervalos, motivo: corpo.p_motivo, criado_por: 'Pessoa' };
+        estado.excecoes = [x];
+        return json(200, x);
+      }
       case '/api/rpc/empresas_para_pedido': return json(200, [{ id: EMP, nome: 'Pintores Fictícios', cidade: 'Campinas' }]);
       case '/api/rpc/servicos_para_cliente': return json(200, { empresa: { id: EMP, nome: 'Pintores Fictícios' }, horarios: grade, aviso: 'A estimativa não é o valor final.',
         servicos: [(({ regras, solicitacoes_abertas, ...x }) => x)(servico())] });
@@ -194,6 +200,7 @@ test('agenda: grade com 2 intervalos por dia; confirmados e sem horário com a p
   await page.goto(`/business/agenda.html?id=${EMP}`);
   await expect(page.locator('#confirmados')).toContainText('Solicitação nº 7');
   await expect(page.locator('#sem-horario')).toContainText('não é reserva');
+  await page.getByRole('tab', { name: 'Horários de atendimento' }).click();
   await page.locator('#d1-1-abre').fill('13:00');
   await page.locator('#form-grade [type="submit"]').click();
   await expect(page.locator('#d1-1-fecha-erro')).toContainText('abertura e fechamento');
@@ -204,6 +211,33 @@ test('agenda: grade com 2 intervalos por dia; confirmados e sem horário com a p
   expect(g).toHaveLength(7);
   expect(g[1].intervalos).toEqual([{ abre: '08:00', fecha: '12:00' }, { abre: '13:00', fecha: '18:00' }]);
   expect(g[0].intervalos).toEqual([]);
+  await axe(page);
+});
+
+test('agenda E04: visão Mês e exceção de horário especial validada antes de enviar [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/agenda.html?id=${EMP}`);
+  await expect(page.locator('#confirmados')).toContainText('Solicitação nº 7');
+  await page.locator('[data-visao="mes"]').click();
+  await expect(page.locator('#confirmados .mes__dia')).toHaveCount(42);
+  await expect(page.locator('#confirmados')).toContainText('Sol. 7');
+  await page.getByRole('tab', { name: /Feriados e exceções/ }).click();
+  const amanha = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+  await page.locator('#excecao-data').fill(amanha);
+  await page.getByLabel('Horário especial').check();
+  await page.locator('#excecao-abre1').fill('14:00');
+  await page.locator('#excecao-fecha1').fill('10:00');
+  await page.locator('#excecao-motivo').fill('Meio período');
+  await page.getByRole('button', { name: 'Salvar exceção' }).click();
+  await expect(page.locator('#excecao-fecha1-erro')).toContainText('depois da abertura');
+  expect(estado.corpos['/api/rpc/salvar_excecao_agenda']).toBeUndefined();
+  await page.locator('#excecao-abre1').fill('09:00');
+  await page.locator('#excecao-fecha1').fill('12:00');
+  await page.getByRole('button', { name: 'Salvar exceção' }).click();
+  await expect(page.locator('#avisos')).toContainText('Exceção salva');
+  expect(estado.corpos['/api/rpc/salvar_excecao_agenda']).toMatchObject({ p_data: amanha, p_tipo: 'horario_especial', p_intervalos: [{ abre: '09:00', fecha: '12:00' }], p_motivo: 'Meio período' });
+  await expect(page.getByRole('tab', { name: /Feriados e exceções/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#lista-excecoes')).toContainText('Horário especial: 09:00 às 12:00');
   await axe(page);
 });
 

@@ -15,9 +15,12 @@ import {
 } from '../../data/estoque.js';
 import { definirVitrineProduto } from '../../data/vitrine.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
-import { menorPreco } from '../../ui/pecas-forja.js';
+import { menorPreco, etiquetaPreco } from '../../ui/pecas-forja.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { formatarDataHora } from '../empresa/comum.js';
+import { campoImagem } from '../../ui/campo-imagem.js';
+import { arquivosDisponiveis, enviarArquivo, definirImagemProduto, imagensDeProdutos, removerArquivo } from '../../data/arquivos.js';
+import { novaChave } from '../../data/empresas.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -272,6 +275,32 @@ function formNovaVariacao() {
     el('h2', { id: 'titulo-nova-variacao' }, 'Adicionar variação'), form);
 }
 
+// E03: imagem real do produto; sem imagem, a etiqueta CK com o menor preço continua como alternativa visual.
+function secaoImagem(urlAtual) {
+  let atual = urlAtual ? urlAtual.split('/').pop() : null;
+  const chaves = { enviar: novaChave(), definir: novaChave(), remover: novaChave() };
+  const trocar = async (novo) => {
+    const antiga = atual;
+    await definirImagemProduto(produto.id, novo, chaves.definir);
+    chaves.definir = novaChave();
+    atual = novo;
+    if (antiga && antiga !== novo) { await removerArquivo(antiga, chaves.remover).catch(() => null); chaves.remover = novaChave(); }
+  };
+  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-imagem-produto' },
+    el('h2', { id: 'titulo-imagem-produto' }, 'Imagem do produto'),
+    campoImagem({ id: 'imagem-produto', rotulo: `Imagem de ${produto.nome}`, ajuda: 'PNG, JPG ou WebP, até 2 MB. Aparece na lista de produtos e, se o produto estiver na vitrine, para os clientes.',
+      urlAtual, podeAlterar: ctx.pode('produtos.alterar'),
+      situacao: urlAtual ? null : 'Sem imagem: mostramos a etiqueta CK com o preço.',
+      alternativa: () => etiquetaPreco(menorPreco(produto.variacoes)),
+      aoEnviar: async (arq) => {
+        const enviado = await enviarArquivo(arq, { finalidade: 'imagem_produto', empresaId: ctx.id, referenciaTipo: 'produto', referenciaId: produto.id, chave: chaves.enviar });
+        chaves.enviar = novaChave();
+        await trocar(enviado.id);
+        return { url: `/api/arquivos/${enviado.id}`, situacao: 'Imagem salva.' };
+      },
+      aoRemover: async () => { await trocar(null); return { situacao: 'Imagem removida. A etiqueta CK volta a aparecer.' }; } }));
+}
+
 async function carregar() {
   mostrarCarregando(area, 'Carregando o produto');
   try {
@@ -297,6 +326,7 @@ async function carregar() {
     if (preco !== null) montarMomento(destaque, 'IB05', { tamanho: 'g', continua: true, inicial: { preco: formatarCentavos(preco) } }).disparar();
     area.append(...[
       destaque,
+      arquivosDisponiveis ? secaoImagem((await imagensDeProdutos(ctx.id).catch(() => ({})))[produto.id] ?? null) : null,
       secaoVariacoes(), formNovaVariacao(), secaoDados(), secaoVenda(),
     ].filter(Boolean));
   } catch (erro) {

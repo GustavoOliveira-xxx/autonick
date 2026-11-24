@@ -107,11 +107,6 @@ test('JavaScript desativado: formulários bloqueados e avisados; clique e Enter 
     await page.waitForTimeout(300);
     expect(page.url()).toBe(antes);
   }
-  await page.goto('/business/onboarding.html');
-  await expect(page.locator('#form-onboarding [data-aguardando]')).toBeVisible();
-  await expect(page.locator('#nome')).toBeDisabled();
-  await expect(page.locator('#email')).toBeDisabled();
-  await expect(page.locator('#avancar')).toBeDisabled();
   semVazamento(v);
   await context.close();
 });
@@ -141,17 +136,12 @@ test('cadastro com a inicialização normal: cria a conta Cliente, sem e-mail ne
   semVazamento(v);
 });
 
-test('cadastro da empresa (onboarding): bloqueado antes do script; liberado só com sessão e categorias [simulação]', async ({ page, context }) => {
+test('endereço antigo do cadastro leva ao modal da Central de empresas; sem sessão, nada é aberto nem enviado [simulação]', async ({ page, context }) => {
   await simularNeon(context);
-  const soltar = await atrasarScript(page, '**/js/features/business/onboarding.js');
   const v = vigiar(page);
-  await page.goto('/business/onboarding.html', { waitUntil: 'commit' });
-  await page.locator('#form-onboarding').waitFor({ state: 'attached' });
-  await tentarEnviar(page, 'form-onboarding', { nome: '[TESTE] Empresa Fictícia S01' });
-  semVazamento(v);
-  soltar();
-  // Sem sessão na simulação: o script pede a entrada e o formulário segue bloqueado (nunca liberado sem sessão).
-  await expect(page.locator('#form-onboarding')).not.toHaveAttribute('data-pronto', 'sim');
-  await expect(page.locator('#nome')).toBeDisabled();
+  await page.goto('/business/onboarding.html');
+  await expect(page).toHaveURL('/business/minhas-empresas.html?cadastrar=1');
+  await expect(page.locator('#empresas')).toContainText(/Entr/);
+  await expect(page.locator('#form-nova-empresa')).toHaveCount(0);
   semVazamento(v);
 });

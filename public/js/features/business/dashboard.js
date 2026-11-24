@@ -172,7 +172,7 @@ async function carregar() {
     const ativa = obterEmpresaAtiva();
     if (ativa?.id) { location.replace(`/business/dashboard.html?id=${encodeURIComponent(ativa.id)}`); return; }
     area.replaceChildren(aviso('info', 'Escolha uma empresa para ver o painel.',
-      el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'), ' · ', el('a', { href: '/business/onboarding.html' }, 'Cadastrar uma empresa'))));
+      el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'), ' · ', el('a', { href: '/business/minhas-empresas.html?cadastrar=1' }, 'Cadastrar uma empresa'))));
     return;
   }
   mostrarCarregando(area, 'Carregando o painel');

@@ -74,3 +74,9 @@ export const ESTADO_VERSAO = { rascunho: 'Rascunho', aguardando_aprovacao: 'Agua
 export const TURNO = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', qualquer: 'Qualquer horário' };
 export const MOTIVO_RECUSA = { preco: 'Preço', prazo: 'Prazo', desisti: 'Desisti do serviço', outra_empresa: 'Escolhi outra empresa', outro: 'Outro motivo' };
 export const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+// --- Exceções da agenda (E04): feriados, fechamentos e horários especiais por data ----------------
+export const excecoesAgenda = (empresaId, de, ate) => neon.rpc('excecoes_agenda', { p_empresa_id: empresaId, p_de: de, p_ate: ate });
+export const salvarExcecaoAgenda = (empresaId, data, tipo, intervalos, motivo, chave) =>
+  neon.rpc('salvar_excecao_agenda', { p_empresa_id: empresaId, p_data: data, p_tipo: tipo, p_intervalos: intervalos, p_motivo: motivo, p_operation_key: chave });
+export const removerExcecaoAgenda = (excecaoId, chave) => neon.rpc('remover_excecao_agenda', { p_excecao_id: excecaoId, p_operation_key: chave });

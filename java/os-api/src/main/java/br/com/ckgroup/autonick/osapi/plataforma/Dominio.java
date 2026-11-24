@@ -20,7 +20,7 @@ public enum Dominio {
             "recusar_convite", "sair_da_empresa", "minha_autorizacao_demonstracao"),
 
     EMPRESAS_EQUIPE(false, "criar_empresa", "atualizar_empresa", "empresa_dados_privados", "painel_empresa",
-            "horarios_empresa", "salvar_horarios_empresa", "equipe_membros", "equipe_historico", "convidar_funcionario",
+            "horarios_empresa", "salvar_horarios_empresa", "excecoes_agenda", "salvar_excecao_agenda", "remover_excecao_agenda", "equipe_membros", "equipe_historico", "convidar_funcionario",
             "cancelar_convite", "desligar_membro", "alterar_perfil_do_membro", "criar_perfil_permissao",
             "alterar_perfil_permissao", "desativar_perfil_permissao", "definir_desconto_maximo", "meu_limite_desconto",
             "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa",
@@ -72,7 +72,7 @@ public enum Dominio {
             "avaliacoes_da_empresa", "denunciar", "minhas_denuncias", "registrar_exportacao_pdf"),
 
     /** Únicas funções do visitante sem login (papel anonymous). */
-    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica", "logos_publicos"),
+    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica", "logos_publicos", "imagens_publicas_de_produtos"),
 
     VITRINE_DEMONSTRACAO(false, "filtros_demonstracao", "buscar_demonstracao", "vitrine_demonstracao"),
 

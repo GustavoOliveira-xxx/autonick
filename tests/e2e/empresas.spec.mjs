@@ -125,6 +125,7 @@ test('gestor cadastra empresa: erro do banco aparece ao lado do campo e a empres
   await simular(context);
   await page.goto('/business/minhas-empresas.html');
   await expect(page.locator('#empresas')).toContainText('Você ainda não participa de nenhuma empresa.');
+  await page.getByRole('button', { name: 'Cadastrar minha primeira empresa' }).click();
   await page.getByRole('button', { name: 'Cadastrar empresa' }).click();
   await expect(page.locator('#nova-nome')).toBeFocused();
   await expect(page.locator('#nova-nome-erro')).toHaveText('Preencha este campo.');
@@ -139,6 +140,12 @@ test('gestor cadastra empresa: erro do banco aparece ao lado do campo e a empres
   await expect(page.locator('#nova-cidade')).toBeFocused();
   await page.locator('#nova-cidade').fill('Campinas');
   await page.getByRole('button', { name: 'Cadastrar empresa' }).click();
+  // E03: o modal confirma e oferece os próximos passos; a lista ao fundo já mostra a empresa nova.
+  const modal = page.getByRole('dialog', { name: 'Cadastrar nova empresa' });
+  await expect(modal.getByRole('status')).toContainText('Empresa cadastrada');
+  await expect(modal.getByRole('link', { name: 'Usar Doces da Vila agora' })).toBeFocused();
+  await expect(page.locator('#lista-empresas')).toContainText('Doces da Vila');
+  await modal.getByRole('link', { name: 'Completar a vitrine' }).click();
   await expect(page).toHaveURL(/\/business\/empresa\.html\?id=/);
   await expect(page.locator('#avisos')).toContainText('Empresa cadastrada');
   await expect(page.locator('h1')).toHaveText('Doces da Vila');

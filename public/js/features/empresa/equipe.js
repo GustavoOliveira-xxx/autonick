@@ -1,5 +1,6 @@
 /**
- * Equipe da empresa (M04, UI-047): membros, convites, perfis de acesso e histórico.
+ * Equipe da empresa (M04, UI-047; simplificada no E04): abas Pessoas, Perfis de acesso e Histórico;
+ * "Adicionar colaborador" num modal; perfis montados por níveis por área (sem acesso, consultar, operar, personalizar).
  *
  * A tela mostra só o que a pessoa pode fazer agora e explica o que falta, mas
  * quem decide é o banco a cada ação (permissão atual, delegação limitada D4-2,
@@ -11,6 +12,9 @@ import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { campoTexto, campoSelecao, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
 import { abrirDialogo } from '../../ui/dialogo.js';
+import { abrirModal } from '../../ui/modal.js';
+import { abas } from '../../ui/abas.js';
+import { iniciais } from '../../ui/seletor-empresa.js';
 import { empresa as lerEmpresa, novaChave } from '../../data/empresas.js';
 import {
   catalogo, minhasPermissoes, membros as lerMembros, historicoEquipe, perfis as lerPerfis, convitesPendentes,
@@ -35,10 +39,16 @@ const chave = (acao) => {
 const concluir = (acao) => chaves.delete(acao);
 
 let estado = null; // { acesso, pode, minhas, catalogo, perfis, membros, convites, historico, empresa }
+let abaAtiva = ({ perfis: 'perfis', 'titulo-form-perfil': 'perfis', 'titulo-perfis': 'perfis', historico: 'historico', 'titulo-historico-equipe': 'historico' })[location.hash.slice(1)] ?? 'pessoas';
+let modalConvite = null;
+let trocarAba = null;
 
 function anunciar(tipo, texto, ...extra) {
   avisos.replaceChildren(el('div', { role: tipo === 'erro' ? 'alert' : 'status' }, aviso(tipo, texto, ...extra)));
-  avisos.scrollIntoView({ block: 'nearest' });
+  // Com o modal de convite aberto, o aviso aparece também dentro dele (a página fica atrás do modal).
+  const noModal = modalConvite?.dialogo.isConnected ? modalConvite.dialogo.querySelector('[data-avisos-modal]') : null;
+  if (noModal) noModal.replaceChildren(aviso(tipo, texto, ...extra.map((x) => (x instanceof Node ? x.cloneNode(true) : x))));
+  else avisos.scrollIntoView({ block: 'nearest' });
 }
 
 /** Executa uma ação no banco com tratamento uniforme de falhas. */
@@ -138,9 +148,11 @@ function acoesDoMembro(m) {
 }
 
 function cartaoMembro(m) {
-  return el('li', { class: 'cartao pilha', 'data-membro': m.membro_id },
-    el('h3', { class: 'cartao__titulo' }, m.nome || m.email, m.eu ? ' (você)' : ''),
-    el('p', { class: 'cartao__meta' }, m.email),
+  return el('li', { class: 'cartao pilha cartao-pessoa', 'data-membro': m.membro_id },
+    el('div', { class: 'cartao-pessoa__topo' },
+      el('span', { class: 'avatar-pessoa', 'aria-hidden': 'true' }, iniciais(m.nome || m.email)),
+      el('div', {}, el('h3', { class: 'cartao__titulo' }, m.nome || m.email, m.eu ? ' (você)' : ''),
+        el('p', { class: 'cartao__meta' }, m.email))),
     el('p', { class: 'opcoes' }, el('span', { class: 'chip chip--info' }, el('span', { 'aria-hidden': 'true' }, m.papel === 'proprietario' ? '★' : '•'),
       papelLegivel(m.papel, m.perfil_nome))),
     el('p', {}, `Na equipe desde ${formatarDataHora(m.desde)}.`),
@@ -150,59 +162,86 @@ function cartaoMembro(m) {
 function secaoMembros() {
   const ativos = estado.membros.filter((m) => m.estado === 'ativo');
   const antigos = estado.membros.filter((m) => m.estado !== 'ativo');
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-membros' },
-    el('h2', { id: 'titulo-membros' }, `Pessoas com acesso (${ativos.length})`),
-    el('ul', { class: 'lista-simples' }, ...ativos.map(cartaoMembro)),
-    antigos.length ? el('details', { class: 'cartao pilha' },
-      el('summary', {}, `Ex-funcionários (${antigos.length})`),
-      el('p', { class: 'campo__ajuda' }, 'O acesso destas pessoas foi encerrado. O que elas fizeram continua no histórico.'),
-      el('ul', { class: 'lista-simples' }, ...antigos.map((m) => el('li', {},
-        el('p', {}, el('strong', {}, m.nome || m.email), ` · ${m.email}`),
-        el('p', {}, `${m.motivo_encerramento === 'saiu' ? 'Saiu da empresa' : 'Acesso encerrado'} em ${formatarDataHora(m.encerrado_em)}. Último perfil: ${m.perfil_nome ?? 'sem perfil'}.`))))) : null);
+  const acoes = [];
+  if (estado.pode('equipe.convidar')) {
+    if (perfisConcediveis().length) {
+      const adicionar = el('button', { type: 'button', class: 'botao', id: 'adicionar-colaborador' }, 'Adicionar colaborador');
+      adicionar.addEventListener('click', abrirConvite);
+      acoes.push(adicionar);
+    } else {
+      const irPerfis = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Criar um perfil de acesso');
+      irPerfis.addEventListener('click', () => trocarAba?.('perfis'));
+      acoes.push(aviso('info', 'Crie um perfil de acesso antes de convidar alguém.',
+        el('p', {}, 'O perfil define o que a pessoa poderá fazer. Use um dos modelos prontos em "Perfis de acesso".'), el('p', {}, irPerfis)));
+    }
+  }
+  return el('div', { class: 'pilha-grande' },
+    el('section', { class: 'pilha', 'aria-labelledby': 'titulo-membros' },
+      el('div', { class: 'cabecalho-secao' }, el('h2', { id: 'titulo-membros' }, `Pessoas com acesso (${ativos.length})`), ...acoes.filter((a) => a.tagName === 'BUTTON')),
+      ...acoes.filter((a) => a.tagName !== 'BUTTON'),
+      el('ul', { class: 'lista-simples grade-pessoas' }, ...ativos.map(cartaoMembro)),
+      antigos.length ? el('details', { class: 'cartao pilha' },
+        el('summary', {}, `Ex-funcionários (${antigos.length})`),
+        el('p', { class: 'campo__ajuda' }, 'O acesso destas pessoas foi encerrado. O que elas fizeram continua no histórico.'),
+        el('ul', { class: 'lista-simples' }, ...antigos.map((m) => el('li', {},
+          el('p', {}, el('strong', {}, m.nome || m.email), ` · ${m.email}`),
+          el('p', {}, `${m.motivo_encerramento === 'saiu' ? 'Saiu da empresa' : 'Acesso encerrado'} em ${formatarDataHora(m.encerrado_em)}. Último perfil: ${m.perfil_nome ?? 'sem perfil'}.`))))) : null),
+    secaoConvitesPendentes());
 }
 
 // --- Convites -----------------------------------------------------------------
 
-function secaoConvites() {
-  const pode = estado.pode;
-  const partes = [];
-  if (pode('equipe.convidar')) {
-    const opcoes = perfisConcediveis();
-    if (!opcoes.length) {
-      partes.push(aviso('info', 'Crie um perfil de acesso antes de convidar alguém.', el('p', {}, 'O perfil define o que a pessoa poderá fazer. Use um dos modelos prontos na seção "Perfis de acesso".')));
-    } else {
-      const botao = el('button', { type: 'submit', class: 'botao' }, 'Criar convite');
-      const form = el('form', { id: 'form-convite', class: 'pilha', novalidate: true },
-        campoTexto({ nome: 'email', rotulo: 'E-mail da pessoa', tipo: 'email', obrigatorio: true, max: 254, id: 'convite-email', autocomplete: 'email',
-          ajuda: 'A pessoa entra no AutoniCK com este e-mail, confirmado, e aceita o convite. Você nunca define nem vê a senha dela.' }),
-        campoSelecao({ nome: 'perfil_id', rotulo: 'Perfil de acesso', obrigatorio: true, opcoes: opcoesPerfis(opcoes), id: 'convite-perfil',
-          ajuda: proprietario() ? null : 'Aparecem só os perfis com permissões que você também tem.' }),
-        el('div', { class: 'grupo-botoes' }, botao));
-      form.addEventListener('submit', (evento) => {
-        evento.preventDefault();
-        limparErros(form);
-        const dados = valores(form);
-        if (!dados.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dados.email)) {
-          erroNoCampo(form, 'email', 'Informe um e-mail válido.');
-          return;
-        }
-        if (!dados.perfil_id) {
-          erroNoCampo(form, 'perfil_id', 'Escolha um perfil de acesso.');
-          return;
-        }
-        ocupado(botao, () => executar('convidar', form, (k) => convidar(id, dados.email, dados.perfil_id, k),
-          (r) => anunciar('sucesso', 'Convite criado.', el('p', {}, `Avise a pessoa para entrar no AutoniCK com o e-mail ${r.email}; o convite vale até ${formatarDataHora(r.expira_em)}.`),
-            el('p', {}, 'O AutoniCK ainda não envia e-mails: o aviso é por sua conta.'))));
-      });
-      partes.push(form);
+/** "Adicionar colaborador": convite por e-mail com um perfil de acesso, num modal. O banco confere a delegação. */
+function abrirConvite() {
+  const opcoes = perfisConcediveis();
+  const botao = el('button', { type: 'submit', class: 'botao', form: 'form-convite' }, 'Criar convite');
+  const form = el('form', { id: 'form-convite', class: 'pilha', novalidate: true },
+    el('div', { 'data-avisos-modal': '' }),
+    campoTexto({ nome: 'email', rotulo: 'E-mail da pessoa', tipo: 'email', obrigatorio: true, max: 254, id: 'convite-email', autocomplete: 'email',
+      ajuda: 'A pessoa entra no AutoniCK com este e-mail, confirmado, e aceita o convite. Você nunca define nem vê a senha dela.' }),
+    campoSelecao({ nome: 'perfil_id', rotulo: 'Perfil de acesso', obrigatorio: true, opcoes: opcoesPerfis(opcoes), id: 'convite-perfil',
+      ajuda: proprietario() ? 'O perfil define o que a pessoa pode fazer. Você pode trocá-lo depois.' : 'Aparecem só os perfis com permissões que você também tem.' }),
+    el('div', { class: 'resumo-perfil', id: 'convite-resumo', 'aria-live': 'polite' }));
+  const resumo = () => {
+    const p = perfilPorId(form.querySelector('#convite-perfil').value);
+    form.querySelector('#convite-resumo').replaceChildren(...(p ? [el('p', { class: 'campo__ajuda' }, `Com o perfil "${p.nome}", a pessoa poderá: `,
+      resumoModulos(codigosDoPerfil(p)) || 'nada ainda (perfil sem permissões).')] : []));
+  };
+  form.querySelector('#convite-perfil').addEventListener('change', resumo);
+  let alterado = false;
+  form.addEventListener('input', () => { alterado = true; });
+  const cancelar = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Cancelar');
+  modalConvite = abrirModal({ titulo: 'Adicionar colaborador', descricao: 'A pessoa recebe acesso só ao que o perfil permite. Tudo fica no histórico da equipe.',
+    corpo: form, rodape: [cancelar, botao], tamanho: 'estreito', protegerAlteracoes: () => alterado, aoFechar: () => { modalConvite = null; } });
+  cancelar.addEventListener('click', () => modalConvite?.dialogo.dispatchEvent(new Event('cancel', { cancelable: true })));
+  form.querySelector('#convite-email').focus();
+  form.addEventListener('submit', (evento) => {
+    evento.preventDefault();
+    limparErros(form);
+    const dados = valores(form);
+    if (!dados.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dados.email)) {
+      erroNoCampo(form, 'email', 'Informe um e-mail válido.');
+      return;
     }
-  }
+    if (!dados.perfil_id) {
+      erroNoCampo(form, 'perfil_id', 'Escolha um perfil de acesso.');
+      return;
+    }
+    ocupado(botao, () => executar('convidar', form, (k) => convidar(id, dados.email, dados.perfil_id, k), (r) => {
+      alterado = false;
+      modalConvite?.fechar();
+      anunciar('sucesso', 'Convite criado.', el('p', {}, `Avise a pessoa para entrar no AutoniCK com o e-mail ${r.email}; o convite vale até ${formatarDataHora(r.expira_em)}.`),
+        el('p', {}, 'O AutoniCK ainda não envia e-mails: o aviso é por sua conta.'));
+    }));
+  });
+}
+
+function secaoConvitesPendentes() {
+  const pode = estado.pode;
   const pendentes = estado.convites;
-  partes.push(el('h3', {}, `Convites aguardando resposta (${pendentes.length})`));
-  if (!pendentes.length) {
-    partes.push(el('p', {}, 'Nenhum convite pendente.'));
-  } else {
-    partes.push(el('ul', { class: 'lista-simples' }, ...pendentes.map((c) => {
+  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-convites' },
+    el('h2', { id: 'titulo-convites' }, `Convites aguardando resposta (${pendentes.length})`),
+    !pendentes.length ? el('p', {}, 'Nenhum convite pendente.') : el('ul', { class: 'lista-simples' }, ...pendentes.map((c) => {
       const expirado = new Date(c.expira_em) <= new Date();
       const cancelar = pode('equipe.convidar') ? el('button', { type: 'button', class: 'botao botao--texto' }, 'Cancelar convite') : null;
       cancelar?.addEventListener('click', () => ocupado(cancelar, async () => {
@@ -216,26 +255,56 @@ function secaoConvites() {
         el('p', { class: 'campo__ajuda' }, expirado ? 'Expirado. Crie um novo convite se ainda quiser a pessoa na equipe.' : `Vale até ${formatarDataHora(c.expira_em)}.`),
         cancelar);
     })));
-  }
-  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-convites' },
-    el('h2', { id: 'titulo-convites' }, 'Convidar pessoa'), ...partes);
+}
+
+/** Resumo em linguagem simples: "Estoque (operar), Vendas (consultar)…". */
+function resumoModulos(codigos) {
+  return gruposDoCatalogo().map((g) => [g.nome, nivelDoModulo(g, new Set(codigos))]).filter(([, n]) => n !== 'nenhum')
+    .map(([nome, n]) => `${nome} (${NIVEIS[n].curto})`).join(', ');
 }
 
 // --- Perfis de acesso -----------------------------------------------------------
 
-function matrizPermissoes(form, marcadas) {
+// Níveis por módulo (E04): atalhos sobre o catálogo real de permissões. "Consultar" = as permissões de visualizar do módulo;
+// "Operar" = todas as não sensíveis; sensíveis (fechar período, ver custo, aplicar desconto…) só marcando uma a uma.
+const NIVEIS = {
+  nenhum: { rotulo: 'Sem acesso', curto: 'sem acesso' },
+  consultar: { rotulo: 'Consultar', curto: 'consultar' },
+  operar: { rotulo: 'Operar', curto: 'operar' },
+  personalizado: { rotulo: 'Personalizar', curto: 'algumas ações' },
+};
+function gruposDoCatalogo() {
   const modulos = [];
   for (const p of estado.catalogo) {
     let grupo = modulos.find((g) => g.modulo === p.modulo);
     if (!grupo) modulos.push(grupo = { modulo: p.modulo, nome: p.modulo_nome, itens: [] });
     grupo.itens.push(p);
   }
+  return modulos;
+}
+const codigosDoNivel = (g, nivel) => (nivel === 'consultar' ? g.itens.filter((p) => p.codigo.endsWith('.visualizar'))
+  : nivel === 'operar' ? g.itens.filter((p) => !p.sensivel) : []).map((p) => p.codigo);
+const mesmoConjunto = (a, b) => a.length === b.length && a.every((c) => b.includes(c));
+function nivelDoModulo(g, marcadas) {
+  const doModulo = g.itens.map((p) => p.codigo).filter((c) => marcadas.has(c));
+  if (!doModulo.length) return 'nenhum';
+  const consultar = codigosDoNivel(g, 'consultar');
+  if (consultar.length && mesmoConjunto(doModulo, consultar)) return 'consultar';
+  if (mesmoConjunto(doModulo, codigosDoNivel(g, 'operar'))) return 'operar';
+  return 'personalizado';
+}
+
+function matrizPermissoes(form, marcadas) {
+  const modulos = gruposDoCatalogo();
   const contador = el('p', { class: 'campo__ajuda', 'aria-live': 'polite', id: 'perfil-contador' });
+  const sincronizadores = [];
   const atualizar = () => {
     const n = form.querySelectorAll('input[name="permissoes"]:checked').length;
     contador.textContent = `${n} de ${estado.catalogo.length} permissões escolhidas.`;
+    for (const f of sincronizadores) f();
   };
   const grupos = modulos.map((g) => {
+    const chaveModulo = g.modulo.replace(/[^a-z0-9_-]/gi, '');
     const caixas = g.itens.map((p) => {
       const idCaixa = `perm-${p.codigo.replace('.', '-')}`;
       const bloqueada = !contidoNasMinhas([p.codigo]);
@@ -245,21 +314,39 @@ function matrizPermissoes(form, marcadas) {
         el('label', { for: idCaixa }, p.acao_nome, p.sensivel ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'sensível') : null),
         el('span', { id: `${idCaixa}-desc`, class: 'campo__ajuda' }, p.descricao, bloqueada ? ' Você não tem esta permissão, por isso não pode concedê-la.' : ''));
     });
-    const todas = el('button', { type: 'button', class: 'botao botao--texto' }, 'Marcar todas');
-    todas.addEventListener('click', () => {
-      const livres = g.itens.map((p) => form.querySelector(`#perm-${p.codigo.replace('.', '-')}`)).filter((c) => !c.disabled);
-      const marcar = livres.some((c) => !c.checked);
-      for (const c of livres) c.checked = marcar;
-      atualizar();
+    const caixa = (codigo) => form.querySelector(`#perm-${codigo.replace('.', '-')}`);
+    const detalhes = el('details', { class: 'modulo-permissoes__detalhe' }, el('summary', {}, `Ajustar uma a uma (${g.itens.length})`),
+      el('div', { class: 'opcoes opcoes--coluna' }, ...caixas));
+    const temConsulta = codigosDoNivel(g, 'consultar').length > 0;
+    const radios = Object.entries(NIVEIS).map(([nivel, info]) => {
+      const idRadio = `nivel-${chaveModulo}-${nivel}`;
+      const entrada = el('input', { type: 'radio', id: idRadio, name: `nivel-${chaveModulo}`, value: nivel, 'data-nivel': nivel,
+        disabled: nivel === 'consultar' && !temConsulta });
+      entrada.addEventListener('change', () => {
+        if (nivel === 'personalizado') { detalhes.open = true; detalhes.querySelector('input:not(:disabled)')?.focus(); return; }
+        const quer = codigosDoNivel(g, nivel);
+        for (const p of g.itens) { const c = caixa(p.codigo); if (!c.disabled) c.checked = quer.includes(p.codigo); }
+        atualizar();
+      });
+      return el('span', { class: 'nivel-acesso' }, entrada, el('label', { for: idRadio }, info.rotulo));
+    });
+    const situacao = el('span', { class: 'campo__ajuda modulo-permissoes__situacao' });
+    sincronizadores.push(() => {
+      const atual = nivelDoModulo(g, new Set([...form.querySelectorAll('input[name="permissoes"]:checked')].map((c) => c.value)));
+      for (const r of radios) { const i = r.querySelector('input'); i.checked = i.value === atual; }
+      const n = g.itens.filter((p) => caixa(p.codigo)?.checked).length;
+      situacao.textContent = `${n} de ${g.itens.length}`;
+      if (atual === 'personalizado') detalhes.open = true;
     });
     return el('fieldset', { class: 'campo modulo-permissoes' },
-      el('legend', {}, g.nome),
-      el('div', { class: 'opcoes opcoes--coluna' }, ...caixas),
-      el('div', { class: 'grupo-botoes' }, todas));
+      el('legend', {}, g.nome, ' ', situacao),
+      el('div', { class: 'niveis-acesso', role: 'radiogroup', 'aria-label': `Nível de acesso em ${g.nome}` }, ...radios),
+      detalhes);
   });
-  form.addEventListener('change', atualizar);
+  form.addEventListener('change', (e) => { if (e.target === form || e.target.name === 'permissoes') atualizar(); });
   queueMicrotask(atualizar);
   return el('div', { class: 'pilha' },
+    el('p', { class: 'campo__ajuda' }, 'Em cada área, escolha: Sem acesso, Consultar (só ver), Operar (ver e fazer o dia a dia, sem ações sensíveis) ou Personalizar (marcar uma a uma).'),
     el('span', { class: 'campo__erro', 'data-grupo': 'permissoes', id: 'perfil-permissoes-erro' }),
     contador, el('div', { class: 'grade-permissoes' }, ...grupos));
 }
@@ -297,7 +384,7 @@ function formularioPerfil(perfil = null) {
     ...(modelos ? [modelos] : []),
     matrizPermissoes(form, codigosDoPerfil(perfil)),
     el('div', { class: 'grupo-botoes' }, botao,
-      editando ? el('a', { class: 'botao botao--texto', href: `/business/equipe.html?id=${encodeURIComponent(id)}#titulo-perfis` }, 'Cancelar edição') : null));
+      editando ? el('a', { class: 'botao botao--texto', href: `/business/equipe.html?id=${encodeURIComponent(id)}#perfis` }, 'Cancelar edição') : null));
   form.addEventListener('submit', (evento) => {
     evento.preventDefault();
     limparErros(form);
@@ -377,6 +464,7 @@ function cartaoPerfil(p) {
     p.descricao ? el('p', {}, p.descricao) : null,
     codigos.includes('vendas.aplicar_desconto') ? blocoDesconto(p) : null,
     el('p', { class: 'cartao__meta' }, `${codigos.length} permissões · usado por ${usam.length} ${usam.length === 1 ? 'pessoa' : 'pessoas'}`),
+    el('p', { class: 'resumo-perfil' }, resumoModulos(codigos) || 'Sem permissões.'),
     el('details', {}, el('summary', {}, 'Ver permissões'),
       el('ul', { class: 'lista-simples' }, ...modulos.map((nome) => el('li', {},
         el('strong', {}, `${nome}: `),
@@ -446,6 +534,7 @@ async function carregar() {
       acesso = await minhasPermissoes(id);
     } catch (erro) {
       if (erro.codigo === 'TENANT_FORBIDDEN') {
+        modalConvite?.fechar();
         semAcesso(area);
         return;
       }
@@ -454,6 +543,7 @@ async function carregar() {
     const minhas = new Set(acesso.permissoes);
     const pode = (codigo) => minhas.has(codigo);
     if (!pode('equipe.visualizar')) {
+      modalConvite?.fechar();
       area.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Seu perfil de acesso não inclui a equipe desta empresa.',
         el('p', {}, el('a', { href: `/business/empresa.html?id=${encodeURIComponent(id)}` }, 'Voltar para a empresa')))));
       return;
@@ -465,14 +555,21 @@ async function carregar() {
     titulo.textContent = `Equipe de ${empresa?.nome_publico ?? 'empresa'}`;
     document.title = `Equipe de ${empresa?.nome_publico ?? 'empresa'} | AutoniCK Business`;
     concluirCarregamento(area);
+    if (modalConvite && !pode('equipe.convidar')) modalConvite.fechar();
+    const ativos = membros.filter((m) => m.estado === 'ativo').length;
+    const grupoAbas = abas({ rotulo: 'Partes da equipe', ativa: abaAtiva, aoTrocar: (k) => { abaAtiva = k; },
+      itens: [
+        { chave: 'pessoas', titulo: 'Pessoas', contador: ativos, painel: secaoMembros() },
+        { chave: 'perfis', titulo: 'Perfis de acesso', contador: perfis.length, painel: secaoPerfis() },
+        { chave: 'historico', titulo: 'Histórico', painel: secaoHistorico() },
+      ] });
+    trocarAba = (k) => { grupoAbas.ativar(k, { focar: true }); };
     area.append(...[
       empresa?.dado_de_teste ? el('p', { class: 'opcoes' }, chipTeste()) : null,
-      secaoMembros(),
-      secaoConvites(),
-      secaoPerfis(),
-      secaoHistorico(),
+      grupoAbas.elemento,
     ].filter(Boolean));
-    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
+    const alvo = location.hash.slice(1);
+    if (alvo && !['pessoas', 'perfis', 'historico'].includes(alvo)) document.getElementById(alvo)?.scrollIntoView({ block: 'start' });
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
       area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));

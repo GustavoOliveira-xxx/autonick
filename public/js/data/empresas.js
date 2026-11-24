@@ -23,6 +23,7 @@ export const SITUACOES_VITRINE = {
 
 export const ROTULOS_CAMPOS = {
   nome_publico: 'Nome do negócio',
+  logo: 'Logo',
   categoria_id: 'Categoria principal',
   modalidade: 'Modalidade',
   cidade: 'Cidade',
@@ -101,7 +102,7 @@ export const ckEmpresas = () => neon.rpc('ck_listar_empresas');
 export const ckHistorico = (id) => neon.rpc('ck_historico_empresa', { p_empresa_id: id });
 
 export const ckFila = () =>
-  neon.consultar('/solicitacoes_publicacao?estado=eq.aberta&select=id,empresa_id,tipo,dados_publicos,enviada_em,origem_contestacao_id&order=enviada_em.asc');
+  neon.consultar('/solicitacoes_publicacao?estado=eq.aberta&select=id,empresa_id,tipo,dados_publicos,enviada_em,origem_contestacao_id,logo_arquivo_id&order=enviada_em.asc');
 
 export const ckModeracoes = () =>
   neon.consultar('/moderacoes_vitrine?estado=eq.pendente&select=id,empresa_id,antes,depois,criada_em&order=criada_em.asc');

@@ -46,6 +46,7 @@ export const logosPublicos = (ids) => (arquivosDisponiveis && ids.length ? neon.
 export const definirImagemProduto = (produtoId, arquivoId, chave) =>
   neon.rpc('definir_imagem_produto', { p_produto_id: produtoId, p_arquivo_id: arquivoId, p_operation_key: chave });
 export const imagensDeProdutos = (empresaId) => (arquivosDisponiveis ? neon.rpc('imagens_de_produtos', { p_empresa_id: empresaId }) : Promise.resolve({}));
+export const imagensPublicasDeProdutos = (empresaId) => (arquivosDisponiveis ? neon.rpcPublica('imagens_publicas_de_produtos', { p_empresa_id: empresaId }) : Promise.resolve({}));
 export const arquivosDoRegistro = (tipo, id) => neon.rpc('arquivos_do_registro', { p_referencia_tipo: tipo, p_referencia_id: id });
 
 /** Validação rápida no navegador (o backend confere de novo o conteúdo real). */

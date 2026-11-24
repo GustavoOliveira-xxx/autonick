@@ -7,7 +7,6 @@ export const PAGINAS = [
   '/cliente/demonstracao-empresa.html?e=00000000-0000-4000-8000-000000000000',
   '/business/',
   '/business/dashboard.html',
-  '/business/onboarding.html',
   '/cliente/entrar.html',
   '/business/entrar.html',
   '/cliente/conta.html',

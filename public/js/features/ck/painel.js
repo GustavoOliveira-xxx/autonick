@@ -19,6 +19,8 @@ import { ckLimites, ckDefinirLimite, ckHistoricoLimites, NOME_LIMITE } from '../
 import { ckFilaModeracao } from '../../data/comunicacao.js';
 import { secoesModeracao } from './moderacao.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
+import { urlDeImagem } from '../../data/arquivos.js';
+
 
 iniciarLayout();
 const painel = document.getElementById('painel');
@@ -93,6 +95,21 @@ const mapearCampo = (campo) => ({ campos: 'campos', motivo: 'motivo', justificat
 const motivoCampo = (rotulo = 'Motivo', ajuda = 'Obrigatório para pedir correção ou rejeitar (pelo menos 10 caracteres). O gestor verá este texto.') =>
   campoTexto({ nome: 'motivo', rotulo, linhas: 3, max: 2000, ajuda });
 
+// E03: a CK vê a logo enviada (e a publicada hoje, numa alteração) antes de decidir.
+function miniLogo(id) {
+  const caixa = el('span', { class: 'logo-empresa logo-empresa--g' }, '—');
+  if (id) urlDeImagem(`/api/arquivos/${id}`).then((src) => { if (src) caixa.replaceChildren(el('img', { src, alt: '' })); }).catch(() => {});
+  return caixa;
+}
+function linhaLogo(s, atual) {
+  const publicada = atual?.logo_arquivo_id ?? null;
+  if (s.tipo === 'alteracao' ? s.logo_arquivo_id === publicada : !s.logo_arquivo_id) return [];
+  return [el('dt', {}, 'Logo'), el('dd', { class: 'grupo-botoes' },
+    s.logo_arquivo_id ? miniLogo(s.logo_arquivo_id) : el('span', {}, 'Sem logo (as iniciais aparecem no lugar)'),
+    s.tipo === 'alteracao' ? el('span', { class: 'campo__ajuda' }, publicada ? 'publicada hoje: ' : '(hoje: sem logo)') : null,
+    s.tipo === 'alteracao' && publicada ? miniLogo(publicada) : null)];
+}
+
 function itemFila(s, publicados) {
   const d = s.dados_publicos;
   const atual = publicados.get(s.empresa_id);
@@ -125,7 +142,7 @@ function itemFila(s, publicados) {
     el('dl', { class: 'dados' }, ...campos.flatMap((c) => [
       el('dt', {}, ROTULOS_CAMPOS[c]),
       el('dd', {}, valorLegivel(c, d[c]), s.tipo === 'alteracao' ? el('span', { class: 'campo__ajuda' }, ` (publicado hoje: ${valorLegivel(c, atual?.[c])})`) : null),
-    ])),
+    ]), ...linhaLogo(s, atual)),
     form);
 }
 

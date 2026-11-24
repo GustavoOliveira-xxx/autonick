@@ -16,6 +16,9 @@ import {
   MODALIDADES, ROTULOS_CAMPOS, CAMPOS_RELEVANTES, CAMPOS_MENOR_RISCO, CAMPOS_PRIVADOS,
 } from '../../data/empresas.js';
 import { minhasPermissoes, sairDaEmpresa } from '../../data/equipe.js';
+import { campoImagem } from '../../ui/campo-imagem.js';
+import { logosDasMinhasEmpresas, enviarArquivo, definirLogoEmpresa, removerArquivo, arquivosDisponiveis } from '../../data/arquivos.js';
+import { iniciais } from '../../ui/seletor-empresa.js';
 import { exigirSessao, chipSituacao, chipErp, chipPapel, chipTeste, semAcesso, listaHistorico, formatarDataHora } from './comum.js';
 
 iniciarLayout();
@@ -295,6 +298,51 @@ function blocoAcesso(acesso, e, pode) {
     el('h2', { id: 'titulo-acesso' }, 'Seu acesso'), ...partes);
 }
 
+/** Logo da empresa: vale na hora para a equipe; a vitrine só troca depois da aprovação da CK. */
+function situacaoLogo(l) {
+  if (!l?.logo_id) return l?.logo_vitrine_id ? 'A vitrine ainda mostra a logo aprovada anteriormente.' : 'Sem logo: usamos as iniciais da empresa.';
+  if (!l.pendente) return 'Esta é a logo aprovada e exibida na vitrine.';
+  return l.em_analise ? 'Logo enviada para a análise da CK junto com a vitrine.' : 'Logo nova: vale no ERP agora; aparece na vitrine depois de enviar para análise e a CK aprovar.';
+}
+// Empresa publicada: a troca de logo vira alteração pendente; a tela é refeita para mostrar o envio para análise.
+function aposTrocarLogo(e, atual) {
+  if (e.situacao_vitrine !== 'publicada' || e.solicitacao_aberta) return;
+  if (atual.pendente !== e.relevantes_pendentes?.includes('logo')) {
+    setTimeout(() => carregar().then(() => anunciar('sucesso', atual.pendente
+      ? 'Logo salva no ERP. Para levá-la à vitrine, envie a alteração para análise da CK.' : 'Logo salva.')), 0);
+  }
+}
+
+function blocoLogo(e, logo, podeAlterar) {
+  let atual = logo;
+  const chaves = { enviar: novaChave(), definir: novaChave(), remover: novaChave() };
+  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-logo' },
+    el('h2', { id: 'titulo-logo' }, 'Logo'),
+    campoImagem({ id: 'logo-empresa', rotulo: `Logo de ${e.nome_publico}`, ajuda: 'PNG, JPG ou WebP, até 2 MB, de preferência quadrada.',
+      urlAtual: atual?.logo_url, podeAlterar, situacao: situacaoLogo(atual),
+      alternativa: () => el('span', { class: 'logo-empresa', 'aria-hidden': 'true' }, iniciais(e.nome_publico)),
+      aoEnviar: async (arq) => {
+        const enviado = await enviarArquivo(arq, { finalidade: 'logo_empresa', empresaId: e.id, chave: chaves.enviar });
+        chaves.enviar = novaChave();
+        const antiga = atual?.logo_id;
+        atual = await definirLogoEmpresa(e.id, enviado.id, chaves.definir);
+        chaves.definir = novaChave();
+        // A logo substituída deixa de ocupar a cota, exceto a que a vitrine ainda mostra.
+        if (antiga && antiga !== atual.logo_vitrine_id) { await removerArquivo(antiga, chaves.remover).catch(() => null); chaves.remover = novaChave(); }
+        aposTrocarLogo(e, atual);
+        return { url: atual.logo_url, situacao: situacaoLogo(atual) };
+      },
+      aoRemover: async () => {
+        const antiga = atual?.logo_id;
+        atual = await definirLogoEmpresa(e.id, null, chaves.definir);
+        chaves.definir = novaChave();
+        // A logo aprovada na vitrine fica guardada até uma nova aprovação; as demais são marcadas como removidas.
+        if (antiga && antiga !== atual.logo_vitrine_id) { await removerArquivo(antiga, chaves.remover).catch(() => null); chaves.remover = novaChave(); }
+        aposTrocarLogo(e, atual);
+        return { situacao: situacaoLogo(atual) };
+      } }));
+}
+
 async function carregar() {
   if (!id) {
     area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
@@ -340,8 +388,12 @@ async function carregar() {
     document.title = `${e.nome_publico} | AutoniCK Business`;
     concluirCarregamento(area);
     const alteraVitrine = pode('vitrine.alterar');
+    const logo = arquivosDisponiveis ? (await logosDasMinhasEmpresas().catch(() => ({})))[id] ?? null : null;
+    // A troca de logo de uma empresa publicada também passa pela análise da CK (a vitrine mostra a aprovada até a decisão).
+    if (card && logo?.pendente && !e.relevantes_pendentes.includes('logo')) e.relevantes_pendentes.push('logo');
     area.append(...[
       blocoAcesso(acesso, e, pode),
+      blocoLogo(e, logo, pode('empresa.alterar')),
       el('section', { class: 'pilha', 'aria-labelledby': 'titulo-situacao' },
         el('h2', { id: 'titulo-situacao' }, 'Situação'),
         el('p', { class: 'opcoes' }, chipErp(), verVitrine ? chipSituacao(e.situacao_vitrine) : null),

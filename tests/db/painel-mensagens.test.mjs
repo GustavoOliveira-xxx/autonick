@@ -168,12 +168,12 @@ test('marcar como lida: só para quem participa, por pessoa, sem voltar no tempo
   falha(rpc(P.OUT, 'marcar_conversa_lida', `'solicitacao', ${q(R.solAberta)}, NULL`), 'NOT_FOUND|não encontrado');
 });
 
-test('privilégios: tabela fechada, nenhuma função para o anônimo, nenhuma permissão nova', opcoes, () => {
+test('privilégios: tabela fechada, nenhuma função nova para o anônimo além das leituras da vitrine, nenhuma permissão nova', opcoes, () => {
   falha(comoPapel(banco.url, { sub: P.O.id }, 'SELECT count(*) FROM public.leituras_conversa'), 'permission denied|permissão');
   assert.equal(adm(`SELECT has_function_privilege('anonymous', 'public.painel_empresa(uuid)', 'EXECUTE')`), 'f');
   assert.equal(adm(`SELECT has_function_privilege('anonymous', 'public.mensagens_novas(uuid)', 'EXECUTE')`), 'f');
   assert.equal(adm(`SELECT has_function_privilege('anonymous', 'public.marcar_conversa_lida(text, uuid, timestamptz)', 'EXECUTE')`), 'f');
   assert.equal(adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`), 'buscar_vitrine,filtros_vitrine,vitrine_publica');
+    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`), 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* + leituras públicas de logos e imagens do E03 */);
   assert.equal(adm('SELECT count(*) FROM public.permissoes_catalogo'), '55');
 });

@@ -127,6 +127,9 @@ test('proprietário cria perfil a partir do modelo e convida (D4-3, D4-1) [simul
   await page.goto(`/business/equipe.html?id=${EMP}`);
   await expect(page.locator('h1')).toHaveText('Equipe de Doces da Vila');
   await expect(page.locator('#equipe')).toContainText('Crie um perfil de acesso antes de convidar alguém.');
+  await expect(page.getByRole('tab', { name: /Pessoas/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Criar um perfil de acesso' }).click();
+  await expect(page.getByRole('tab', { name: /Perfis de acesso/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#perfil-contador')).toHaveText('0 de 48 permissões escolhidas.');
   await page.getByRole('button', { name: 'Criar perfil' }).click();
   await expect(page.locator('#perfil-nome-erro')).toHaveText('Dê um nome ao perfil (2 a 60 caracteres).');
@@ -135,15 +138,27 @@ test('proprietário cria perfil a partir do modelo e convida (D4-3, D4-1) [simul
   await expect(page.locator('#perfil-contador')).toHaveText('7 de 48 permissões escolhidas.');
   await expect(page.locator('#perm-estoque-aprovar')).toBeChecked();
   await expect(page.locator('#perm-financeiro-fechar')).not.toBeChecked();
+  await expect(page.locator('#nivel-financeiro-nenhum')).toBeChecked();
+  // E04: nível por área. "Consultar" marca só as permissões de ver; "Sem acesso" tira todas da área.
+  await page.locator('label[for="nivel-vendas-consultar"]').click();
+  await expect(page.locator('#perm-vendas-visualizar')).toBeChecked();
+  await expect(page.locator('#perm-vendas-criar')).not.toBeChecked();
+  await expect(page.locator('#perfil-contador')).toHaveText('8 de 48 permissões escolhidas.');
+  await page.locator('label[for="nivel-vendas-nenhum"]').click();
+  await expect(page.locator('#perfil-contador')).toHaveText('7 de 48 permissões escolhidas.');
   const resultado = await new AxeBuilder({ page }).withTags(AXE).analyze();
   expect(resultado.violations).toEqual([]);
   await page.getByRole('button', { name: 'Criar perfil' }).click();
   await expect(page.locator('#avisos')).toContainText('Perfil "Estoque" criado.');
   await expect(page.locator('#equipe')).toContainText('7 permissões · usado por 0 pessoas');
+  await page.getByRole('tab', { name: /Pessoas/ }).click();
+  await page.getByRole('button', { name: 'Adicionar colaborador' }).click();
   await page.locator('#convite-email').fill('Eva@Teste.example');
   await page.locator('#convite-perfil').selectOption({ label: 'Estoque (7 permissões)' });
+  await expect(page.locator('#convite-resumo')).toContainText('Com o perfil "Estoque", a pessoa poderá');
   await page.getByRole('button', { name: 'Criar convite' }).click();
   await expect(page.locator('#avisos')).toContainText('Avise a pessoa para entrar no AutoniCK com o e-mail eva@teste.example');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('#equipe')).toContainText('Convites aguardando resposta (1)');
   await expect(page.locator('#equipe')).toContainText('Convite criado');
   expect(estado.chamadas).toContain('/api/rpc/convidar_funcionario');
@@ -198,9 +213,13 @@ test('gestor designado: não concede o que não tem nem mexe em quem tem mais (D
   await expect(page.locator('[data-membro="m4"] details')).toHaveCount(0);
   await expect(page.locator('#equipe')).toContainText('Este é o seu perfil.');
   await expect(page.locator('#equipe')).toContainText('Este perfil tem permissões que você não tem; você não pode alterá-lo.');
+  await page.getByRole('button', { name: 'Adicionar colaborador' }).click();
   const opcoes = await page.locator('#convite-perfil option').allTextContents();
   expect(opcoes.some((o) => o.startsWith('Financeiro'))).toBe(false);
   expect(opcoes.some((o) => o.startsWith('Estoque'))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('tab', { name: /Perfis de acesso/ }).click();
   await page.getByRole('button', { name: 'Gerente', exact: true }).click();
   await expect(page.locator('#avisos')).toContainText('Modelo "Gerente" aplicado.');
   await expect(page.locator('#perfil-contador')).toHaveText('47 de 48 permissões escolhidas.');
@@ -216,6 +235,7 @@ test('recusa do banco (permissão retirada no meio) atualiza a tela e explica [s
     erros: { '/api/rpc/convidar_funcionario': [{ hint: 'FORBIDDEN_ACTION', message: 'Seu acesso não permite esta ação nesta empresa.' }] },
   });
   await page.goto(`/business/equipe.html?id=${EMP}`);
+  await page.getByRole('button', { name: 'Adicionar colaborador' }).click();
   await page.locator('#convite-email').fill('novo@teste.example');
   await page.locator('#convite-perfil').selectOption('pf1');
   estado.acesso = { papel: 'funcionario', perfil_id: 'pf1', perfil_nome: 'Estoque', permissoes: ['produtos.visualizar', 'estoque.visualizar', 'estoque.propor'] };
@@ -223,6 +243,7 @@ test('recusa do banco (permissão retirada no meio) atualiza a tela e explica [s
   await expect(page.locator('#avisos')).toContainText('Seu acesso não permite esta ação nesta empresa.');
   await expect(page.locator('#equipe')).toContainText('Seu perfil de acesso não inclui a equipe desta empresa.');
   await expect(page.locator('#form-convite')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('perda de rede no convite: a nova tentativa reaproveita a chave; erro do banco vai ao campo [simulação]', async ({ page, context }) => {
@@ -233,10 +254,12 @@ test('perda de rede no convite: a nova tentativa reaproveita a chave; erro do ba
     erros: { '/api/rpc/convidar_funcionario': [{ hint: 'STATE_CONFLICT', message: 'Essa pessoa já faz parte da equipe.' }, 'rede'] },
   });
   await page.goto(`/business/equipe.html?id=${EMP}`);
+  await page.getByRole('button', { name: 'Adicionar colaborador' }).click();
   await page.locator('#convite-email').fill('dona@teste.example');
   await page.locator('#convite-perfil').selectOption('pf1');
   await page.getByRole('button', { name: 'Criar convite' }).click();
   await expect(page.locator('#avisos')).toContainText('Essa pessoa já faz parte da equipe.');
+  await expect(page.getByRole('dialog')).toContainText('Essa pessoa já faz parte da equipe.');
   await page.locator('#convite-email').fill('nova@teste.example');
   await page.locator('#convite-perfil').selectOption('pf1');
   await page.getByRole('button', { name: 'Criar convite' }).click();

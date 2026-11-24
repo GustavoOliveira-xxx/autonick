@@ -391,10 +391,10 @@ test('limites da CK: só administrador CK, motivo obrigatório, faixa, idempotê
   ok(P.CK, 'ck_definir_limite', `'reagendamentos_por_os', 3, 'Volta ao valor padrão depois do teste.', ${q(k())}`);
 });
 
-test('privilégios: exatamente 3 funções para o anônimo, nenhuma tabela, núcleo e demonstração fechados', opcoes, () => {
+test('privilégios: anônimo só nas leituras da vitrine (3 do M10 e 2 de logos e imagens do E03), nenhuma tabela, núcleo e demonstração fechados', opcoes, () => {
   const anonimas = adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname IN ('public', 'app_private', 'authz') AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`);
-  assert.equal(anonimas, 'buscar_vitrine,filtros_vitrine,vitrine_publica');
+  assert.equal(anonimas, 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* + leituras públicas de logos e imagens do E03 */);
   assert.equal(adm(`SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname IN ('public', 'app_private')
     AND c.relkind IN ('r', 'v', 'm') AND (has_table_privilege('anonymous', c.oid, 'SELECT') OR has_table_privilege('anonymous', c.oid, 'INSERT')
     OR has_table_privilege('anonymous', c.oid, 'UPDATE') OR has_table_privilege('anonymous', c.oid, 'DELETE'))`), '0');

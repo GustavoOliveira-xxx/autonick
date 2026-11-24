@@ -134,33 +134,33 @@ test('empresa ativa sem vínculo: o painel não mostra dados e não chega a pedi
   expect(estado.chamadas).not.toContain('/api/rpc/painel_empresa');
 });
 
-test('cadastro em etapas grava pelo criar_empresa e abre o painel da nova empresa [simulação]', async ({ page, context }) => {
+test('cadastro pelo modal da Central (endereço antigo redireciona) grava pelo criar_empresa e abre o painel da nova empresa [simulação]', async ({ page, context }) => {
   const estado = await simular(context, { painel: painelVazio });
   await page.goto('/business/onboarding.html');
-  await page.getByLabel('Nome do negócio').fill('Ateliê Ponto Firme');
-  await page.getByLabel('Categoria').selectOption({ label: 'Costura e moda' });
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.locator('#resumo-erros')).toContainText('Escolha como o negócio atende.');
-  await page.getByLabel('Os dois').check();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.getByLabel('Cidade').fill('Campinas');
-  await page.getByLabel('E-mail de contato').fill('contato@autonick-teste.example');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.locator('#revisao')).toContainText('Campinas (SP)');
-  await page.getByRole('button', { name: 'Cadastrar empresa' }).click();
-  await expect(page).toHaveURL(/dashboard\.html\?id=.*&criada=1/);
-  await expect(page.locator('#avisos')).toContainText('Empresa cadastrada.');
+  await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
+  const modal = page.getByRole('dialog', { name: 'Cadastrar nova empresa' });
+  await expect(modal).toBeVisible();
+  await modal.getByLabel('Nome do negócio').fill('Ateliê Ponto Firme');
+  await modal.getByLabel('O que a empresa faz').selectOption('ambos');
+  await modal.getByLabel('Categoria principal').selectOption({ label: 'Costura e moda' });
+  await modal.getByLabel('Cidade').fill('Campinas');
+  await modal.getByLabel('E-mail de contato da empresa').fill('contato@autonick-teste.example');
+  await expect(modal.locator('#nova-revisao')).toContainText('Campinas (SP)');
+  await modal.getByRole('button', { name: 'Cadastrar empresa' }).click();
+  await expect(modal.getByRole('status')).toContainText('Empresa cadastrada');
   const c = estado.corpos['/api/rpc/criar_empresa'];
   expect(c.p_dados).toEqual({ nome_publico: 'Ateliê Ponto Firme', modalidade: 'ambos', categoria_id: 'k1', cidade: 'Campinas', uf: 'SP', email_contato: 'contato@autonick-teste.example' });
   expect(c.p_operation_key).toMatch(/^[0-9a-f-]{36}$/);
+  await modal.getByRole('link', { name: 'Usar Ateliê Ponto Firme agora' }).click();
+  await expect(page).toHaveURL(new RegExp(`dashboard\\.html\\?id=${EMP}`));
 });
 
-test('cadastro em etapas sem sessão pede para entrar e não mostra o formulário [simulação]', async ({ page, context }) => {
+test('cadastro sem sessão pede para entrar e não abre o modal [simulação]', async ({ page, context }) => {
   await simular(context, { logado: false });
   await page.goto('/business/onboarding.html');
-  await expect(page.locator('#acesso-onboarding')).toContainText(/Entre/);
-  await expect(page.locator('#form-onboarding')).toBeHidden();
+  await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
+  await expect(page.locator('#empresas')).toContainText(/Entr/);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('lista de orçamentos marca a conversa com mensagens novas, com texto e não só cor [simulação]', async ({ page, context }) => {

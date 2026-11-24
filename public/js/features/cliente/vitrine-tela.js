@@ -16,6 +16,7 @@ import { neon } from '../../data/sessao.js';
 import { blocoAvaliacoesVitrine } from '../comunicacao/avaliacao.js';
 import { botaoDenunciar } from '../comunicacao/moderacao.js';
 import { montarMomento, vazioComMomento } from '../../ui/forja3d/momentos.js';
+import { logosPublicos, imagensPublicasDeProdutos } from '../../data/arquivos.js';
 import {
   filtrosVitrine, buscarVitrine, vitrinePublica, filtrosDemonstracao, buscarDemonstracao, vitrineDemonstracao,
   minhaAutorizacaoDemonstracao, POLITICA_VITRINE, MODALIDADE, FAIXA,
@@ -32,10 +33,27 @@ const CHAVES = ['termo', 'tipo', 'categoria_id', 'categoria_produto_id', 'cidade
 export const indisponivel = () => aviso('info', 'Esta área ainda não está disponível nesta versão.',
   el('p', {}, 'Ela funciona no ambiente de desenvolvimento conectado ao banco de dados.'));
 
-export function monograma(nome, categoria, grande = false) {
+export function monograma(nome, categoria, grande = false, empresaId = null) {
   const n = [...(categoria ?? '')].reduce((t, c) => t + c.codePointAt(0), 0) % 4;
-  return el('span', { class: `monograma monograma--${n}${grande ? ' monograma--grande' : ''}`, 'aria-hidden': 'true' },
+  return el('span', { class: `monograma monograma--${n}${grande ? ' monograma--grande' : ''}`, 'aria-hidden': 'true', 'data-logo-empresa': empresaId },
     (nome ?? '?').trim().charAt(0).toLocaleUpperCase('pt-BR'));
+}
+
+/**
+ * E03: troca a inicial pela logo APROVADA pela CK (só de empresas publicadas; o banco decide). Imagem pública servida pela
+ * API de arquivos; se falhar, a inicial continua.
+ */
+async function aplicarLogos(raiz) {
+  const caixas = [...raiz.querySelectorAll('[data-logo-empresa]')];
+  const ids = [...new Set(caixas.map((c) => c.dataset.logoEmpresa))].slice(0, 200);
+  if (!ids.length) return;
+  const logos = await logosPublicos(ids).catch(() => ({}));
+  for (const c of caixas) {
+    const url = logos[c.dataset.logoEmpresa];
+    if (!url) continue;
+    const img = el('img', { src: url, alt: '', decoding: 'async', loading: 'lazy' });
+    img.addEventListener('load', () => { c.classList.add('monograma--logo'); c.replaceChildren(img); }, { once: true });
+  }
 }
 
 const faixaDemonstracao = () => el('p', { class: 'chip chip--alerta chip--quebra', 'data-demonstracao': '' }, el('span', { 'aria-hidden': 'true' }, '!'),
@@ -86,7 +104,7 @@ function cartaoResultado(i, modo) {
   const achados = i.itens_que_casaram.length
     ? el('p', {}, 'Encontrado em: ', i.itens_que_casaram.map((x) => `${x.tipo === 'servico' ? 'serviço' : 'produto'} "${x.nome}"`).join('; '), '.') : null;
   return el('li', { class: 'cartao cartao-vitrine', 'data-empresa': i.empresa_id },
-    monograma(i.nome_publico, i.categoria),
+    monograma(i.nome_publico, i.categoria, false, i.empresa_id),
     el('div', { class: 'pilha' },
       el('h3', { class: 'cartao__titulo' }, el('a', { href }, i.nome_publico)),
       el('p', { class: 'cartao__meta' }, `${i.categoria ?? 'Sem categoria'} · ${i.bairro ? `${i.bairro}, ` : ''}${i.cidade} · ${MODALIDADE[i.modalidade] ?? i.modalidade}`),
@@ -163,6 +181,7 @@ export async function iniciarBusca(modo) {
       }
       partes.push(acoesAmpliar(r));
       resultados.replaceChildren(...partes.filter(Boolean));
+      aplicarLogos(resultados);
     } catch (erro) {
       contagem.textContent = '';
       if (erro.codigo === 'VALIDATION_ERROR' && erro.campo === 'bairro') { erroBairro.textContent = erro.message; form.bairro.focus(); }
@@ -227,8 +246,9 @@ export async function iniciarPerfil(modo) {
   mostrarCarregando(area, 'Carregando a vitrine');
   let v;
   let logado;
+  let imagens = {};
   try {
-    [v, logado] = await Promise.all([M.perfil(id), neon.temSessao()]);
+    [v, logado, imagens] = await Promise.all([M.perfil(id), neon.temSessao(), modo === 'demonstracao' ? {} : imagensPublicasDeProdutos(id).catch(() => ({}))]);
   } catch (erro) {
     if (erro.codigo === 'NOT_FOUND') { naoDisponivel(); return; }
     titulo.textContent = 'Vitrine';
@@ -253,7 +273,7 @@ export async function iniciarPerfil(modo) {
   const seloPerfil = el('div', { class: 'com-momento selo-perfil' },
     el('p', {}, el('span', { class: 'chip chip--sucesso' }, el('span', { 'aria-hidden': 'true' }, '✓'), e.selo)));
   if (e.selo) montarMomento(seloPerfil, 'IC01', { tamanho: 'p' }).disparar();
-  partes.push(el('div', { class: 'cartao-vitrine' }, monograma(e.nome_publico, e.categoria, true),
+  partes.push(el('div', { class: 'cartao-vitrine' }, monograma(e.nome_publico, e.categoria, true, e.id),
     el('div', { class: 'pilha' },
       seloPerfil,
       el('p', { class: 'texto-suave' }, 'O selo indica que a CK revisou o cadastro para publicação. Não é verificação de CNPJ nem garantia comercial.'),
@@ -289,6 +309,7 @@ export async function iniciarPerfil(modo) {
   if (v.produtos.length) {
     partes.push(el('section', { 'aria-labelledby': 'titulo-produtos', class: 'pilha' }, el('h2', { id: 'titulo-produtos' }, 'Produtos'),
       el('ul', { role: 'list', class: 'grade', id: 'lista-produtos' }, v.produtos.map((p) => el('li', { class: 'cartao pilha', 'data-produto': p.id },
+        imagens[p.id] ? el('span', { class: 'imagem-produto imagem-produto--vitrine' }, el('img', { src: imagens[p.id], alt: `Imagem de ${p.nome}`, decoding: 'async', loading: 'lazy' })) : null,
         el('h3', { class: 'cartao__titulo' }, p.nome),
         p.categoria ? el('p', { class: 'cartao__meta' }, p.categoria) : null,
         p.descricao ? el('p', {}, p.descricao) : null,
@@ -302,8 +323,9 @@ export async function iniciarPerfil(modo) {
   // M12 (D12-13, D12-14): avaliações publicadas, "Cliente verificado", média só a partir de 3; denúncia só com login.
   partes.push(blocoAvaliacoesVitrine(v.avaliacoes, { logado, botaoDenunciar }));
   if (logado) partes.push(el('div', { class: 'grupo-botoes', id: 'denunciar-empresa' }, botaoDenunciar('empresa', e.id, { rotulo: 'Denunciar esta empresa', descricaoAlvo: 'esta empresa' })));
-  partes.push(el('p', { class: 'campo__ajuda' }, 'Fotos ainda não estão disponíveis. Estoque e custos nunca aparecem na vitrine.'));
+  partes.push(el('p', { class: 'campo__ajuda' }, 'Estoque e custos nunca aparecem na vitrine.'));
   area.replaceChildren(...partes.filter(Boolean));
+  aplicarLogos(area);
 }
 
 export { POLITICA_VITRINE };

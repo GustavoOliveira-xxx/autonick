@@ -10,7 +10,7 @@ export function montarCsp(origensNeon = [], extra = '') {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self'",
-    "img-src 'self' data:",
+    "img-src 'self' data: blob:",
     "font-src 'self'",
     `connect-src 'self'${origensNeon.length ? ` ${origensNeon.join(' ')}` : ''}${extra ? ` ${extra}` : ''}`,
     "manifest-src 'self'",

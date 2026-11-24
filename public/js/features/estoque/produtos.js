@@ -12,6 +12,7 @@ import { produtosDaEmpresa, criarProduto, FINALIDADES } from '../../data/estoque
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
 import { etiquetaPreco, menorPreco } from '../../ui/pecas-forja.js';
 import { vazioComMomento } from '../../ui/forja3d/momentos.js';
+import { imagensDeProdutos, urlDeImagem } from '../../data/arquivos.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -19,6 +20,7 @@ const nav = document.getElementById('navegacao');
 const anunciar = criarAnunciador(document.getElementById('avisos'));
 let ctx = null;
 let produtos = [];
+let imagens = {};
 let filtro = { texto: '', tipo: 'ativos' };
 
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
@@ -34,11 +36,22 @@ function selos(p) {
     p.resumo?.variacoes_em_alerta ? chip('chip--alerta', '!', `Estoque baixo em ${p.resumo.variacoes_em_alerta} ${p.resumo.variacoes_em_alerta === 1 ? 'variação' : 'variações'}`) : null);
 }
 
+// E03: com imagem, a lista mostra a miniatura otimizada; sem imagem (ou se ela falhar), a etiqueta CK com o preço.
+function miniatura(p) {
+  const caixa = el('span', { class: 'miniatura-produto' }, etiquetaPreco(menorPreco(p.variacoes)));
+  urlDeImagem(imagens[p.id]).then((src) => {
+    if (!src) return;
+    caixa.classList.add('imagem-produto');
+    caixa.replaceChildren(el('img', { src, alt: '', decoding: 'async', loading: 'lazy' }));
+  }).catch(() => {});
+  return caixa;
+}
+
 function cartao(p) {
   const ativas = p.variacoes.filter((v) => v.ativo);
   const nomeadas = ativas.filter((v) => !v.padrao);
   return el('li', { class: 'cartao com-momento', 'data-produto': p.id },
-    etiquetaPreco(menorPreco(p.variacoes)),
+    imagens[p.id] ? miniatura(p) : etiquetaPreco(menorPreco(p.variacoes)),
     el('div', { class: 'pilha' },
       el('h3', { class: 'cartao__titulo' }, el('a', { href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(p.id)}` }, p.nome)),
       selos(p),
@@ -224,7 +237,7 @@ async function carregar() {
       area.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Seu perfil de acesso não inclui os produtos desta empresa.')));
       return;
     }
-    produtos = await produtosDaEmpresa(ctx.id);
+    [produtos, imagens] = await Promise.all([produtosDaEmpresa(ctx.id), imagensDeProdutos(ctx.id).catch(() => ({}))]);
     document.getElementById('titulo-pagina').textContent = `Produtos de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
     area.append(...[

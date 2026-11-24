@@ -127,7 +127,7 @@ function menuBusiness() {
         el('ul', { role: 'list' }, ...itens.map((i) => item(i.href, i.rotulo, i.icone, i.chave === chave, i.chave === 'painel' ? el('span', { class: 'contador', id: 'contador-mensagens', hidden: true }) : null)))))
     : [el('div', { class: 'menu-grupo' }, el('ul', { role: 'list' },
       item('/business/minhas-empresas.html', 'Minhas empresas', 'i-vitrine', atual === '/business/minhas-empresas.html'),
-      item('/business/onboarding.html', 'Cadastrar empresa', 'i-escudo', atual === '/business/onboarding.html')))];
+      item('/business/minhas-empresas.html?cadastrar=1', 'Cadastrar empresa', 'i-escudo', false)))];
   const botaoSair = el('button', { type: 'button', class: 'menu-sair' }, icone('i-sair'), el('span', {}, 'Sair'));
   botaoSair.addEventListener('click', () => sair(botaoSair));
   return el('nav', { class: 'menu-lateral', id: 'menu-principal', 'aria-label': 'Principal' },

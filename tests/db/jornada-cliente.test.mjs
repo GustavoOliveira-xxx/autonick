@@ -371,9 +371,9 @@ test('D11-07: suspensão grave mantém os bloqueios, mostra "grave" e não alter
   reativar(E.susp);
 });
 
-test('privilégios: anônimo continua com as 3 funções do M10; auxiliares fechadas; nenhuma tabela nova', opcoes, () => {
+test('privilégios: anônimo só nas leituras da vitrine (M10 e E03); auxiliares fechadas; nenhuma tabela nova', opcoes, () => {
   assert.equal(adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'execute')`), 'buscar_vitrine,filtros_vitrine,vitrine_publica');
+    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'execute')`), 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* + leituras públicas de logos e imagens do E03 */);
   for (const f of ['app_private.empresa_aceita_novas(uuid, text)', 'app_private.suspensao_da_vitrine(uuid)']) {
     assert.equal(adm(`SELECT has_function_privilege('authenticated', '${f}', 'execute')`), 'f', f);
   }

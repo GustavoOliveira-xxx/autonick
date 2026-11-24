@@ -55,26 +55,27 @@ test('diálogo prende o foco, fecha com Esc e devolve o foco ao botão [simulaç
   await expect(botao).toBeFocused();
 });
 
-test('cadastro em etapas: erros explicados e foco no primeiro campo inválido [simulação]', async ({ page }) => {
+test('cadastro de empresa no modal: erro explicado, foco no campo inválido e proteção contra perda de dados [simulação]', async ({ page }) => {
   await simularLogado(page, { '/api/categorias_plataforma': [{ id: 'k1', nome: 'Costura e moda', slug: 'costura-moda' }] });
-  await page.goto('/business/onboarding.html');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByRole('alert')).toContainText('Corrija os campos abaixo');
-  await expect(page.locator('#nome')).toBeFocused();
-  await expect(page.locator('#nome')).toHaveAttribute('aria-invalid', 'true');
-  await page.locator('#nome').fill('Negócio Fictício');
-  await page.locator('#categoria').selectOption('k1');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByRole('heading', { name: 'Como atende' })).toBeFocused();
-  await page.getByLabel('Os dois').check();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.locator('#cidade').fill('São Paulo');
-  await page.locator('#email').fill('email-invalido');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.locator('#erro-email')).toContainText('e-mail válido');
-  await page.locator('#email').fill('teste@negocio.example');
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.locator('#revisao')).toContainText('Negócio Fictício');
-  await expect(page.getByRole('button', { name: 'Cadastrar empresa' })).toBeVisible();
+  await page.goto('/business/minhas-empresas.html?cadastrar=1');
+  const modal = page.getByRole('dialog', { name: 'Cadastrar nova empresa' });
+  await modal.getByRole('button', { name: 'Cadastrar empresa' }).click();
+  await expect(page.locator('#nova-nome')).toBeFocused();
+  await expect(page.locator('#nova-nome')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#nova-nome-erro')).toHaveText('Preencha este campo.');
+  await page.locator('#nova-nome').fill('Negócio Fictício');
+  await page.locator('#nova-modalidade').selectOption('ambos');
+  await page.locator('#nova-categoria').selectOption('k1');
+  await page.locator('#nova-cidade').fill('São Paulo');
+  await page.locator('#nova-email').fill('email-invalido');
+  await modal.getByRole('button', { name: 'Cadastrar empresa' }).click();
+  await expect(page.locator('#nova-email-erro')).toContainText('Confira o e-mail');
+  await expect(page.locator('#nova-email')).toBeFocused();
+  await expect(modal.locator('#nova-revisao')).toContainText('Negócio Fictício');
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeVisible();
+  await expect(modal.getByRole('alert').filter({ hasText: 'Há alterações não salvas' })).toBeVisible();
+  await modal.getByRole('button', { name: 'Continuar editando' }).click();
+  await expect(page.locator('#nova-email')).toHaveValue('email-invalido');
 });
 
