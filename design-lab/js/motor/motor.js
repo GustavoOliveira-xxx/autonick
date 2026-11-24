@@ -11,6 +11,8 @@ const URL_THREE = new URL('../../public/vendor/three/three.module.min.js', impor
 const URL_GLTF = new URL('../../public/vendor/three/addons/loaders/GLTFLoader.js', import.meta.url).href;
 const URL_UTILS = new URL('../../public/vendor/three/addons/utils/BufferGeometryUtils.js', import.meta.url).href;
 export const URL_MODELO = new URL('../../public/assets/sino/autonick-sino-hq.glb', import.meta.url).href;
+/** Cópia em base64 do mesmo GLB, usada só onde o servidor não entrega .glb (página hospedada como artefato). */
+const URL_MODELO_B64 = new URL('../../public/assets/sino/autonick-sino-hq.glb.b64.txt', import.meta.url).href;
 export const URL_POSTER = new URL('../../public/assets/sino/autonick-sino-hq-poster.webp', import.meta.url).href;
 
 const chave = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -25,6 +27,13 @@ export function webglDisponivel() {
   try { const c = document.createElement('canvas'); return Boolean(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); } catch { return false; }
 }
 
+async function baixarModelo() {
+  const local = ['127.0.0.1', 'localhost'].includes(location.hostname);
+  const glb = async () => { const r = await fetch(URL_MODELO); if (!r.ok) throw new Error(`modelo respondeu ${r.status}`); return r.arrayBuffer(); };
+  const b64 = async () => { const r = await fetch(URL_MODELO_B64); if (!r.ok) throw new Error(`modelo respondeu ${r.status}`); const bin = atob((await r.text()).trim()); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
+  try { return await (local ? glb() : b64()); } catch { return local ? b64() : glb(); }
+}
+
 let promessa = null;
 /** Carrega o motor uma única vez (Three.js + GLB). Falha → as vitrines ficam com a imagem estática do app. */
 export function obterMotor() { return promessa ?? (promessa = criarMotor()); }
@@ -33,8 +42,7 @@ async function criarMotor() {
   if (!webglDisponivel()) throw new Error('WebGL indisponível neste navegador');
   const THREE = await import(URL_THREE);
   const [{ GLTFLoader }, { mergeVertices }] = await Promise.all([import(URL_GLTF), import(URL_UTILS)]);
-  const resp = await fetch(URL_MODELO); if (!resp.ok) throw new Error(`modelo respondeu ${resp.status}`);
-  const bytes = await resp.arrayBuffer();
+  const bytes = await baixarModelo();
   const gltf = await new Promise((ok, erro) => new GLTFLoader().parse(bytes, '', ok, erro));
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
