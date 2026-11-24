@@ -52,8 +52,8 @@ export function ligarBotao(btn, op = {}) {
   btn.classList.add('fb');
   if (!btn.querySelector('.fb-ico')) btn.insertAdjacentHTML('beforeend', '<span class="fb-ico" aria-hidden="true"></span><span class="fb-barra" aria-hidden="true"></span><span class="fb-onda" aria-hidden="true"></span><span class="fb-carimbo" aria-hidden="true">OK</span><span class="fb-msg" aria-hidden="true"></span>');
   const ico = btn.querySelector('.fb-ico'); const msg = btn.querySelector('.fb-msg');
-  aplicarEstilo(estilo);
   let ocupado = false, t0 = 0, timers = [];
+  aplicarEstilo(estilo);
   const limpar = () => { timers.forEach(clearTimeout); timers = []; };
   const ev = (nome, classe) => op.aoEvento?.(nome, Math.round(performance.now() - t0), classe);
   function estado(e) {

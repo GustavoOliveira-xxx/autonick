@@ -253,3 +253,28 @@ p { margin: 0; }
 .lab-main:focus { outline: none; }
 .contador-escolhas b { color: var(--tinta); background: rgb(255 255 255 / 0.55); padding: 0 0.3rem; border-radius: 3px; }
 .cartao-prop .vitrine--replica { aspect-ratio: 1280 / 652; }
+
+/* ---------- categoria I: cenas por área ---------- */
+.cena-i { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 0.5rem; min-height: 11rem; padding: 0.8rem; background: #fbf5e9 radial-gradient(circle, rgb(22 17 31 / 0.12) 1.1px, transparent 1.7px) 0 0 / 9px 9px; color: #16111f; }
+.cena-i--ck { background: #0b0719 linear-gradient(rgb(159 189 232 / 0.06) 1px, transparent 1px) 0 0 / 24px 24px; color: #e7eefb; }
+.cena-i-mock { display: grid; gap: 0.25rem; padding: 0.7rem 0.8rem; background: #fffdf8; border: 2px solid #16111f; box-shadow: 3px 3px 0 #16111f; font-size: 0.85rem; min-width: 0; }
+.cena-i--ck .cena-i-mock { background: #170f35; border: 1px solid #3b2f78; border-left: 3px solid #6fd8ff; box-shadow: none; }
+.cena-i-mock b { font: 800 1.15rem/1.05 var(--f-titulo); text-transform: uppercase; }
+.cena-i-mock b.kpi { font-size: 1.9rem; }
+.cena-i-mock span { color: inherit; opacity: 0.8; }
+.cena-i-3d { position: relative; aspect-ratio: 1; width: 100%; max-width: 11rem; justify-self: center; }
+.mini-barras { display: flex; align-items: flex-end; gap: 0.35rem; height: 5rem; border-bottom: 2px solid #16111f; }
+.mini-barras i { flex: 1; height: var(--h); background: linear-gradient(180deg, #ffb547, #e2431b); border: 2px solid #16111f; border-bottom: 0; transform-origin: bottom; }
+.mini-barras.cresce i { animation: rpb-cresce 700ms cubic-bezier(.2,.8,.2,1) both; }
+.mini-barras.cresce i:nth-child(2) { animation-delay: 90ms; } .mini-barras.cresce i:nth-child(3) { animation-delay: 180ms; } .mini-barras.cresce i:nth-child(4) { animation-delay: 270ms; }
+
+/* ---------- celular: nada passa da largura ---------- */
+.palco-bloco, .painel, .cat > *, .duas-colunas > * { min-width: 0; }
+.palco-barra > * { max-width: 100%; }
+.ctl { flex-wrap: wrap; max-width: 100%; min-width: 0; }
+.ctl select { max-width: 100%; min-width: 0; }
+.campo-lab select, .campo-lab input, .campo-lab textarea { max-width: 100%; min-width: 0; width: 100%; }
+.grupo-seg { flex-wrap: wrap; max-width: 100%; }
+.layout-combinador { grid-template-columns: minmax(0, 2.2fr) minmax(17rem, 1fr); }
+@media (max-width: 60rem) { .layout-combinador { grid-template-columns: minmax(0, 1fr); } .duas-colunas[style] { grid-template-columns: minmax(0, 1fr) !important; } }
+@media (max-width: 34rem) { .lab-main { padding-left: var(--gutter); padding-right: var(--gutter-d); } .palco-bloco { padding: 0.6rem; } .papel-ck { padding: 0.7rem; } }

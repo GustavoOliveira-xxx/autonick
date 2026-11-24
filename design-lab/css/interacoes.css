@@ -327,3 +327,6 @@
 }
 .lab[data-reduzido] .fb, .lab[data-reduzido] .fb *, .lab[data-reduzido] .ld, .lab[data-reduzido] .ld *, .lab[data-reduzido] .hc, .lab[data-reduzido] .hc * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 .lab[data-pausado] .rp *, .lab[data-pausado] .ld * { animation-play-state: paused !important; }
+.fora *, .fora { animation-play-state: paused !important; }
+.ref-f00:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--tinta); }
+.papel-ck .hc-campo input { width: 100%; }
