@@ -204,7 +204,7 @@ html:not([data-tema="claro"]) {
 @keyframes esqueleto-brilho { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
 /* botão de tema no cabeçalho (mesmo formato do botão de leitura) */
-.tema b { font: 800 1.05rem/1 var(--fonte-titulo); }
+.tema b { display: inline-block; flex: none; inline-size: 1.1rem; block-size: 1.1rem; border: 2px solid currentColor; border-radius: 50%; background: linear-gradient(90deg, currentColor 50%, transparent 50%); font-size: 0; }
 /* G07: o painel carrega em cartões com o cabeçalho metálico brilhando (um por indicador) */
 .esqueleto--cartoes { display: grid; gap: var(--esp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
 .esqueleto--cartoes .esqueleto__linha { width: 100% !important; height: 7.5rem; border-radius: 10px; position: relative; overflow: hidden; }
