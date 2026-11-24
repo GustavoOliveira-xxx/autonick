@@ -1,0 +1,15 @@
+<title>teste</title><link rel="stylesheet" href="css/lab.css"><link rel="stylesheet" href="css/replica.css"><link rel="stylesheet" href="css/interacoes.css">
+<div class="lab" style="display:grid;gap:12px;padding:12px;grid-template-columns:1fr 1fr;grid-template-areas:none"><div id="a"></div><div id="b"></div><div id="c" style="max-width:390px"></div><div id="d"></div></div>
+<script type="module">
+import { carregarFontes } from './js/fontes.js';
+import { criarReplica } from './js/replica.js';
+await carregarFontes();
+const q = new URLSearchParams(location.search);
+const cfgs = (q.get('c') || 'A00~A04~A09~J00').split('~');
+const ids = ['a','b','c','d'];
+cfgs.forEach((c, i) => {
+  const [a, e = 'E00', dir = 'J00', extra] = c.split(',');
+  const tela = a === 'BUS' ? 'business' : 'home';
+  criarReplica(document.getElementById(ids[i]), { a: a === 'BUS' ? 'A00' : a, e, dir, anim: extra || 'B00' }, { tela, largura: i === 2 ? 390 : 1280, recorte: q.get('r') || 'heroi', t: Number(q.get('t') || 4.4), tocando: false });
+});
+</script>

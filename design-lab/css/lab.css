@@ -250,3 +250,6 @@ p { margin: 0; }
 
 /* movimento reduzido (real ou simulado na bancada) */
 @media (prefers-reduced-motion: reduce) { .bt, .cartao-prop { transition: none; } }
+.lab-main:focus { outline: none; }
+.contador-escolhas b { color: var(--tinta); background: rgb(255 255 255 / 0.55); padding: 0 0.3rem; border-radius: 3px; }
+.cartao-prop .vitrine--replica { aspect-ratio: 1280 / 652; }

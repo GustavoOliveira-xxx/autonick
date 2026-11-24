@@ -1,1 +1,27 @@
 <title>AutoniCK Design Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Laboratório de direção artística, UI/UX e interações 3D do AutoniCK, uma iniciativa da CK Group.">
+<meta name="theme-color" content="#18111f">
+<link rel="icon" href="public/assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="css/lab.css">
+<link rel="stylesheet" href="css/replica.css">
+<link rel="stylesheet" href="css/interacoes.css">
+<div class="lab" id="lab">
+  <header class="lab-topo">
+    <a class="lab-marca" href="#inicio"><img src="public/assets/brand/autonick-geral-320.webp" alt="" width="40" height="39"><span><b>Autoni<i>CK</i> Design Lab</b><small>Direção artística · UI/UX · 3D</small></span></a>
+    <div class="controles" role="group" aria-label="Controles de todas as animações">
+      <button type="button" class="bt" id="ctl-tocar" aria-pressed="false" title="Pausa ou retoma todas as animações">❚❚ Pausar tudo</button>
+      <button type="button" class="bt" id="ctl-reiniciar" title="Volta o palco para o início do ciclo">↺ Reiniciar</button>
+      <button type="button" class="bt ctl--opcional" id="ctl-laco" aria-pressed="true" title="Repetir em laço ou tocar uma vez">⟲ Laço</button>
+      <span class="ctl ctl--opcional"><label for="ctl-vel">Velocidade</label><select id="ctl-vel"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></span>
+      <span class="ctl ctl--opcional"><label for="ctl-int">Efeitos</label><input id="ctl-int" type="range" min="0" max="150" step="10" value="100"><output for="ctl-int" id="ctl-int-v">100%</output></span>
+      <button type="button" class="bt" id="ctl-reduzido" aria-pressed="false" title="Simula a preferência de movimento reduzido do sistema">Movimento reduzido</button>
+      <span class="medidor" id="medidor" title="Medição real neste navegador: tempo médio para desenhar um quadro 3D">medindo…</span>
+      <a class="bt bt--ouro contador-escolhas" href="#escolhas">Minhas escolhas <b id="contador">0/10</b></a>
+    </div>
+  </header>
+  <nav class="lab-nav" aria-label="Categorias" id="nav"></nav>
+  <main class="lab-main" id="conteudo" tabindex="-1"></main>
+</div>
+<noscript><p style="padding:16px">O AutoniCK Design Lab precisa de JavaScript para funcionar.</p></noscript>
+<script type="module" src="js/app.js"></script>
