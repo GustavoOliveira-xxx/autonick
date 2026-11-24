@@ -16,7 +16,8 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E04 | Equipe em abas, "Adicionar colaborador" em modal, níveis por área | Implementado aguardando validação manual | equipe.spec (6), capturas |
 | E04 | Agenda: calendário dia/semana/mês/lista, grade semanal, exceções por data | Implementado aguardando validação manual | agenda-excecoes.test, servicos/ordens e2e |
 | E04 | Avisos de conflito considerando feriados e horários especiais | Concluído e validado | agenda-excecoes.test |
-| E04 | Compromisso avulso (sem solicitação/OS) e agenda por funcionário | Não iniciado | fora do escopo atual do banco; precisa de modelo novo |
+| E04 | Compromissos internos e bloqueios com proteção contra conflito | Concluído e validado | agenda-excecoes.test (compromissos), servicos e2e, fluxo real |
+| E04 | Agenda individual por funcionário com bloqueio automático | Não iniciado | conflitos geram aviso com confirmação, não bloqueio |
 | E05 | Busca global, Ctrl+K, favoritos de módulos, atividades, vendas, funil | Não iniciado | |
 | E06 | Financeiro em abas, painel orientado a ação, metas | Não iniciado | |
 | E07 | OS simplificada, checklists, "Sem responsável definido", documentos | Não iniciado | |

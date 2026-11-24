@@ -16,7 +16,10 @@ import { campoTexto, campoSelecao, grupoOpcoes, erroNoCampo, limparErros, ocupad
 import { abrirDialogo } from '../../ui/dialogo.js';
 import { abas } from '../../ui/abas.js';
 import { montarGrade, textoHorario } from '../../domain/servicos.js';
-import { salvarHorarios, excecoesAgenda, salvarExcecaoAgenda, removerExcecaoAgenda, DIAS, TURNO } from '../../data/servicos.js';
+import { salvarHorarios, excecoesAgenda, salvarExcecaoAgenda, removerExcecaoAgenda, compromissosAgenda, salvarCompromissoAgenda, cancelarCompromissoAgenda,
+  DIAS, TURNO } from '../../data/servicos.js';
+import { abrirModal } from '../../ui/modal.js';
+import { novaChave } from '../../data/empresas.js';
 import { agendaOperacional, ESTADO_OS } from '../../data/ordens.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, gradeTexto, dataDeHoje, somarDias, formatarData } from './comum.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
@@ -132,7 +135,7 @@ function rotuloDoDia(d, grade, excecoes) {
 function gradeDeHoras(dias, a, excecoes) {
   const minutos = [...a.grade.flatMap((g) => g.intervalos), ...[...excecoes.values()].flatMap((x) => x.intervalos)]
     .flatMap((i) => [paraMin(i.abre), paraMin(i.fecha)]);
-  for (const x of a.confirmados) { minutos.push(minutosSp(x.inicio)); minutos.push(Math.min(24 * 60, minutosSp(x.inicio) + (Date.parse(x.fim) - Date.parse(x.inicio)) / 60000)); }
+  for (const x of [...a.confirmados, ...(a.compromissos ?? [])]) { minutos.push(minutosSp(x.inicio)); minutos.push(Math.min(24 * 60, minutosSp(x.inicio) + (Date.parse(x.fim) - Date.parse(x.inicio)) / 60000)); }
   const h0 = Math.max(0, Math.floor((minutos.length ? Math.min(...minutos) : 8 * 60) / 60));
   const h1 = Math.min(24, Math.max(h0 + 4, Math.ceil((minutos.length ? Math.max(...minutos) : 18 * 60) / 60)));
   const total = (h1 - h0) * 60;
@@ -146,6 +149,7 @@ function gradeDeHoras(dias, a, excecoes) {
   const colunas = dias.map((d) => {
     const { intervalos } = atendimentoDoDia(d, a.grade, excecoes);
     const itens = a.confirmados.filter((x) => diaSp(x.inicio) === d);
+    const internos = (a.compromissos ?? []).filter((c) => diaSp(c.inicio) === d);
     const faixas = intervalos.map((i) => pos(el('div', { class: 'calendario__aberto', 'aria-hidden': 'true' }), paraMin(i.abre), paraMin(i.fecha)));
     const eventos = itens.map((x) => {
       const ini = minutosSp(x.inicio);
@@ -154,13 +158,16 @@ function gradeDeHoras(dias, a, excecoes) {
       li.classList.add('calendario__evento');
       if (x.os_id) li.classList.add('calendario__evento--os');
       return pos(li, ini, fim);
-    });
+    }).concat(internos.map((c) => {
+      const ini = minutosSp(c.inicio);
+      return pos(itemInterno(c, 'calendario__evento'), ini, Math.min(h1 * 60, ini + (Date.parse(c.fim) - Date.parse(c.inicio)) / 60000));
+    }));
     const hoje = d === dataDeHoje();
     return el('section', { class: `calendario__dia${hoje ? ' calendario__dia--hoje' : ''}`, 'aria-labelledby': `dia-${d}`, 'data-dia': d },
       el('h3', { id: `dia-${d}`, class: 'calendario__cab' }, el('span', {}, `${DIAS_CURTOS[diaDaSemana(d)]} `), el('strong', {}, d.slice(8)),
         el('span', { class: 'visualmente-oculto' }, `, ${DIAS[diaDaSemana(d)]}, ${formatarData(d)}`), rotuloDoDia(d, a.grade, excecoes)),
       el('div', { class: 'calendario__corpo' }, ...faixas,
-        itens.length ? el('ul', { class: 'calendario__eventos', role: 'list' }, ...eventos) : el('p', { class: 'visualmente-oculto' }, 'Nenhum horário confirmado.')));
+        eventos.length ? el('ul', { class: 'calendario__eventos', role: 'list' }, ...eventos) : el('p', { class: 'visualmente-oculto' }, 'Nenhum horário confirmado.')));
   });
   const grade = el('div', { class: `calendario calendario--${dias.length === 1 ? 'dia' : 'semana'}` }, horas, ...colunas);
   grade.style.setProperty('--linhas', String(h1 - h0));
@@ -174,13 +181,15 @@ function gradeDoMes(r, a, excecoes) {
   const cab = DIAS_CURTOS.map((n) => el('span', { class: 'mes__semana', 'aria-hidden': 'true' }, n));
   const celulas = dias.map((d) => {
     const itens = a.confirmados.filter((x) => diaSp(x.inicio) === d);
+    const internos = (a.compromissos ?? []).filter((c) => diaSp(c.inicio) === d);
     const abrir = el('button', { type: 'button', class: 'mes__numero', 'aria-label': `Abrir ${DIAS[diaDaSemana(d)]}, ${formatarData(d)}: ${itens.length} ${itens.length === 1 ? 'horário' : 'horários'}` }, String(Number(d.slice(8))));
     abrir.addEventListener('click', () => { periodo = { ...periodo, de: d, visao: 'dia' }; carregar(); });
     return el('section', { class: `mes__dia${d.slice(0, 7) === r.mes ? '' : ' mes__dia--fora'}${d === dataDeHoje() ? ' mes__dia--hoje' : ''}`, 'data-dia': d, 'aria-label': formatarData(d) },
       abrir, rotuloDoDia(d, a.grade, excecoes),
-      itens.length ? el('ul', { class: 'mes__itens', role: 'list' }, ...itens.slice(0, 3).map((x) => el('li', {},
+      itens.length || internos.length ? el('ul', { class: 'mes__itens', role: 'list' }, ...itens.slice(0, 3).map((x) => el('li', {},
         el('a', { href: linkCompromisso(x) }, `${textoHorario(x.inicio).split(' ').pop()} ${x.os_id ? `OS ${x.os_numero}` : `Sol. ${x.solicitacao_numero}`}`))),
-        itens.length > 3 ? el('li', { class: 'campo__ajuda' }, `+${itens.length - 3}`) : null) : null);
+        ...internos.slice(0, Math.max(0, 3 - itens.length)).map((c) => itemInterno(c, 'mes__interno')),
+        itens.length + internos.length > 3 ? el('li', { class: 'campo__ajuda' }, `+${itens.length + internos.length - 3}`) : null) : null);
   });
   return el('div', { class: 'calendario__rolagem' }, el('div', { class: 'mes' }, ...cab, ...celulas));
 }
@@ -188,9 +197,11 @@ function gradeDoMes(r, a, excecoes) {
 function listaPorDia(dias, a, excecoes) {
   return dias.map((d) => {
     const itens = a.confirmados.filter((x) => diaSp(x.inicio) === d);
+    const internos = (a.compromissos ?? []).filter((c) => diaSp(c.inicio) === d);
     return el('section', { class: 'pilha', 'aria-labelledby': `dia-${d}`, 'data-dia': d },
       el('h3', { id: `dia-${d}` }, `${DIAS[diaDaSemana(d)]}, ${formatarData(d)} `, rotuloDoDia(d, a.grade, excecoes)),
-      itens.length ? el('ul', { class: 'pilha' }, ...itens.map(cartaoCompromisso)) : el('p', { class: 'campo__ajuda' }, 'Nenhum horário confirmado.'));
+      itens.length || internos.length ? el('ul', { class: 'pilha' }, ...itens.map(cartaoCompromisso), ...internos.map((c) => itemInterno(c, 'cartao')))
+        : el('p', { class: 'campo__ajuda' }, 'Nenhum horário confirmado.'));
   });
 }
 
@@ -218,6 +229,84 @@ function acompanharLembrete(confirmados, lugar) {
   if (espera < 6 * 60 * 60 * 1000) relogioLembrete = setTimeout(() => acompanharLembrete(confirmados, lugar), espera);
 }
 
+// --- Compromissos internos (visita, reunião, bloqueio) ---------------------------------------------------
+
+let equipeAtual = [];
+const DURACOES = [[15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora'], [90, '1 hora e meia'], [120, '2 horas'], [180, '3 horas'],
+  [240, '4 horas'], [480, '8 horas'], [720, '12 horas']];
+
+function itemInterno(c, classe) {
+  const bloqueio = c.tipo === 'bloqueio';
+  const abrir = el('button', { type: 'button', class: 'evento-interno__abrir', 'aria-label': `${bloqueio ? 'Bloqueio' : 'Compromisso'}: ${c.titulo}, ${textoHorario(c.inicio, c.fim)}` },
+    el('strong', {}, textoHorario(c.inicio, c.fim).split(' ').slice(-3).join(' ')), ' ', c.titulo);
+  abrir.addEventListener('click', () => abrirCompromisso(c, equipeAtual));
+  return el('li', { class: `${classe} evento-interno${bloqueio ? ' evento-interno--bloqueio' : ''}`, 'data-interno': c.id },
+    abrir, c.responsavel ? el('p', { class: 'campo__ajuda' }, c.responsavel) : null,
+    c.avisos?.length ? el('p', { class: 'campo__ajuda' }, `Gravado com aviso: ${c.avisos.map((v) => v.mensagem).join(' ')}`) : null);
+}
+
+/** Novo ou alterar compromisso num modal. Conflitos voltam como avisos; "Salvar mesmo assim" grava com a confirmação. */
+function abrirCompromisso(c, equipe) {
+  const podeAlterar = ctx.pode('agenda.alterar');
+  const inicioSp = c ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).format(new Date(c.inicio)).split(' ') : [periodo.de, '09:00'];
+  const duracao = c ? Math.round((Date.parse(c.fim) - Date.parse(c.inicio)) / 60000) : 60;
+  const avisosModal = el('div', { 'aria-live': 'polite' });
+  const form = el('form', { id: 'form-compromisso', class: 'pilha', novalidate: true },
+    avisosModal,
+    grupoOpcoes({ nome: 'tipo', legenda: 'Tipo', opcoes: [['compromisso', 'Compromisso (visita, reunião)'], ['bloqueio', 'Bloquear horário']], valor: c?.tipo ?? 'compromisso' }),
+    campoTexto({ nome: 'titulo', rotulo: 'Título', obrigatorio: true, max: 120, valor: c?.titulo ?? '', id: 'compromisso-titulo', ajuda: 'Por exemplo: "Visita ao cliente" ou "Almoço da equipe".' }),
+    el('div', { class: 'grade-semana__turno' },
+      campoTexto({ nome: 'data', rotulo: 'Data', tipo: 'date', obrigatorio: true, valor: inicioSp[0], id: 'compromisso-data' }),
+      campoTexto({ nome: 'hora', rotulo: 'Hora', tipo: 'time', obrigatorio: true, valor: inicioSp[1], id: 'compromisso-hora' }),
+      campoSelecao({ nome: 'duracao_min', rotulo: 'Duração', opcoes: DURACOES.some(([m]) => m === duracao) ? DURACOES : [[duracao, `${duracao} minutos`], ...DURACOES],
+        valor: String(duracao), vazio: null, id: 'compromisso-duracao' })),
+    campoSelecao({ nome: 'responsavel_auth_id', rotulo: 'Responsável (opcional)', opcoes: equipe.map((m) => [m.auth_user_id, m.nome]), valor: c?.responsavel_auth_id ?? '', vazio: 'Ninguém em especial', id: 'compromisso-responsavel' }),
+    campoTexto({ nome: 'observacao', rotulo: 'Observação (opcional)', linhas: 2, max: 500, valor: c?.observacao ?? '', id: 'compromisso-observacao' }));
+  const salvar = el('button', { type: 'submit', class: 'botao', form: 'form-compromisso' }, c ? 'Salvar alterações' : 'Criar compromisso');
+  const cancelarComp = c && podeAlterar ? el('button', { type: 'button', class: 'botao botao--perigo' }, 'Cancelar compromisso') : null;
+  let alterado = false;
+  form.addEventListener('input', () => { alterado = true; avisosModal.replaceChildren(); salvar.textContent = c ? 'Salvar alterações' : 'Criar compromisso'; aceitar = false; });
+  let aceitar = false;
+  const modal = abrirModal({ titulo: c ? (c.tipo === 'bloqueio' ? 'Bloqueio de horário' : 'Compromisso') : 'Novo compromisso',
+    descricao: c ? `Registrado por ${c.criado_por ?? 'pessoa removida'}.` : 'Fica na agenda da empresa. Sobreposições e horários fora do atendimento geram aviso antes de gravar.',
+    corpo: form, rodape: [cancelarComp, salvar].filter(Boolean), tamanho: 'estreito', protegerAlteracoes: () => alterado });
+  if (!podeAlterar) { for (const campo of form.elements) campo.disabled = true; salvar.hidden = true; }
+  cancelarComp?.addEventListener('click', () => ocupado(cancelarComp, async () => {
+    const ok = await abrirDialogo({ titulo: 'Cancelar este compromisso?', mensagens: ['Ele sai da agenda. O registro continua no histórico da empresa.'], rotuloConfirmar: 'Cancelar compromisso', rotuloCancelar: 'Manter' });
+    if (!ok) return;
+    alterado = false;
+    modal.fechar();
+    await executar(`cancelar-comp-${c.id}`, null, (k) => cancelarCompromissoAgenda(c.id, c.versao, k), () => anunciar('sucesso', 'Compromisso cancelado.'));
+  }));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    limparErros(form);
+    const d = valores(form);
+    if (!d.titulo || d.titulo.trim().length < 2) return erroNoCampo(form, 'titulo', 'Dê um título (2 a 120 caracteres).');
+    if (!d.data) return erroNoCampo(form, 'data', 'Escolha a data.');
+    if (!d.hora) return erroNoCampo(form, 'hora', 'Escolha a hora.');
+    const dados = { tipo: d.tipo || 'compromisso', titulo: d.titulo.trim(), observacao: d.observacao || null, responsavel_auth_id: d.responsavel_auth_id || null,
+      inicio: `${d.data}T${d.hora}:00-03:00`, duracao_min: Number(d.duracao_min) };
+    return ocupado(salvar, async () => {
+      // Cada tentativa usa uma chave nova: o aviso não grava nada, e a confirmação é outra operação.
+      const r = await executar(`comp-${c?.id ?? 'novo'}-${aceitar ? 'aceito' : 'tentativa'}`, form,
+        (k) => salvarCompromissoAgenda(ctx.id, c?.id ?? null, dados, aceitar, c?.versao ?? null, k), () => {});
+      if (!r) return;
+      if (!r.gravado) {
+        avisosModal.replaceChildren(aviso('alerta', 'Confira antes de gravar.', el('ul', {}, ...r.avisos.map((v) => el('li', {}, v.mensagem))),
+          el('p', {}, 'Se estiver certo, use "Salvar mesmo assim". Nada foi gravado ainda.')));
+        aceitar = true;
+        salvar.textContent = 'Salvar mesmo assim';
+        avisosModal.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      alterado = false;
+      modal.fechar();
+      anunciar('sucesso', c ? 'Compromisso alterado.' : 'Compromisso criado.', r.avisos.length ? el('p', {}, 'Gravado com aviso de conflito, como você confirmou.') : null);
+    });
+  });
+}
+
 function painelCalendario(r, a, excecoes) {
   const dias = [];
   for (let d = r.inicio; d <= r.fim; d = somarDias(d, 1)) dias.push(d);
@@ -228,8 +317,12 @@ function painelCalendario(r, a, excecoes) {
     `Nº ${x.numero} · ${x.servico} · ${x.cliente_nome}`);
   const lembrete = el('div', { id: 'lembrete-agenda' });
   acompanharLembrete(a.confirmados, lembrete);
+  const novo = ctx.pode('agenda.alterar') ? el('button', { type: 'button', class: 'botao', id: 'novo-compromisso' }, 'Novo compromisso') : null;
+  novo?.addEventListener('click', () => abrirCompromisso(null, a.equipe));
+  equipeAtual = a.equipe;
   return el('div', { class: 'pilha-grande' },
     lembrete,
+    novo ? el('div', { class: 'grupo-botoes' }, novo, el('span', { class: 'campo__ajuda' }, 'Visita, reunião ou bloqueio de horário. Conflitos geram aviso antes de gravar.')) : null,
     formPeriodo(a.equipe),
     navegacaoPeriodo(r),
     el('p', { class: 'campo__ajuda' }, a.aviso),
@@ -238,7 +331,7 @@ function painelCalendario(r, a, excecoes) {
     el('section', { class: 'pilha', 'aria-labelledby': 'titulo-confirmados', id: 'confirmados' },
       el('h2', { id: 'titulo-confirmados', class: 'visualmente-oculto' }, `Horários confirmados de ${formatarData(r.inicio)} a ${formatarData(r.fim)}`),
       ...[corpo].flat(),
-      a.confirmados.length ? null : el('p', { class: 'campo__ajuda' }, 'Nenhum horário confirmado neste período.')),
+      a.confirmados.length || a.compromissos?.length ? null : el('p', { class: 'campo__ajuda' }, 'Nenhum horário confirmado neste período.')),
     el('div', { class: 'agenda-pendencias' },
       el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-propostos' }, el('h2', { id: 'titulo-propostos' }, `Horários propostos aguardando resposta (${a.propostos.length})`),
         a.propostos.length ? el('ul', { class: 'pilha', id: 'propostos' }, ...a.propostos.map((x) => el('li', { class: 'pilha' },
@@ -381,8 +474,10 @@ async function carregar() {
     }
     const r = intervalo();
     const hoje = dataDeHoje();
-    const [a, lista] = await Promise.all([agendaOperacional(ctx.id, r.inicio, r.fim, periodo.responsavel || null),
-      excecoesAgenda(ctx.id, r.inicio < hoje ? r.inicio : hoje, somarDias(r.inicio < hoje ? r.inicio : hoje, 400)).catch(() => [])]);
+    const [a, lista, internos] = await Promise.all([agendaOperacional(ctx.id, r.inicio, r.fim, periodo.responsavel || null),
+      excecoesAgenda(ctx.id, r.inicio < hoje ? r.inicio : hoje, somarDias(r.inicio < hoje ? r.inicio : hoje, 400)).catch(() => []),
+      compromissosAgenda(ctx.id, r.inicio, r.fim).catch(() => [])]);
+    a.compromissos = (Array.isArray(internos) ? internos : []).filter((c) => !periodo.responsavel || c.responsavel_auth_id === periodo.responsavel);
     const excecoes = new Map((Array.isArray(lista) ? lista : []).map((x) => [x.data, x]));
     const futuras = new Map([...excecoes].filter(([d]) => d >= hoje));
     concluirCarregamento(area);

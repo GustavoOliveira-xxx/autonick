@@ -80,3 +80,10 @@ export const excecoesAgenda = (empresaId, de, ate) => neon.rpc('excecoes_agenda'
 export const salvarExcecaoAgenda = (empresaId, data, tipo, intervalos, motivo, chave) =>
   neon.rpc('salvar_excecao_agenda', { p_empresa_id: empresaId, p_data: data, p_tipo: tipo, p_intervalos: intervalos, p_motivo: motivo, p_operation_key: chave });
 export const removerExcecaoAgenda = (excecaoId, chave) => neon.rpc('remover_excecao_agenda', { p_excecao_id: excecaoId, p_operation_key: chave });
+
+// --- Compromissos internos (E04): compromisso ou bloqueio de horário, com avisos de conflito ------------------
+export const compromissosAgenda = (empresaId, de, ate) => neon.rpc('compromissos_agenda', { p_empresa_id: empresaId, p_de: de, p_ate: ate });
+export const salvarCompromissoAgenda = (empresaId, compromissoId, dados, aceitarAvisos, versao, chave) => neon.rpc('salvar_compromisso_agenda',
+  { p_empresa_id: empresaId, p_compromisso_id: compromissoId, p_dados: dados, p_aceitar_avisos: aceitarAvisos, p_expected_version: versao, p_operation_key: chave });
+export const cancelarCompromissoAgenda = (compromissoId, versao, chave) =>
+  neon.rpc('cancelar_compromisso_agenda', { p_compromisso_id: compromissoId, p_expected_version: versao, p_operation_key: chave });

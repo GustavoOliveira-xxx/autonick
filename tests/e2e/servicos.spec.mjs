@@ -93,6 +93,16 @@ async function simular(context, { permissoes = TODAS, tipo = 'business', erros =
         solicitacoes_sem_horario: [{ solicitacao_id: 's2', numero: 8, servico: 'Pintura de parede', cliente_nome: 'Cliente César', estado: 'nova', preferencia: { datas: ['2099-01-12'], turno: 'tarde' } }] });
       case '/api/rpc/salvar_horarios_empresa': return json(200, { grade: corpo.p_grade });
       case '/api/rpc/excecoes_agenda': return json(200, estado.excecoes ?? []);
+      case '/api/rpc/compromissos_agenda': return json(200, estado.compromissos ?? []);
+      case '/api/rpc/salvar_compromisso_agenda': {
+        estado.tentativas = [...(estado.tentativas ?? []), corpo];
+        const avisos = [{ tipo: 'compromisso', mensagem: 'Sobrepõe o compromisso "Visita" (10/01 10:00 a 11:00).' }];
+        if (!corpo.p_aceitar_avisos) return json(200, { gravado: false, avisos });
+        const c = { id: 'c1', tipo: corpo.p_dados.tipo, titulo: corpo.p_dados.titulo, inicio: corpo.p_dados.inicio,
+          fim: new Date(Date.parse(corpo.p_dados.inicio) + corpo.p_dados.duracao_min * 60000).toISOString(), avisos, versao: 1, criado_por: 'Pessoa' };
+        estado.compromissos = [c];
+        return json(200, { gravado: true, avisos, compromisso: c });
+      }
       case '/api/rpc/salvar_excecao_agenda': {
         const x = { id: 'x1', data: corpo.p_data, tipo: corpo.p_tipo, intervalos: corpo.p_intervalos, motivo: corpo.p_motivo, criado_por: 'Pessoa' };
         estado.excecoes = [x];
@@ -239,6 +249,30 @@ test('agenda E04: visão Mês e exceção de horário especial validada antes de
   await expect(page.getByRole('tab', { name: /Feriados e exceções/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#lista-excecoes')).toContainText('Horário especial: 09:00 às 12:00');
   await axe(page);
+});
+
+test('agenda E04: compromisso com conflito só grava depois de "Salvar mesmo assim", com chave nova [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/agenda.html?id=${EMP}`);
+  await page.getByRole('button', { name: 'Novo compromisso' }).click();
+  const modal = page.getByRole('dialog', { name: 'Novo compromisso' });
+  await modal.getByRole('button', { name: 'Criar compromisso' }).click();
+  await expect(page.locator('#compromisso-titulo-erro')).toContainText('título');
+  await page.locator('#compromisso-titulo').fill('Reunião com fornecedor');
+  await page.locator('#compromisso-hora').fill('10:30');
+  await modal.getByRole('button', { name: 'Criar compromisso' }).click();
+  await expect(modal).toContainText('Sobrepõe o compromisso "Visita"');
+  await expect(modal).toContainText('Nada foi gravado ainda.');
+  await axe(page);
+  await modal.getByRole('button', { name: 'Salvar mesmo assim' }).click();
+  await expect(page.locator('#avisos')).toContainText('Compromisso criado.');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const [primeira, segunda] = estado.tentativas;
+  expect(primeira.p_aceitar_avisos).toBe(false);
+  expect(segunda.p_aceitar_avisos).toBe(true);
+  expect(segunda.p_operation_key).not.toEqual(primeira.p_operation_key);
+  expect(segunda.p_dados).toMatchObject({ tipo: 'compromisso', titulo: 'Reunião com fornecedor', duracao_min: 60 });
+  await expect(page.locator('[data-interno="c1"]')).toContainText('Reunião com fornecedor');
 });
 
 test('cliente pede orçamento: estimativa do banco, respostas sem preço, sem endereço, preferência opcional [simulação]', async ({ page, context }) => {

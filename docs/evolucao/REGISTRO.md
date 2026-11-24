@@ -56,4 +56,7 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   Horários de atendimento (grade semanal com 2 turnos e cópia de segunda para os dias úteis) e Feriados e exceções.
 - Migration `202611260001_agenda_excecoes`: exceções por data (fechado ou horário especial), consideradas nos avisos de conflito
   ao marcar horário (dia fechado avisa com o motivo; horário especial substitui a grade naquele dia). Testes em `tests/db/agenda-excecoes.test.mjs`.
-- Não implementado nesta etapa (registrado na matriz): compromisso avulso sem solicitação/OS e agenda por funcionário.
+- Migration `202611260002_compromissos_agenda`: compromissos internos (visita, reunião) e bloqueios de horário, com responsável opcional.
+  Conflito (sobreposição, bloqueio, fora do horário, dia fechado) volta como aviso e nada é gravado; "Salvar mesmo assim" grava com
+  outra chave de operação e guarda os avisos aceitos. Os avisos ao marcar horário de solicitação ou OS passam a considerar os compromissos.
+- Não implementado (registrado na matriz): agenda individual por funcionário com bloqueio automático.

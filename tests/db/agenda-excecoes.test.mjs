@@ -111,16 +111,62 @@ test('avisos ao marcar horário: dia fechado e horário especial substituem a gr
   assert.equal(avisos(especial, '15:30')[0].tipo, 'fora_do_horario', 'termina depois do fim do horário especial');
 });
 
-test('rollback da 202611260001 sem resíduo e reaplicação', opcoes, () => {
+const compromisso = (p, dados, { aceitar = false, id = null, versao = null } = {}) =>
+  rpc(p, 'salvar_compromisso_agenda', `${q(E.a)}, ${q(id)}, ${j(dados)}, ${aceitar}, ${versao ?? 'NULL'}, ${q(k())}`);
+const sp = (data, hora) => `${data}T${hora}:00-03:00`;
+
+test('compromissos: conflito avisa e só grava com confirmação; bloqueio entra nos avisos de solicitação e OS', opcoes, () => {
+  const d = dia(30);
+  let r = JSON.parse(compromisso(P.O, { titulo: 'Visita técnica', inicio: sp(d, '10:00'), duracao_min: 60 }).saida);
+  assert.equal(r.gravado, true, 'sem conflito grava direto');
+  const visita = r.compromisso;
+  r = JSON.parse(compromisso(P.O, { titulo: 'Reunião com fornecedor', inicio: sp(d, '10:30'), duracao_min: 60 }).saida);
+  assert.equal(r.gravado, false);
+  assert.equal(r.avisos[0].tipo, 'compromisso');
+  assert.match(r.avisos[0].mensagem, /Visita técnica/);
+  assert.equal(ok(P.O, 'compromissos_agenda', `${q(E.a)}, ${q(d)}, ${q(d)}`).length, 1, 'nada gravado sem confirmação');
+  r = JSON.parse(compromisso(P.O, { titulo: 'Reunião com fornecedor', inicio: sp(d, '10:30'), duracao_min: 60 }, { aceitar: true }).saida);
+  assert.equal(r.gravado, true);
+  assert.equal(r.compromisso.avisos.length, 1, 'o aviso aceito fica registrado no compromisso');
+  // Alterar o próprio compromisso não conflita consigo mesmo.
+  r = JSON.parse(compromisso(P.O, { titulo: 'Visita técnica (cliente VIP)', inicio: sp(d, '09:30'), duracao_min: 60 }, { id: visita.id, versao: visita.versao }).saida);
+  assert.equal(r.gravado, true);
+  falha(compromisso(P.O, { titulo: 'Velho', inicio: sp(d, '15:00'), duracao_min: 30 }, { id: visita.id, versao: visita.versao }), 'VERSION_CONFLICT|mudou');
+  // Fora do horário e bloqueio.
+  r = JSON.parse(compromisso(P.O, { tipo: 'bloqueio', titulo: 'Manutenção da bancada', inicio: sp(d, '20:00'), duracao_min: 60 }).saida);
+  assert.equal(r.avisos[0].tipo, 'fora_do_horario');
+  r = JSON.parse(compromisso(P.O, { tipo: 'bloqueio', titulo: 'Manutenção da bancada', inicio: sp(d, '14:00'), duracao_min: 120 }).saida);
+  assert.equal(r.gravado, true);
+  const av = JSON.parse(adm(`SELECT app_private.avisos_horario(${q(E.a)}, '00000000-0000-4000-8000-000000000000', ${q(sp(d, '15:00'))}::timestamptz, ${q(sp(d, '15:30'))}::timestamptz)::text`));
+  assert.equal(av[0].tipo, 'bloqueio');
+  assert.match(av[0].mensagem, /Horário bloqueado: "Manutenção da bancada"/);
+  // Validações e acesso.
+  falha(compromisso(P.O, { titulo: 'X', inicio: sp(d, '09:00'), duracao_min: 30 }), 'título');
+  falha(compromisso(P.O, { titulo: 'Longo demais', inicio: sp(d, '09:00'), duracao_min: 800 }), 'duração');
+  falha(compromisso(P.O, { titulo: 'Sem hora', inicio: 'amanhã cedo', duracao_min: 30 }), 'data, hora');
+  falha(compromisso(P.O, { titulo: 'Responsável de fora', inicio: sp(d, '09:00'), duracao_min: 30, responsavel_auth_id: P.OUT.id }), 'equipe');
+  falha(compromisso(P.OUT, { titulo: 'Invasão', inicio: sp(d, '09:00'), duracao_min: 30 }), 'TENANT_FORBIDDEN|acesso');
+  falha(rpc(P.OUT, 'compromissos_agenda', `${q(E.a)}, ${q(d)}, ${q(d)}`), 'TENANT_FORBIDDEN|acesso');
+  falha(rpc(P.OUT, 'cancelar_compromisso_agenda', `${q(visita.id)}, 2, ${q(k())}`), 'NOT_FOUND|não encontrado');
+  falha(comoPapel(banco.url, { papel: 'authenticated', sub: P.O.id }, 'SELECT count(*) FROM public.compromissos_agenda'), 'permission denied');
+  const cancelado = ok(P.O, 'cancelar_compromisso_agenda', `${q(visita.id)}, 2, ${q(k())}`);
+  assert.equal(cancelado.estado, 'cancelado');
+  assert.equal(ok(P.O, 'compromissos_agenda', `${q(E.a)}, ${q(d)}, ${q(d)}`).length, 2);
+});
+
+test('rollback da 202611260002 e da 202611260001 (nessa ordem) sem resíduo e reaplicação', opcoes, () => {
   const impressao = readFileSync(new URL('../../db/tests/impressao-esquema.sql', import.meta.url), 'utf8').trim().replace(/;$/, '');
   const foto = () => adm(`SELECT md5(string_agg(tipo || '|' || objeto || '|' || impressao, E'\\n' ORDER BY tipo, objeto)) FROM (${impressao}) x`);
   const depois = foto();
   adm('DELETE FROM public.excecoes_agenda');
+  adm('DELETE FROM public.compromissos_agenda');
+  aplicarArquivo(banco.url, 'db/migrations_propostas/202611260002_compromissos_agenda.down.sql');
   aplicarArquivo(banco.url, 'db/migrations_propostas/202611260001_agenda_excecoes.down.sql');
   const sem = foto();
   assert.notEqual(sem, depois);
   assert.equal(adm("SELECT count(*) FROM app_private.historico_migracoes WHERE id = '202611260001'"), '0');
   assert.equal(adm("SELECT to_regclass('public.excecoes_agenda') IS NULL"), 't');
   aplicarArquivo(banco.url, 'db/migrations_propostas/202611260001_agenda_excecoes.sql');
-  assert.equal(foto(), depois, 'reaplicada, volta ao mesmo esquema');
+  aplicarArquivo(banco.url, 'db/migrations_propostas/202611260002_compromissos_agenda.sql');
+  assert.equal(foto(), depois, 'reaplicadas, voltam ao mesmo esquema');
 });

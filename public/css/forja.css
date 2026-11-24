@@ -558,3 +558,16 @@ html[data-tema="claro"] .nivel-acesso label { background: #fff; }
 .calendario__cab .chip, .mes__dia .chip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .grade-permissoes { align-items: start; }
 .modulo-permissoes { align-content: start; }
+/* Compromissos internos: borda verde; bloqueio listrado */
+.evento-interno { list-style: none; }
+.calendario__evento.evento-interno { position: absolute; inset-inline: 4px; top: var(--topo); height: var(--altura); min-height: 30px; overflow: hidden; padding: 4px 8px; z-index: 1;
+  border-radius: 8px; border-left: 4px solid #3ecf8e; background: color-mix(in srgb, var(--superficie) 86%, #3ecf8e); font-size: 0.82rem; }
+.evento-interno--bloqueio.calendario__evento { border-left-color: #9a8fb0;
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--superficie) 92%, #9a8fb0) 0 8px, color-mix(in srgb, var(--superficie) 80%, #9a8fb0) 8px 16px); }
+.evento-interno__abrir { all: unset; display: block; cursor: pointer; color: var(--texto); line-height: 1.25; }
+.evento-interno__abrir:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; border-radius: 4px; }
+.evento-interno p { margin: 2px 0 0; }
+.mes__interno .evento-interno__abrir { display: block; padding: 2px 6px; border-radius: 6px; background: rgb(62 207 142 / 0.16); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.78rem; }
+.mes__interno.evento-interno--bloqueio .evento-interno__abrir { background: rgb(154 143 176 / 0.22); }
+li.cartao.evento-interno { border-left: 4px solid #3ecf8e; }
+li.cartao.evento-interno--bloqueio { border-left-color: #9a8fb0; }
