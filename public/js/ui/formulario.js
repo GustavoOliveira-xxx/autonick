@@ -76,14 +76,41 @@ export function erroNoCampo(form, nome, mensagem) {
   return true;
 }
 
+const LIMIAR_PROCESSANDO_MS = 120;
+const NS_SVG = 'http://www.w3.org/2000/svg';
+
+/**
+ * Indicador F14 (CK Forja Noturna): contorno dourado que percorre a borda do botão enquanto a operação real roda.
+ * Só aparece se a operação passar do limiar anti-piscar; em salvamentos de formulário, o sininho compacto (G08)
+ * acompanha no canto. Não muda o tamanho do botão e não indica sucesso: some quando a operação termina.
+ */
+function mostrarProcessando(botao) {
+  botao.classList.add('botao--processando');
+  const svg = document.createElementNS(NS_SVG, 'svg');
+  svg.setAttribute('class', 'contorno-corre'); svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+  const rect = document.createElementNS(NS_SVG, 'rect'); rect.setAttribute('pathLength', '100');
+  svg.append(rect); botao.append(svg);
+  if (botao.type === 'submit') {
+    const sino = document.createElement('span'); sino.className = 'sininho-salvando'; sino.setAttribute('aria-hidden', 'true');
+    botao.append(sino);
+  }
+}
+function esconderProcessando(botao) {
+  botao.classList.remove('botao--processando');
+  for (const e of botao.querySelectorAll(':scope > .contorno-corre, :scope > .sininho-salvando')) e.remove();
+}
+
 /** Desabilita o botão enquanto a ação roda (evita clique duplo). */
 export async function ocupado(botao, acao) {
   const tinhaFoco = document.activeElement === botao;
   botao.disabled = true;
   botao.setAttribute('aria-busy', 'true');
+  const sinal = setTimeout(() => mostrarProcessando(botao), LIMIAR_PROCESSANDO_MS);
   try {
     return await acao();
   } finally {
+    clearTimeout(sinal);
+    esconderProcessando(botao);
     botao.disabled = false;
     botao.removeAttribute('aria-busy');
     // Botão desabilitado perde o foco (inclusive o devolvido por um diálogo de confirmação). Se o foco ficou perdido

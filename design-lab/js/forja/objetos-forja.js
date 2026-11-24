@@ -133,6 +133,7 @@ Object.assign(OBJETOS, {
       const v = e.preco ?? 'R$ 29,90';
       if (v !== p.texto.valor) {
         p.texto.valor = v; const [r, c] = v.replace('R$ ', '').split(',');
+        if (!v) p.tx.redesenhar(() => {}); else
         p.tx.redesenhar((ctx, w) => {
           const cent = `,${c ?? '00'}`;
           ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';

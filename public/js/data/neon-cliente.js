@@ -103,6 +103,11 @@ export function expiracaoDoJwt(jwt) {
 
 const sem = (url) => url.replace(/\/+$/, '');
 
+/** Avisa a casca da página (cabeçalho) quando a sessão é confirmada ou some, sem nova chamada de rede. */
+function avisarSessao(autenticado) {
+  globalThis.document?.dispatchEvent(new CustomEvent('autonick:sessao', { detail: { autenticado } }));
+}
+
 export class ClienteNeon {
   #authUrl;
   #dataApiUrl;
@@ -312,8 +317,10 @@ export class ClienteNeon {
     const dados = await resposta.json().catch(() => null);
     if (!dados?.user) {
       this.#descartarToken();
+      avisarSessao(false);
       return null;
     }
+    avisarSessao(true);
     const jwt = resposta.headers.get('set-auth-jwt');
     if (jwt) {
       if (jwt !== this.#jwt) {

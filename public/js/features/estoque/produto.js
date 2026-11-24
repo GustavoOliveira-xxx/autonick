@@ -15,6 +15,8 @@ import {
 } from '../../data/estoque.js';
 import { definirVitrineProduto } from '../../data/vitrine.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
+import { menorPreco } from '../../ui/pecas-forja.js';
+import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { formatarDataHora } from '../empresa/comum.js';
 
 iniciarLayout();
@@ -289,8 +291,12 @@ async function carregar() {
     document.getElementById('titulo-pagina').textContent = produto.nome;
     document.title = `${produto.nome} | AutoniCK Business`;
     concluirCarregamento(area);
+    // IB05: sem foto, o produto mostra a etiqueta 3D com o menor preço real das variações ativas
+    const destaque = el('div', { class: 'com-momento' }, el('p', {}, el('a', { href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para os produtos')));
+    const preco = menorPreco(produto.variacoes);
+    if (preco !== null) montarMomento(destaque, 'IB05', { tamanho: 'g', continua: true, inicial: { preco: formatarCentavos(preco) } }).disparar();
     area.append(...[
-      el('p', {}, el('a', { href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para os produtos')),
+      destaque,
       secaoVariacoes(), formNovaVariacao(), secaoDados(), secaoVenda(),
     ].filter(Boolean));
   } catch (erro) {

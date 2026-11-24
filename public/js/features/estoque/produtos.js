@@ -10,6 +10,8 @@ import { lerValorEmReais } from '../../domain/moeda.js';
 import { lerQuantidade, faixaDePreco, variacoesRepetidas } from '../../domain/variacoes.js';
 import { produtosDaEmpresa, criarProduto, FINALIDADES } from '../../data/estoque.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
+import { etiquetaPreco, menorPreco } from '../../ui/pecas-forja.js';
+import { vazioComMomento } from '../../ui/forja3d/momentos.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -35,13 +37,15 @@ function selos(p) {
 function cartao(p) {
   const ativas = p.variacoes.filter((v) => v.ativo);
   const nomeadas = ativas.filter((v) => !v.padrao);
-  return el('li', { class: 'cartao pilha', 'data-produto': p.id },
-    el('h3', { class: 'cartao__titulo' }, el('a', { href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(p.id)}` }, p.nome)),
-    selos(p),
-    el('p', { class: 'cartao__meta' },
-      [faixaDePreco(ativas), nomeadas.length ? `${nomeadas.length} ${nomeadas.length === 1 ? 'variação' : 'variações'}` : 'Sem variações']
-        .filter(Boolean).join(' · ')),
-    p.resumo ? el('p', {}, `Disponível: ${quantidadeLegivel(p.resumo.disponivel)} · Físico: ${quantidadeLegivel(p.resumo.fisico)} · Reservado: ${quantidadeLegivel(p.resumo.reservado)}`) : null);
+  return el('li', { class: 'cartao com-momento', 'data-produto': p.id },
+    etiquetaPreco(menorPreco(p.variacoes)),
+    el('div', { class: 'pilha' },
+      el('h3', { class: 'cartao__titulo' }, el('a', { href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(p.id)}` }, p.nome)),
+      selos(p),
+      el('p', { class: 'cartao__meta' },
+        [faixaDePreco(ativas), nomeadas.length ? `${nomeadas.length} ${nomeadas.length === 1 ? 'variação' : 'variações'}` : 'Sem variações']
+          .filter(Boolean).join(' · ')),
+      p.resumo ? el('p', {}, `Disponível: ${quantidadeLegivel(p.resumo.disponivel)} · Físico: ${quantidadeLegivel(p.resumo.fisico)} · Reservado: ${quantidadeLegivel(p.resumo.reservado)}`) : null));
 }
 
 function lista() {
@@ -59,7 +63,8 @@ function lista() {
     }
   });
   const ul = el('ul', { class: 'lista-simples', id: 'lista-produtos' }, ...visiveis.map(cartao));
-  return visiveis.length ? ul : el('p', { id: 'lista-produtos' }, produtos.length ? 'Nenhum produto com esses filtros.' : 'Nenhum produto cadastrado ainda.');
+  if (visiveis.length) return ul;
+  return produtos.length ? el('p', { id: 'lista-produtos' }, 'Nenhum produto com esses filtros.') : vazioComMomento('IB02', { id: 'lista-produtos' }, 'Nenhum produto cadastrado ainda.');
 }
 
 function filtros() {

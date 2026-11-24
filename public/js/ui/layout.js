@@ -61,6 +61,41 @@ function botaoLeitura() {
   return b;
 }
 
+// ---- Tema: escuro (CK Forja Noturna) é o principal; o claro (M13b) fica como opção, só neste aparelho ----
+const CHAVE_TEMA = 'autonick.preferencia.tema';
+function lerTemaClaro() {
+  try { return localStorage.getItem(CHAVE_TEMA) === 'claro'; } catch { return false; }
+}
+function aplicarTema(claro) {
+  if (claro) document.documentElement.dataset.tema = 'claro'; else delete document.documentElement.dataset.tema;
+  for (const b of document.querySelectorAll('button[data-tema]')) b.setAttribute('aria-pressed', String(claro));
+}
+function botaoTema() {
+  const b = el('button', { type: 'button', class: 'leitura tema', 'data-tema': '', 'aria-pressed': String(lerTemaClaro()) },
+    el('b', { 'aria-hidden': 'true' }, '◐'), el('span', { class: 'leitura__rotulo', 'aria-hidden': 'true' }, 'Tema claro'),
+    el('span', { class: 'visualmente-oculto' }, 'Tema claro'));
+  b.addEventListener('click', () => {
+    const claro = b.getAttribute('aria-pressed') !== 'true';
+    try { if (claro) localStorage.setItem(CHAVE_TEMA, 'claro'); else localStorage.removeItem(CHAVE_TEMA); } catch { /* sem armazenamento */ }
+    aplicarTema(claro);
+  });
+  return b;
+}
+
+// ---- Navegação: o item clicado mostra que a próxima página está abrindo (só se a troca demorar) ----
+function sinalizarNavegacao() {
+  let timer = 0;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('#cabecalho a[href], .barra-celular a[href]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => a.classList.add('abrindo'), 120);
+  });
+  window.addEventListener('pageshow', () => { clearTimeout(timer); for (const a of document.querySelectorAll('.abrindo')) a.classList.remove('abrindo'); });
+}
+
 function marca(area) {
   const empresarial = area === 'business';
   return el('a', { href: empresarial ? '/business/' : area === 'ck' ? '/ck-admin/' : '/', class: 'marca',
@@ -140,13 +175,13 @@ function montarCabecalho(area) {
       if (e.key === 'Escape' && document.body.classList.contains('menu-aberto')) { botaoMenu.click(); botaoMenu.focus(); }
     });
     return [el('div', { class: 'cabecalho__interno' },
-      el('div', { class: 'cabecalho__topo' }, marca(area), botaoLeitura(), botaoMenu),
+      el('div', { class: 'cabecalho__topo' }, marca(area), botaoLeitura(), botaoTema(), botaoMenu),
       blocoEmpresaAtiva(), menuBusiness())];
   }
   // A Ajuda precisa abrir sem conexão: a casca não importa a configuração do ambiente (ela não fica no cache).
   const ambiente = area === 'ck' ? el('span', { class: 'ambiente' }, 'versão de desenvolvimento') : null;
-  const entrar = area === 'cliente' ? el('a', { class: 'botao botao--orbe botao--entrar', href: '/cliente/entrar.html' }, 'Entrar') : null;
-  return [el('div', { class: 'cabecalho__interno' }, marca(area), ambiente, navSimples(area), botaoLeitura(), entrar)];
+  const entrar = area === 'cliente' ? el('a', { class: 'botao botao--orbe botao--entrar', id: 'acesso-cabecalho', href: '/cliente/entrar.html' }, 'Entrar') : null;
+  return [el('div', { class: 'cabecalho__interno' }, marca(area), ambiente, navSimples(area), botaoLeitura(), botaoTema(), entrar)];
 }
 
 function barraCelular(area) {
@@ -164,9 +199,20 @@ function montarRodape() {
       el('li', {}, el('a', { href: '/ajuda.html#privacidade' }, 'Privacidade nesta versão')))));
 }
 
+/** Cliente com sessão confirmada pela própria tela não vê mais "Entrar" (a conta já está no menu e na barra do celular). */
+function acompanharSessaoNoCabecalho() {
+  document.addEventListener('autonick:sessao', (e) => {
+    const link = document.getElementById('acesso-cabecalho');
+    if (link) link.hidden = Boolean(e.detail?.autenticado);
+  });
+}
+
 export function iniciarLayout() {
   const area = document.body.dataset.area ?? 'publico';
   aplicarLeitura(lerPreferencia());
+  aplicarTema(lerTemaClaro());
+  if (area === 'cliente') acompanharSessaoNoCabecalho();
+  sinalizarNavegacao();
   document.getElementById('cabecalho')?.replaceChildren(...montarCabecalho(area));
   document.getElementById('rodape')?.replaceChildren(montarRodape());
   const atalhos = barraCelular(area);

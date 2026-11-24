@@ -11,6 +11,7 @@ import { carregarContexto } from '../estoque/comum.js';
 import { painelEmpresa } from '../../data/painel.js';
 import { obterEmpresaAtiva } from '../../core/contexto-empresa.js';
 import { dinheiro } from '../vendas/comum.js';
+import { contarAte } from '../../ui/pecas-forja.js';
 
 iniciarLayout();
 const area = document.getElementById('painel');
@@ -81,7 +82,7 @@ function blocoNumeros(p, id) {
     const ant = p.vendas.mes_anterior_total_centavos;
     const variacao = ant > 0 ? Math.round(((p.vendas.total_centavos - ant) / ant) * 100) : null;
     itens.push(el('div', { class: 'escudo--vendas-wrap' }, escudo(`Vendas de ${mesNome}`,
-      el('p', { class: 'valor-grande num' }, dinheiro(p.vendas.total_centavos)),
+      el('p', { class: 'valor-grande num', 'data-centavos': String(p.vendas.total_centavos) }, dinheiro(p.vendas.total_centavos)),
       el('p', { class: 'legenda-dado' }, p.vendas.quantidade ? plural(p.vendas.quantidade, 'venda confirmada', 'vendas confirmadas') : 'Nenhuma venda confirmada neste mês',
         variacao !== null ? el('span', { class: `variacao${variacao < 0 ? ' variacao--queda' : ''}` }, ` ${variacao < 0 ? '▼' : '▲'} ${Math.abs(variacao)}% sobre o mês anterior`) : null),
       p.vendas.quantidade ? barrasSemanas(p.vendas.semanas) : el('p', {}, el('a', { href: L('venda-nova', id) }, 'Registrar a primeira venda')))));
@@ -89,13 +90,13 @@ function blocoNumeros(p, id) {
   if (p.financeiro) {
     const r = p.financeiro.receber_7_dias;
     const pg = p.financeiro.pagar_7_dias;
-    itens.push(escudo('A receber · 7 dias', el('p', { class: 'valor-medio num' }, dinheiro(r.valor_centavos)),
+    itens.push(escudo('A receber · 7 dias', el('p', { class: 'valor-medio num', 'data-centavos': String(r.valor_centavos) }, dinheiro(r.valor_centavos)),
       el('p', { class: 'legenda-dado' }, r.parcelas ? plural(r.parcelas, 'parcela', 'parcelas') : 'Nada vencendo',
         r.atrasadas ? el('span', { class: 'selo selo--alerta' }, plural(r.atrasadas, 'atrasada', 'atrasadas')) : null)));
-    itens.push(escudo('A pagar · 7 dias', el('p', { class: 'valor-medio num' }, dinheiro(pg.valor_centavos)),
+    itens.push(escudo('A pagar · 7 dias', el('p', { class: 'valor-medio num', 'data-centavos': String(pg.valor_centavos) }, dinheiro(pg.valor_centavos)),
       el('p', { class: 'legenda-dado' }, pg.parcelas ? plural(pg.parcelas, 'conta', 'contas') : 'Nada vencendo',
         pg.atrasadas ? el('span', { class: 'selo selo--perigo' }, plural(pg.atrasadas, 'atrasada', 'atrasadas')) : null)));
-    itens.push(escudo('Saldo das contas', el('p', { class: 'valor-medio num' }, dinheiro(p.financeiro.saldo_contas_centavos)),
+    itens.push(escudo('Saldo das contas', el('p', { class: 'valor-medio num', 'data-centavos': String(p.financeiro.saldo_contas_centavos) }, dinheiro(p.financeiro.saldo_contas_centavos)),
       el('p', { class: 'legenda-dado' }, 'Registrado no AutoniCK; não é extrato bancário.')));
   }
   if (p.estoque) {
@@ -151,6 +152,21 @@ function primeirosPassos(ctx) {
 const semMovimento = (p) => !(p.pedidos?.aguardando || p.orcamentos?.abertas || p.ordens?.em_andamento || p.vendas?.quantidade
   || p.financeiro?.receber_7_dias?.parcelas || p.financeiro?.pagar_7_dias?.parcelas || p.estoque?.abaixo_do_minimo || p.mensagens?.total);
 
+/**
+ * IB01 (preparado): a moeda CK gira ao lado das vendas do mês quando uma META EXISTENTE é atingida.
+ * O AutoniCK ainda não tem cadastro de metas; quando o painel passar a trazer `vendas.meta_centavos`, a celebração
+ * acontece sozinha, uma vez, sincronizada com a contagem. Sem meta, nada é celebrado.
+ */
+async function celebrarMeta(p) {
+  const meta = p.vendas?.meta_centavos;
+  if (!Number.isFinite(meta) || meta <= 0 || p.vendas.total_centavos < meta) return;
+  const lugar = area.querySelector('.escudo--vendas-wrap .escudo__corpo');
+  if (!lugar) return;
+  const { montarMomento } = await import('../../ui/forja3d/momentos.js');
+  lugar.classList.add('com-momento');
+  montarMomento(lugar, 'IB01', { tamanho: 'p' }).disparar();
+}
+
 async function carregar() {
   if (!parametro('id')) {
     const ativa = obterEmpresaAtiva();
@@ -160,6 +176,7 @@ async function carregar() {
     return;
   }
   mostrarCarregando(area, 'Carregando o painel');
+  area.querySelector('.esqueleto')?.classList.add('esqueleto--cartoes');
   try {
     const ctx = await carregarContexto(area);
     if (!ctx) return;
@@ -182,6 +199,9 @@ async function carregar() {
     for (const m of area.querySelectorAll('[data-altura]')) m.style.height = `${m.dataset.altura}%`;
     for (const m of area.querySelectorAll('[data-nivel]')) m.style.width = `${m.dataset.nivel}%`;
     for (const c of area.querySelectorAll('.barra-col')) c.style.setProperty('--h', `${c.querySelector('[data-altura]').dataset.altura}%`);
+    // Indicadores entram contando até o valor real que veio do banco.
+    for (const v of area.querySelectorAll('[data-centavos]')) contarAte(v, Number(v.dataset.centavos), dinheiro);
+    celebrarMeta(p);
   } catch (erro) {
     tratarErro(area, erro, carregar);
   }

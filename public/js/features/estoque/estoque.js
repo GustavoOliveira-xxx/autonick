@@ -16,6 +16,9 @@ import {
 } from '../../data/estoque.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
 import { formatarDataHora } from '../empresa/comum.js';
+import { vazioComMomento } from '../../ui/forja3d/momentos.js';
+import { comFioDourado } from '../../ui/pecas-forja.js';
+const areaDosSaldos = () => document.getElementById('titulo-saldos')?.parentElement ?? null;
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -60,7 +63,7 @@ function secaoSaldos() {
     linhas.length ? el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: 'tabela-saldos' },
       el('caption', { class: 'visualmente-oculto' }, 'Estoque físico, reservado e disponível por variação'),
       el('thead', {}, el('tr', {}, ...['Produto', 'Físico', 'Reservado', 'Disponível', 'Mínimo'].map((c) => el('th', { scope: 'col' }, c)))),
-      el('tbody', {}, ...linhas))) : el('p', {}, 'Nenhum produto ativo. Cadastre produtos na tela de produtos.'));
+      el('tbody', {}, ...linhas))) : vazioComMomento('IB02', null, 'Nenhum produto ativo. Cadastre produtos na tela de produtos.'));
 }
 
 function secaoLancamento() {
@@ -97,11 +100,11 @@ function secaoLancamento() {
       item.custo_centavos = c.centavos;
     }
     if (d.tipo !== 'entrada' && !d.motivo) return erroNoCampo(form, 'motivo', 'Informe o motivo.');
-    ocupado(botao, () => executar('movimentar', form, (k) => movimentar(direto, ctx.id, d.tipo, [item], d.motivo, k), (r) => {
+    ocupado(botao, () => comFioDourado(areaDosSaldos(), () => executar('movimentar', form, (k) => movimentar(direto, ctx.id, d.tipo, [item], d.motivo, k), (r) => {
       const s = r.saldos?.[0];
       anunciar('sucesso', r.estado === 'pendente' ? 'Movimentação enviada para aprovação.' : 'Estoque atualizado.',
         s ? el('p', {}, `Agora: ${quantidadeLegivel(s.disponivel)} disponíveis (${quantidadeLegivel(s.fisico)} no físico).`) : null);
-    }));
+    }), 'Atualizando o estoque'));
   });
   return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-lancar' },
     el('h2', { id: 'titulo-lancar' }, direto ? 'Lançar movimentação' : 'Propor movimentação'),

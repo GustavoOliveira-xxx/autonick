@@ -1,9 +1,11 @@
 /**
- * Sino HQ do herói da página de apresentação (cena "Quem tocou?" em laço).
+ * Sino HQ do herói da página de apresentação (cena "Chamado da Forja" em laço, direção CK Forja Noturna).
  *
  * - A imagem estática já vem no HTML: reserva o espaço e é o plano B. Nada de "Carregando".
  * - O 3D (Three.js + GLB do próprio app) só carrega com a seção visível e depois do texto e dos botões.
- * - Laço: cena, pausa na pose final e volta suave à pose inicial (animacao-quem-tocou.js).
+ * - Laço: cena, pausa na pose final e volta suave à pose inicial (animacao-chamado-forja.js).
+ * - O fundo do herói (palco em perspectiva, raios e contraluz) nasce da posição real do sino: este componente informa
+ *   centro e base do sino em variáveis CSS (--sino-x, --sino-y, --sino-base, --sino-raio) e o pulso do impacto (--impacto).
  * - Para fora da tela e com a aba oculta; volta do mesmo ponto, com um só ciclo de quadros.
  * - Movimento reduzido: começa estático; tocar no sino (ou Enter/Espaço com ele em foco) toca a cena uma vez. Sem som.
  * - Sem WebGL, sem o GLB ou com erro: fica a imagem estática e a página segue funcionando.
@@ -12,7 +14,7 @@
  * encerrado), data-rodando (sim | nao), data-ciclos (ciclos completos), data-t (tempo da cena, em décimos de segundo),
  * data-motivo (quando falha).
  */
-import { DURACAO_CICLO, LACO, QUEM_TOCOU, poseDoLaco } from './animacao-quem-tocou.js';
+import { DURACAO_CICLO, LACO, CHAMADO, poseDoLaco } from './animacao-chamado-forja.js';
 
 const LIMITE_CARGA_MS = 20000;
 
@@ -95,8 +97,30 @@ export function montarHeroiSino(raiz, opcoes = {}) {
   }
   function desenharAgora() {
     if (!est.palco) return;
-    est.palco.desenhar(poseDoLaco(est.t, { reduzido: est.reduzido, soUmaVez: est.reduzido }), QUEM_TOCOU.enquadramento);
+    const pose = poseDoLaco(est.t, { reduzido: est.reduzido, soUmaVez: est.reduzido });
+    est.palco.desenhar(pose, CHAMADO.enquadramento);
+    posicionarFundo(est.palco.projecao(), pose.impacto || 0);
   }
+
+  /* ---------- fundo do herói alinhado ao sino ---------- */
+  const heroi = raiz.closest('.heroi') ?? raiz.parentElement;
+  let ultimoFundo = '';
+  function posicionarFundo(proj, impacto = 0) {
+    if (!heroi) return;
+    const h = heroi.getBoundingClientRect(), p = palcoEl.getBoundingClientRect();
+    if (!h.width || !p.width) return;
+    // sem 3D: a imagem estática ocupa 16–67% × 19–78% do palco (mesma medida do pôster)
+    const cx = proj ? proj.centro.x / proj.w : 0.415, cy = proj ? proj.centro.y / proj.h : 0.485, cb = proj ? proj.base.y / proj.h : 0.78;
+    const x = p.left - h.left + cx * p.width, y = p.top - h.top + cy * p.height, base = p.top - h.top + cb * p.height + p.height * 0.03;
+    const chave = `${Math.round(x)}|${Math.round(y)}|${Math.round(base)}|${Math.round(p.width)}`;
+    if (chave !== ultimoFundo) {
+      ultimoFundo = chave;
+      heroi.style.setProperty('--sino-x', `${x}px`); heroi.style.setProperty('--sino-y', `${y}px`);
+      heroi.style.setProperty('--sino-base', `${base}px`); heroi.style.setProperty('--sino-raio', `${p.width * 0.24}px`);
+    }
+    heroi.style.setProperty('--impacto', impacto.toFixed(3));
+  }
+  posicionarFundo(null);
 
   /* ---------- movimento reduzido: o próprio sino toca a cena uma vez, sob pedido ---------- */
   function atualizarToque() {
@@ -142,7 +166,7 @@ export function montarHeroiSino(raiz, opcoes = {}) {
   };
   prefere.addEventListener?.('change', aoMudarPreferencia);
 
-  const ro = new ResizeObserver(() => { if (est.palco && est.palco.redimensionar() && !est.rodando) desenharAgora(); });
+  const ro = new ResizeObserver(() => { if (est.palco && est.palco.redimensionar() && !est.rodando) desenharAgora(); else if (!est.palco) posicionarFundo(null); });
   ro.observe(palcoEl);
 
   const aoSair = (e) => { if (!e.persisted) desmontar(); };

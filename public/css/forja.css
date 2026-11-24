@@ -1,0 +1,213 @@
+/*
+ * CK FORJA NOTURNA · tema escuro principal do AutoniCK (Noite da Forja + Empresarial Premium + toques de HQ Cinematográfica).
+ * Camada única, carregada depois de componentes.css em todas as páginas. O tema claro (M13b) continua disponível pelo
+ * botão "Tema claro" do cabeçalho: com <html data-tema="claro">, nada daqui se aplica.
+ *
+ * Intensidade por área: página inicial (apresentacao.css) é a mais cinematográfica; Business é calmo para longas
+ * jornadas; Cliente é mais acolhedor (vinho); CK Admin mantém a Noite Elétrica com acentos dourados.
+ * Microinterações H02 (luz e metal, ~200 ms); processamento F14 (contorno dourado que corre); loaders por contexto.
+ * Contraste AA conferido nas superfícies abaixo; estados sempre com texto e ícone, nunca só cor.
+ */
+:root {
+  --forja-0: #07040d; --forja-1: #0d0817; --forja-2: #160e22; --forja-3: #1e1530; --forja-4: #281c3d;
+  --forja-vinho: #3a0e1d; --forja-vinho-2: #561324; --forja-vinho-3: #7c1b30;
+  --forja-ouro-2: #ffd567; --forja-ouro-3: #ffeab0;
+  --forja-filete: rgb(245 183 10 / 0.42); --forja-filete-fraco: rgb(245 183 10 / 0.18);
+  --forja-linha: #3a2c4e; --forja-linha-2: #8a7aa3;
+  --forja-el-1: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 4px 14px rgb(0 0 0 / 0.34);
+  --forja-el-2: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 14px 34px rgb(0 0 0 / 0.46);
+  --forja-curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --forja-dur: 200ms;
+}
+
+/* ===================== componentes de interação comuns aos dois temas ===================== */
+/* F14: contorno dourado que percorre a borda enquanto uma operação real está em andamento (inserido por formulario.js). */
+.contorno-corre { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); z-index: 3; pointer-events: none; overflow: visible; }
+.contorno-corre rect { x: 1.5px; y: 1.5px; width: calc(100% - 3px); height: calc(100% - 3px); rx: 11px; ry: 11px; fill: none; stroke: #f5b70a; stroke-width: 3px;
+  stroke-linecap: round; stroke-dasharray: 24 76; filter: drop-shadow(0 0 3px rgb(255 213 103 / 0.9)); animation: contorno-corre 1.15s linear infinite; }
+@keyframes contorno-corre { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.botao.botao--processando, .botao.botao--processando:disabled { filter: none; cursor: progress; opacity: 1; }
+/* G08 compacto: o sino do AutoniCK (quadros do modelo real) balançando no canto do botão de salvar */
+.sininho-salvando { position: absolute; top: -0.95rem; right: -0.85rem; z-index: 4; width: 1.9rem; height: 1.9rem; pointer-events: none;
+  background: url("/assets/forja/sino-mini.webp") 0 0 / 1000% 100% no-repeat; animation: sininho 0.9s steps(10) infinite; filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5)); }
+@keyframes sininho { to { background-position: 111.11% 0; } }
+/* G10 adaptado à navegação: só o item clicado mostra que a próxima página está abrindo */
+.abrindo { position: relative; }
+.abrindo::after { content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: 3px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, #f5b70a, #ffeab0);
+  transform-origin: left; animation: abrindo 900ms var(--forja-curva) infinite; }
+@keyframes abrindo { 0% { transform: scaleX(0); opacity: 1; } 80% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+/* G01: fio dourado no topo de uma lista enquanto o estoque é atualizado */
+.fio-dourado { position: relative; height: 3px; overflow: hidden; background: rgb(245 183 10 / 0.12); border-radius: 2px; }
+.fio-dourado::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 40%; background: linear-gradient(90deg, transparent, #f5b70a, #ffeab0); box-shadow: 0 0 10px #f5b70a; animation: fio-dourado 1.1s var(--forja-curva) infinite; }
+@keyframes fio-dourado { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+/* momentos 3D (categoria I): decorativos, com espaço reservado; somem sem WebGL */
+.momento-3d { position: relative; flex: none; inline-size: 8rem; block-size: 8rem; }
+.momento-3d--p { inline-size: 5.5rem; block-size: 5.5rem; }
+.momento-3d--g { inline-size: 10rem; block-size: 11rem; }
+.momento-3d .cena-3d__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.com-momento { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-3) var(--esp-5); }
+.com-momento > :not(.momento-3d) { flex: 1 1 16rem; min-width: 0; }
+.etiqueta-preco { position: relative; display: inline-block; flex: none; inline-size: 3.1rem; block-size: 7rem; background: url("/assets/forja/etiqueta-ck.webp") center / contain no-repeat; }
+.etiqueta-preco span { position: absolute; left: 50%; top: 66.5%; translate: -50% -50%; text-align: center; white-space: nowrap; font: 800 italic 0.95rem/1 var(--fonte-titulo); color: #fff6e2;
+  text-shadow: 1px 1px 0 #191418, -1px -1px 0 #191418, 1px -1px 0 #191418, -1px 1px 0 #191418; }
+.etiqueta-preco small { display: block; margin-bottom: 0.1rem; font: 700 0.55rem/1 var(--fonte); color: #ffdf7e; font-style: normal; }
+.selo-verificada { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.8125rem; }
+.selo-verificada::before { content: ""; inline-size: 1.7rem; block-size: 1.7rem; background: url("/assets/forja/selo-ck.webp") center / contain no-repeat; }
+.contagem-entra { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .contorno-corre rect { animation: none; stroke-dasharray: none; } .sininho-salvando { animation: none; } .abrindo::after, .fio-dourado::before { animation: none; } }
+
+/* ===================== TEMA ESCURO (principal) ===================== */
+html:not([data-tema="claro"]) {
+  color-scheme: dark;
+
+  & body:not([data-area="ck"]) {
+    --fundo: var(--forja-1); --superficie: var(--forja-2); --superficie-2: var(--forja-3);
+    --texto: #f4ecdd; --texto-suave: #cdc1da; --borda: var(--forja-linha-2); --borda-suave: var(--forja-linha);
+    --sucesso: #8be6b1; --sucesso-fundo: rgb(139 230 177 / 0.12); --alerta: #ffd77e; --alerta-fundo: rgb(255 213 122 / 0.12);
+    --erro: #ffa49c; --erro-fundo: rgb(255 120 110 / 0.13); --info: #a9d6ff; --info-fundo: rgb(166 212 255 / 0.12);
+    --link: var(--forja-ouro-2); --link-hover: var(--forja-ouro-3); --marca-roxo: var(--forja-ouro-2); --marca-roxo-hover: var(--forja-ouro-3);
+    --foco: var(--forja-ouro-2); --foco-anel: rgb(245 183 10 / 0.35); --sombra: var(--forja-el-1);
+    background: var(--forja-1) radial-gradient(1200px 520px at 90% -10%, rgb(124 27 48 / 0.22), transparent 70%) no-repeat; color: var(--texto);
+  }
+  & body[data-area="cliente"], & body[data-area="publico"] { background: #110a16 radial-gradient(1000px 460px at 8% 0%, rgb(124 27 48 / 0.3), transparent 70%) no-repeat; background-image: radial-gradient(1000px 460px at 8% 0%, rgb(124 27 48 / 0.3), transparent 70%), radial-gradient(circle, rgb(255 223 126 / 0.05) 1.1px, transparent 1.7px); background-size: auto, 9px 9px; background-repeat: no-repeat, repeat; }
+  & body[data-area="business"] { --fundo: #0c0814; }
+
+  /* faixa de versão, cabeçalhos e rodapé */
+  & .faixa-demo { color: var(--forja-ouro-3); background: repeating-linear-gradient(-45deg, rgb(245 183 10 / 0.16) 0 10px, rgb(245 183 10 / 0.06) 10px 20px), var(--forja-0); border-bottom: 1px solid var(--forja-filete); font-size: 0.8125rem; padding-block: 0.3rem; }
+  & .faixa-demo strong { color: #f5b70a; }
+  & body:not([data-area="business"]):not([data-area="ck"]) #cabecalho { background: linear-gradient(180deg, #0b0614, #07040d); border-bottom: 1px solid var(--forja-filete); box-shadow: 0 2px 0 rgb(195 22 30 / 0.85), 0 8px 24px rgb(0 0 0 / 0.4); }
+  & body[data-area="business"] #cabecalho { background: linear-gradient(180deg, #0b0614 0%, #08050f 100%); border-bottom: 1px solid var(--forja-filete); box-shadow: 0 2px 0 rgb(195 22 30 / 0.85); }
+  & .rodape { background: var(--forja-0); border-top: 1px solid var(--forja-filete); box-shadow: inset 0 2px 0 rgb(195 22 30 / 0.6); }
+  & .empresa-ativa { background: linear-gradient(135deg, var(--forja-vinho), #1a0b16); border: 1px solid var(--forja-filete); }
+  & .menu-lateral a:hover, & .menu-sair:hover { background: linear-gradient(90deg, rgb(245 183 10 / 0.14), transparent); color: #fff; }
+  & .menu-lateral a[aria-current="page"] { color: var(--forja-ouro-3); background: linear-gradient(90deg, rgb(124 27 48 / 0.7), rgb(124 27 48 / 0.15)); clip-path: none; box-shadow: inset 3px 0 0 #f5b70a, inset 0 0 0 1px rgb(245 183 10 / 0.15); font-weight: 700; }
+  & .menu-lateral a[aria-current="page"] .icone { color: #f5b70a; filter: drop-shadow(0 0 4px rgb(245 183 10 / 0.7)); }
+  & .menu-lateral a, & .menu-sair { transition: background var(--forja-dur), color var(--forja-dur); }
+  & .navegacao a { transition: color var(--forja-dur), background var(--forja-dur); }
+  & .navegacao a[aria-current="page"] { box-shadow: inset 0 -2px 0 #f5b70a, 0 6px 10px -8px #f5b70a; }
+
+  /* títulos: placa vira título cinematográfico em camadas; seções com marcador metálico */
+  & main h1 { background: none; border: 0; clip-path: none; box-shadow: none; padding: 0; color: #fff4dc; font-style: italic; letter-spacing: 0.01em;
+    text-shadow: 0 1px 0 #f5b70a, 2px 3px 0 var(--forja-vinho-2), 4px 6px 0 rgb(0 0 0 / 0.55); }
+  & main section > h2:first-child::before, & .bloco__cab h2::before { background: var(--metal); border-color: #000; box-shadow: 0 0 10px rgb(245 183 10 / 0.5); }
+  & .cab-pagina { position: relative; isolation: isolate; overflow: hidden; padding: 1.1rem 1.25rem 1rem; border-radius: 10px; border: 1px solid var(--forja-linha);
+    background: radial-gradient(500px 160px at 92% 10%, rgb(245 183 10 / 0.16), transparent 70%), linear-gradient(135deg, var(--forja-vinho) 0%, var(--forja-2) 62%); box-shadow: var(--forja-el-1); }
+  & .cab-pagina::before { content: ""; position: absolute; inset: 0; z-index: -1; background: repeating-conic-gradient(from 0deg at 96% 0%, rgb(255 213 103 / 0.07) 0deg 3deg, transparent 3deg 9deg);
+    -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000); mask-image: linear-gradient(90deg, transparent 35%, #000); }
+  & .cab-pagina::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, #f5b70a, rgb(245 183 10 / 0.1) 70%, transparent); }
+  & .cab-pagina__titulo p { color: var(--texto-suave); }
+
+  /* botões (H02: luz imediata no toque, reflexo só no hover do principal, foco que acende) */
+  & .botao { overflow: visible; border-color: #120a10; box-shadow: 3px 3px 0 #000, inset 0 1px 0 rgb(255 255 255 / 0.55); transition: transform 120ms var(--forja-curva), box-shadow var(--forja-dur), background-position 420ms var(--forja-curva), filter var(--forja-dur); }
+  & .botao::after { inset: 0; width: auto; left: 0; transform: none; border-radius: inherit; background: linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 0.5) 50%, transparent 62%) no-repeat;
+    background-size: 260% 100%; background-position: 160% 0; transition: background-position 700ms var(--forja-curva); z-index: -1; }
+  & .botao:hover::after { left: 0; background-position: -60% 0; }
+  & .botao:hover { box-shadow: 3px 3px 0 #000, 0 0 22px rgb(255 160 50 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.55); }
+  & .botao:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000, inset 0 2px 4px rgb(0 0 0 / 0.25); filter: brightness(0.94); transition-duration: 0ms; }
+  & .botao--secundario, & .botao--secundario:hover { color: var(--forja-ouro-2); background: rgb(245 183 10 / 0.07); border: 1.5px solid rgb(245 183 10 / 0.55); box-shadow: none; }
+  & .botao--secundario:hover { background: rgb(245 183 10 / 0.13); border-color: #f5b70a; box-shadow: 0 0 16px rgb(245 183 10 / 0.18); }
+  & .botao--secundario:active { box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.45); }
+  & .botao--texto, & .botao--texto:hover { color: var(--forja-ouro-2); }
+  & .botao--texto:hover { background: rgb(245 183 10 / 0.08); }
+  & .botao-menu { box-shadow: 2px 2px 0 #000; }
+
+  /* superfícies */
+  & .cartao { background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%), var(--forja-2); border: 1px solid var(--forja-linha); border-radius: 10px; box-shadow: var(--forja-el-1); }
+  & li.cartao, & .lista-simples > .cartao, & .resultados > .cartao { border-left: 3px solid var(--forja-vinho-3); transition: border-color var(--forja-dur), box-shadow var(--forja-dur); }
+  & li.cartao:hover { border-left-color: #f5b70a; box-shadow: var(--forja-el-2); }
+  & .cartao.cartao-vitrine, & .resultados > li.cartao.cartao-vitrine { border: 1px solid var(--forja-linha); border-top: 3px solid #f5b70a; box-shadow: var(--forja-el-1); }
+  & .resultados > li.cartao.cartao-vitrine:hover { box-shadow: var(--forja-el-2), 0 0 0 1px var(--forja-filete-fraco); }
+  & .cartao-vitrine .cartao__titulo a { color: #fff4dc; text-decoration-color: #f5b70a; }
+  & .escolha { background: var(--forja-2); border: 1px solid var(--forja-linha); box-shadow: var(--forja-el-1); border-radius: 10px; }
+  & .escolha::before, & .ficha::before { background: linear-gradient(225deg, var(--forja-vinho-3) 0 48%, #f5b70a 48% 52%, transparent 52%); }
+  & .modulo-permissoes { background: var(--forja-2); }
+  & .estado-vazio { background: repeating-linear-gradient(-30deg, transparent 0 9px, rgb(245 183 10 / 0.04) 9px 18px), var(--forja-2); border: 1px dashed var(--forja-linha-2); }
+  & .aviso { box-shadow: none; border-width: 1px; border-left-width: 5px; border-radius: 8px; }
+  & .aviso__icone, & .aviso__icone * { color: var(--forja-1); }
+  & .chip--neutro { background: var(--forja-3); color: var(--texto-suave); }
+  & .notificacao { background: var(--forja-4); color: var(--texto); border: 1px solid var(--forja-linha-2); border-left: 4px solid #f5b70a; border-radius: 10px; box-shadow: var(--forja-el-2); animation: forja-toast 260ms var(--forja-curva); }
+  & dialog.dialogo { background: var(--forja-3); color: var(--texto); border: 1px solid var(--forja-linha-2); border-top: 2px solid #f5b70a; border-radius: 10px; box-shadow: var(--forja-el-2); }
+  & dialog.dialogo[open] { animation: forja-modal 240ms var(--forja-curva); }
+  & dialog.dialogo::backdrop { background: rgb(30 6 14 / 0.6); backdrop-filter: blur(2px); }
+
+  /* formulários: campo escuro, foco que acende em dourado */
+  & .campo input, & .campo select, & .campo textarea { background-color: var(--forja-0); color: var(--texto); border: 1px solid var(--forja-linha-2); box-shadow: none; transition: border-color var(--forja-dur), box-shadow var(--forja-dur); }
+  & .campo input:focus-visible, & .campo select:focus-visible, & .campo textarea:focus-visible { outline: 2px solid #f5b70a; outline-offset: 1px; border-color: #f5b70a; box-shadow: 0 0 0 4px rgb(245 183 10 / 0.25), 0 0 16px rgb(245 183 10 / 0.25); }
+  & .campo input::placeholder, & .campo textarea::placeholder { color: #9d90b2; }
+  & .campo input[type="checkbox"], & .campo input[type="radio"] { accent-color: #f5b70a; }
+  & select option { background: var(--forja-3); color: var(--texto); }
+
+  /* tabelas */
+  & .tabela-container { background: var(--forja-2); border: 1px solid var(--forja-linha); border-radius: 10px; box-shadow: var(--forja-el-1); }
+  & .tabela { background: transparent; }
+  & .tabela thead th { background: var(--forja-3); color: var(--texto-suave); border-bottom: 1px solid var(--forja-filete); }
+  & .tabela tbody tr:nth-child(even) td { background: rgb(255 255 255 / 0.02); }
+  & .tabela tbody tr:hover td { background: rgb(245 183 10 / 0.06); }
+  & .tabela td { border-bottom-color: var(--forja-linha); transition: background var(--forja-dur); }
+
+  /* G06: esqueleto com retícula e brilho dourado discreto */
+  & .esqueleto__linha { background: var(--forja-3) radial-gradient(circle, rgb(255 223 126 / 0.09) 1.1px, transparent 1.7px) 0 0 / 6px 6px; position: relative; overflow: hidden; }
+  & .esqueleto__linha::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(255 213 103 / 0.14), transparent); animation: esqueleto-brilho 1.4s ease-in-out infinite; }
+
+  /* painel Business: fichas, escudos e barras */
+  & .ficha { background: var(--forja-2); border: 1px solid var(--forja-linha); border-radius: 10px; box-shadow: var(--forja-el-1); color: var(--texto); }
+  & .ficha:hover { transform: translateY(-2px); box-shadow: var(--forja-el-2), 0 0 0 1px var(--forja-filete-fraco); color: var(--texto); }
+  & .ficha--principal { background: linear-gradient(135deg, var(--forja-2) 0%, var(--forja-2) 55%, rgb(124 27 48 / 0.5) 100%); }
+  & .ficha--principal .ficha__numero { color: #f5b70a; text-shadow: 0 0 18px rgb(245 183 10 / 0.35); }
+  & .ficha__ir { color: var(--forja-ouro-2); }
+  & .ficha__lista li { background: var(--forja-3); border-color: var(--forja-linha); }
+  & .escudo { filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.45)); }
+  & .escudo__borda { background: var(--forja-linha); }
+  & .escudo__borda::before { background: var(--forja-2); }
+  & .barras { border-bottom-color: var(--forja-linha-2); }
+  & .barra-col .marca { border-color: #000; box-shadow: 0 0 12px rgb(255 154 46 / 0.3); background: linear-gradient(180deg, #ffd567, #e2431b 70%, #8c0d13); }
+  & .nivel { background: var(--forja-3); border-color: var(--forja-linha-2); }
+  & .agenda { background: var(--forja-2); border: 1px solid var(--forja-linha); border-radius: 10px; }
+  & .agenda li { border-bottom-color: var(--forja-linha); }
+  & .agenda time { color: var(--forja-ouro-2); }
+  & .lista-mensagens li { background: var(--forja-2); border: 1px solid var(--forja-linha); border-left: 3px solid #f5b70a; }
+
+  /* Cliente: capa de revista e quadro de busca na noite da forja */
+  & .heroi, & .capa-revista { background: repeating-conic-gradient(from 0deg at var(--foco-x, 82%) var(--foco-y, 40%), rgb(255 213 103 / 0.08) 0deg 3.4deg, transparent 3.4deg 10deg),
+    radial-gradient(circle at var(--foco-x, 82%) var(--foco-y, 40%), #4a1a2c 0%, #2b0f2a 22%, #170c26 50%, #0b0715 80%, #06040b 100%); }
+  & .heroi::after, & .capa-revista::after { background-image: radial-gradient(circle, rgb(255 223 126 / 0.1) 1.1px, transparent 1.7px); }
+  & body[data-area="business"] .heroi { background: linear-gradient(135deg, var(--forja-vinho) 0 58%, transparent 58%), var(--metal); }
+  & .heroi h1, & .capa-revista h1 { color: #fff4dc; text-shadow: 0 1px 0 #f5b70a, 2px 3px 0 #6b1426, 4px 6px 0 #2a0812, 0 0 30px rgb(245 183 10 / 0.25); }
+  & .capa-revista h1 em { color: var(--forja-ouro-2); }
+  & .quadro-busca { filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.5)); }
+  & .quadro-busca > form.cartao { background: #f5b70a; }
+  & .quadro-busca > form.cartao::before { background: var(--forja-2); }
+  & .rubrica { color: var(--forja-ouro-2); }
+  & .tira > li { background: var(--forja-2); border: 1px solid var(--forja-linha); border-radius: 10px; box-shadow: var(--forja-el-1); }
+  & .etapas li { background: var(--forja-3); color: var(--texto-suave); }
+  & .etapas li[aria-current="step"] { background: var(--forja-vinho-2); color: #fff; box-shadow: inset 0 0 0 1px var(--forja-filete); }
+  & .barra-celular { background: #0b0614; border-top: 2px solid #f5b70a; }
+
+  /* entrada discreta do conteúdo ao abrir a tela */
+  & main .largura > .pilha-grande > *, & main .largura > .pilha > * { animation: forja-entra 380ms var(--forja-curva) both; }
+  & main .largura > .pilha-grande > :nth-child(2), & main .largura > .pilha > :nth-child(2) { animation-delay: 50ms; }
+  & main .largura > .pilha-grande > :nth-child(n+3), & main .largura > .pilha > :nth-child(n+3) { animation-delay: 100ms; }
+  & :focus-visible { outline-color: var(--forja-ouro-2); box-shadow: 0 0 0 6px rgb(245 183 10 / 0.28), 0 0 18px rgb(245 183 10 / 0.3); }
+
+  /* CK Admin: mantém a Noite Elétrica; o dourado aparece nas ações e nos filetes */
+  & body[data-area="ck"] .cab-pagina { background: radial-gradient(500px 160px at 92% 10%, rgb(111 216 255 / 0.14), transparent 70%), linear-gradient(135deg, #16123a 0%, #170f35 62%); border-color: var(--noite-linha); }
+  & body[data-area="ck"] .cab-pagina::after { background: linear-gradient(90deg, var(--eletrico), #f5b70a 40%, transparent); }
+  & body[data-area="ck"] main h1 { text-shadow: 0 0 18px rgb(111 216 255 / 0.4), 2px 3px 0 #0d0a26; }
+  & body[data-area="ck"] main section > h2:first-child::before { background: var(--eletrico); border-color: var(--eletrico); box-shadow: 0 0 10px rgb(111 216 255 / 0.6); }
+  & body[data-area="ck"] .cartao { background: rgb(20 12 46 / 0.85); border: 1px solid var(--noite-linha); }
+  & body[data-area="ck"] li.cartao { border-left: 3px solid var(--eletrico); }
+  & body[data-area="ck"] .botao--secundario, & body[data-area="ck"] .botao--secundario:hover { color: var(--texto); border-color: var(--borda); background: transparent; }
+}
+
+@keyframes forja-entra { from { opacity: 0; transform: translateY(6px); } }
+@keyframes forja-toast { from { opacity: 0; transform: translateY(10px); box-shadow: 0 0 26px rgb(245 183 10 / 0.6); } }
+@keyframes forja-modal { from { opacity: 0; scale: 0.97; } }
+@keyframes esqueleto-brilho { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* botão de tema no cabeçalho (mesmo formato do botão de leitura) */
+.tema b { font: 800 1.05rem/1 var(--fonte-titulo); }
+/* G07: o painel carrega em cartões com o cabeçalho metálico brilhando (um por indicador) */
+.esqueleto--cartoes { display: grid; gap: var(--esp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.esqueleto--cartoes .esqueleto__linha { width: 100% !important; height: 7.5rem; border-radius: 10px; position: relative; overflow: hidden; }
+.esqueleto--cartoes .esqueleto__linha::before { content: ""; position: absolute; inset: 0 0 auto; height: 1.9rem; background: var(--metal); background-size: 200% 100%; animation: metal-corre 1.4s linear infinite; }
+@keyframes metal-corre { from { background-position: 100% 0; } to { background-position: -100% 0; } }
