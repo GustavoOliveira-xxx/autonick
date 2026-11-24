@@ -1,0 +1,19 @@
+<title>teste</title>
+<style>body{background:#c3161e;margin:0;display:flex;flex-wrap:wrap;gap:8px} .v{width:360px;height:360px;position:relative;background:#8c0d13} .v canvas{position:absolute;inset:0;width:100%;height:100%}</style>
+<div id="r"></div>
+<script type="module">
+import { obterMotor } from './js/motor/motor.js';
+import { ANIMACOES, criarLaco, RITMOS } from './js/motor/animacoes.js';
+import { OBJETOS } from './js/motor/objetos.js';
+const m = await obterMotor();
+const ids = (new URLSearchParams(location.search).get('ids') || 'B00').split(',');
+
+for (const item of ids) { const [id, tt0] = item.split('@'); const t = Number(tt0 ?? 1);
+  const el = document.createElement('div'); el.className = 'v'; el.title = id; document.body.append(el);
+  let fonte, enq;
+  if (id.startsWith('B')) { const a = ANIMACOES[id]; const l = criarLaco(a, RITMOS.C01); fonte = (tt, ctx) => l.quadro(tt, ctx); enq = a.enquadramento; }
+  else { const d = OBJETOS[id]; fonte = (tt, ctx) => { const p = (ANIMACOES.B00.quadro(0)); p.martelo = null; p.objetos = [{ id, ...d.interacao(tt, p) }]; return { pose: p, info: {} }; }; enq = { meiaAltura: 1.75, meiaLargura: 3.05, deslocX: 0.85 }; }
+  const v = m.criarVista(el, { fonte, enquadramento: enq, t });
+}
+setTimeout(() => { document.title = 'pronto'; }, 1500);
+</script>
