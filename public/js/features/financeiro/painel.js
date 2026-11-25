@@ -134,6 +134,19 @@ function secaoDivergencias(d) {
     el('p', {}, el('a', { href: `/business/financeiro-relatorios.html?id=${encodeURIComponent(ctx.id)}&tipo=conferencias` }, 'Ver todas as conferências')));
 }
 
+// E06: o que mais se faz no dia a dia, a um clique (cada ação abre no lugar certo, já com o formulário aberto).
+function acoesRapidas() {
+  const id = encodeURIComponent(ctx.id);
+  const a = (href, rotulo, ajuda) => el('a', { class: 'cartao-acao', href }, el('strong', {}, rotulo), el('span', {}, ajuda));
+  const itens = [
+    ctx.pode('financeiro.aprovar') ? a(`/business/financeiro-movimentacoes.html?id=${id}#acao-avulso`, 'Entrada ou saída', 'Pago ou recebido na hora.') : null,
+    ctx.pode('financeiro.aprovar') ? a(`/business/financeiro-movimentacoes.html?id=${id}#acao-transferencia`, 'Transferir', 'Entre caixa e banco.') : null,
+    ctx.pode('financeiro.criar') ? a(`/business/financeiro-contas.html?id=${id}`, 'Conta a pagar ou receber', 'Com vencimento e parcelas.') : null,
+    a(`/business/financeiro-relatorios.html?id=${id}`, 'Relatórios', 'Resultado, fluxo e exportação.'),
+  ].filter(Boolean);
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-acoes-fin' }, el('h2', { id: 'titulo-acoes-fin' }, 'Ações rápidas'), el('div', { class: 'grade-acoes' }, ...itens));
+}
+
 async function carregar() {
   mostrarCarregando(area, 'Carregando o financeiro');
   try {
@@ -157,6 +170,7 @@ async function carregar() {
       el('p', { class: 'campo__ajuda', id: 'aviso-recorrencias' },
         'As despesas recorrentes do mês são geradas quando alguém abre o financeiro. Não há processamento automático contínuo.'),
       p.fechado_ate ? el('p', { id: 'fechado-ate' }, `Fechado até ${mesPorExtenso(p.fechado_ate)}: registros com data nesse período não mudam mais.`) : null,
+      acoesRapidas(),
       formPeriodo(),
       secaoSaldos(p),
       secaoAbertos(p),

@@ -54,6 +54,18 @@ async function simular(context, { permissoes = TODAS, painel = painelCheio, loga
         return json({ membro_id: 'm1', perfil_id: null, papel: 'funcionario', perfil_nome: 'Atendimento', permissoes });
       case '/api/empresas': return json(empresas ? [{ id: EMP, nome_publico: 'Ateliê Ponto Firme', modalidade: 'ambos', cidade: 'Campinas', uf: 'SP', situacao_vitrine: 'publicada', dado_de_teste: true, versao: 1 }] : []);
       case '/api/rpc/painel_empresa': return json(painel());
+      case '/api/rpc/busca_global': return json({ texto: corpo.p_texto, grupos: { clientes: [{ id: 'c1', titulo: 'Cida Ramos', detalhe: '19999990000' }], ordens: [] } });
+      case '/api/rpc/meus_favoritos': return json(estado.favoritos ?? []);
+      case '/api/rpc/atividades_da_empresa': return json(corpo.p_antes ? { itens: [], mais: false } : { mais: true, itens: [
+        { id: 'a1', tipo: 'venda.confirmada', recurso_tipo: 'vendas', recurso_id: 'b1000000-0000-4000-8000-000000000001', ator: 'Bia Vendas', voce: false, dados: {}, criado_em: agora.toISOString() },
+        { id: 'a2', tipo: 'agenda.compromisso_criado', recurso_tipo: 'compromissos_agenda', recurso_id: 'c1000000-0000-4000-8000-000000000001', ator: 'Pessoa fictícia', voce: true, dados: {}, criado_em: agora.toISOString() },
+        { id: 'a3', tipo: 'algo.desconhecido', recurso_tipo: 'outra', recurso_id: null, ator: 'Téo', voce: false, dados: {}, criado_em: agora.toISOString() }] });
+      case '/api/rpc/alternar_favorito': {
+        const atual = estado.favoritos ?? [];
+        const tem = atual.some((f) => f.chave === corpo.p_chave);
+        estado.favoritos = tem ? atual.filter((f) => f.chave !== corpo.p_chave) : [...atual, { tipo: corpo.p_tipo, chave: corpo.p_chave, empresa_id: corpo.p_empresa_id, rotulo: corpo.p_rotulo }];
+        return json({ tipo: corpo.p_tipo, chave: corpo.p_chave, favorito: !tem });
+      }
       case '/api/categorias_plataforma': return json([{ id: 'k1', nome: 'Costura e moda', slug: 'costura-moda' }]);
       case '/api/rpc/criar_empresa': return json({ id: EMP, nome_publico: corpo?.p_dados?.nome_publico, versao: 1 });
       case '/api/rpc/sou_ck_admin': return json(true);
@@ -161,6 +173,58 @@ test('cadastro sem sessão pede para entrar e não abre o modal [simulação]', 
   await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
   await expect(page.locator('#empresas')).toContainText(/Entr/);
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('paleta Ctrl+K: filtra áreas, navega por teclado, busca registros no banco e fixa no menu [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/dashboard.html?id=${EMP}`);
+  await expect(page.getByRole('heading', { name: 'Precisa da sua ação' })).toBeVisible();
+  await page.keyboard.press('Control+k');
+  const paleta = page.getByRole('dialog', { name: 'Buscar e ir para' });
+  await expect(paleta).toBeVisible();
+  const campo = paleta.getByRole('combobox');
+  await expect(campo).toBeFocused();
+  await campo.fill('financ');
+  await expect(paleta.getByRole('option')).toHaveCount(2);
+  await expect(paleta.getByRole('option').nth(1)).toContainText('Financeiro');
+  await paleta.getByRole('button', { name: 'Fixar Financeiro' }).click();
+  await expect(page.locator('#menu-fixados')).toContainText('Financeiro');
+  expect(estado.corpos['/api/rpc/alternar_favorito']).toMatchObject({ p_tipo: 'modulo', p_chave: 'modulo:financeiro', p_empresa_id: EMP });
+  await campo.fill('cida');
+  await expect(paleta.getByRole('option', { name: /Cida Ramos/ })).toBeVisible();
+  expect(estado.corpos['/api/rpc/busca_global']).toEqual({ p_empresa_id: EMP, p_texto: 'cida' });
+  const opcoes = await paleta.getByRole('option').allInnerTexts();
+  for (let i = 0; i < opcoes.findIndex((t) => t.includes('Cida Ramos')); i += 1) await page.keyboard.press('ArrowDown');
+  await expect(campo).toHaveAttribute('aria-activedescendant', /paleta-op-/);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/business\/clientes\.html\?id=.*&busca=Cida%20Ramos/);
+});
+
+test('paleta: sem empresa ativa o atalho não abre nada; Esc fecha e devolve o foco [simulação]', async ({ page, context }) => {
+  await simular(context);
+  await page.goto('/business/minhas-empresas.html');
+  await page.keyboard.press('Control+k');
+  await expect(page.getByRole('dialog', { name: 'Buscar e ir para' })).toHaveCount(0);
+  await page.goto(`/business/dashboard.html?id=${EMP}`);
+  await expect(page.getByRole('heading', { name: 'Precisa da sua ação' })).toBeVisible();
+  await page.locator('#abrir-paleta').click();
+  await expect(page.getByRole('dialog', { name: 'Buscar e ir para' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('atividades: textos simples, "Você" para a própria ação, links para o registro e "mais antigas" [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/atividades.html?id=${EMP}`);
+  const lista = page.locator('#lista-atividades');
+  await expect(lista).toContainText('Bia Vendas confirmou uma venda');
+  await expect(lista).toContainText('Você criou um compromisso na agenda');
+  await expect(lista).toContainText('registrou "desconhecido" em algo');
+  await expect(lista.locator('[data-tipo="venda.confirmada"] a')).toHaveAttribute('href', /venda\.html\?id=.*&venda=b1000000/);
+  await expect(page.locator('#menu-principal a[aria-current="page"]')).toContainText('Atividades');
+  await page.getByRole('button', { name: 'Ver atividades mais antigas' }).click();
+  await expect(page.getByRole('button', { name: 'Ver atividades mais antigas' })).toBeHidden();
+  expect(estado.corpos['/api/rpc/atividades_da_empresa'].p_antes).toBeTruthy();
 });
 
 test('lista de orçamentos marca a conversa com mensagens novas, com texto e não só cor [simulação]', async ({ page, context }) => {

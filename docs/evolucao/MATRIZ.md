@@ -18,8 +18,15 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E04 | Avisos de conflito considerando feriados e horários especiais | Concluído e validado | agenda-excecoes.test |
 | E04 | Compromissos internos e bloqueios com proteção contra conflito | Concluído e validado | agenda-excecoes.test (compromissos), servicos e2e, fluxo real |
 | E04 | Agenda individual por funcionário com bloqueio automático | Não iniciado | conflitos geram aviso com confirmação, não bloqueio |
-| E05 | Busca global, Ctrl+K, favoritos de módulos, atividades, vendas, funil | Não iniciado | |
-| E06 | Financeiro em abas, painel orientado a ação, metas | Não iniciado | |
+| E05 | Busca global no banco com permissão por área | Concluído e validado | busca-global.test, paleta no app real |
+| E05 | Paleta Ctrl+K com áreas, ações rápidas, fixados e registros | Implementado aguardando validação manual | painel-m13b e2e (2) |
+| E05 | Favoritos de áreas e ações ("Fixados" no menu) | Implementado aguardando validação manual | painel-m13b e2e |
+| E05 | Ficha do cliente | Implementado aguardando validação manual | busca-global.test (ficha), vendas e2e (2) |
+| E05 | Funil de orçamentos em colunas | Implementado aguardando validação manual | servicos e2e |
+| E05 | Central de atividades | Implementado aguardando validação manual | busca-global.test (atividades), painel-m13b e2e |
+| E05 | Vendas "consulta primeiro" e modelos reutilizáveis | Não iniciado | |
+| E06 | Financeiro: ações rápidas em modal a partir do painel | Implementado aguardando validação manual | financeiro e2e (21) |
+| E06 | Painel orientado a ação e metas com métricas reais | Não iniciado | |
 | E07 | OS simplificada, checklists, "Sem responsável definido", documentos | Não iniciado | |
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
 | E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |

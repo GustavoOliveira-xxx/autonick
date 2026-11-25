@@ -74,6 +74,10 @@ async function simular(context, { permissoes = TODAS, papel = 'proprietario', er
       case '/api/empresas': return json(200, [{ id: EMP, nome_publico: 'Doceria Teste', versao: 1, dado_de_teste: true, situacao_vitrine: 'publicada' }]);
       case '/api/rpc/minhas_permissoes': return json(200, { membro_id: 'm', papel, perfil_id: null, perfil_nome: null, permissoes });
       case '/api/rpc/catalogo_para_venda': return json(200, catalogo(permissoes.includes('estoque.visualizar')));
+      case '/api/rpc/ficha_cliente': return json(200, { cliente: { id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, observacoes: 'Prefere retirar à tarde.',
+        ativo: true, conta_vinculada: false, desde: '2026-10-01T12:00:00Z', versao: 1 },
+        ...(permissoes.includes('vendas.visualizar') ? { resumo: { vendas: 1, total_centavos: 7000, ultima_compra: '2026-11-10T15:00:00Z' },
+          vendas: [{ id: VENDA, numero: 12, estado: 'confirmada', total_centavos: 7000, data: '2026-11-10T15:00:00Z' }] } : {}) });
       case '/api/rpc/clientes_da_empresa': return json(200, [{ id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, observacoes: null, ativo: true, versao: 1, conta_vinculada: false, vendas: 1 }]);
       case '/api/rpc/meu_limite_desconto': return json(200, limite);
       case '/api/rpc/registrar_venda_direta': return json(200, { id: VENDA, numero: 7, estado: 'confirmada', entrega: 'entregue', total_centavos: 8000, versao: 3 });
@@ -290,6 +294,30 @@ for (const caminho of [`/business/venda-nova.html?id=${EMP}`, `/business/venda.h
     expect(larguras[0]).toBeLessThanOrEqual(larguras[1]);
   });
 }
+
+test('ficha do cliente: resumo, histórico em abas e links; sem permissão de vendas a parte some [simulação]', async ({ page, context }) => {
+  await simular(context);
+  await page.goto(`/business/clientes.html?id=${EMP}`);
+  await page.getByRole('button', { name: 'Abrir ficha' }).click();
+  const ficha = page.getByRole('dialog', { name: 'Ficha de Ana Souza' });
+  await expect(ficha).toContainText('Compras confirmadas');
+  await expect(ficha).toContainText('R$ 70,00');
+  await expect(ficha).toContainText('Prefere retirar à tarde.');
+  await expect(ficha.getByRole('tab', { name: /Vendas/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(ficha.getByRole('link', { name: 'Venda nº 12' })).toHaveAttribute('href', new RegExp(`venda=${VENDA}`));
+  const r = await new AxeBuilder({ page }).withTags(AXE).analyze();
+  expect(r.violations).toEqual([]);
+});
+
+test('ficha do cliente abre direto pelo endereço (vindo da busca Ctrl+K) [simulação]', async ({ page, context }) => {
+  await simular(context, { permissoes: ['clientes.visualizar'], papel: 'funcionario' });
+  await page.goto(`/business/clientes.html?id=${EMP}&busca=Ana&ficha=00000000-0000-4000-8000-0000000000c1`);
+  const ficha = page.getByRole('dialog', { name: 'Ficha de Ana Souza' });
+  await expect(ficha).toBeVisible();
+  await expect(ficha).not.toContainText('Compras confirmadas');
+  await expect(ficha).toContainText('Seu perfil não inclui vendas');
+  await expect(page).not.toHaveURL(/ficha=/);
+});
 
 test('M13: comprovante da venda sem custo dos itens; rascunho sem botão [simulação]', async ({ page, context }) => {
   const estado = await simular(context);

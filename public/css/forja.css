@@ -571,3 +571,63 @@ html[data-tema="claro"] .nivel-acesso label { background: #fff; }
 .mes__interno.evento-interno--bloqueio .evento-interno__abrir { background: rgb(154 143 176 / 0.22); }
 li.cartao.evento-interno { border-left: 4px solid #3ecf8e; }
 li.cartao.evento-interno--bloqueio { border-left-color: #9a8fb0; }
+
+/* ---------------------------------------------------------------------------------------------
+   E05 · Paleta de comandos (Ctrl+K) e botão "Buscar" do menu
+   --------------------------------------------------------------------------------------------- */
+.botao-buscar { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; margin-block: 6px 2px; border-radius: 10px; cursor: pointer;
+  border: 1px solid rgb(255 255 255 / 0.14); background: rgb(255 255 255 / 0.04); color: #d9cfe6; font: inherit; font-weight: 600; text-align: left; }
+.botao-buscar span { flex: 1; }
+.botao-buscar kbd, .paleta kbd { padding: 1px 6px; border-radius: 6px; border: 1px solid rgb(255 255 255 / 0.2); background: rgb(255 255 255 / 0.06); font: 600 0.75rem/1.4 ui-monospace, monospace; color: inherit; }
+.botao-buscar:hover { border-color: rgb(245 183 10 / 0.6); color: #fff; }
+.modal--paleta { align-self: start; margin-top: 10vh; }
+.paleta { display: grid; gap: 8px; }
+.paleta__campo { width: 100%; min-height: 52px; padding: 0 16px; border-radius: 12px; border: 2px solid rgb(245 183 10 / 0.6); background: var(--superficie-2); color: var(--texto); font: inherit; font-size: 1.1rem; }
+.paleta__campo:focus { outline: none; border-color: #f5b70a; box-shadow: 0 0 0 4px rgb(245 183 10 / 0.18); }
+.paleta__lista { max-height: min(56vh, 520px); overflow-y: auto; display: grid; gap: 10px; padding-right: 2px; }
+.paleta__titulo-grupo { margin: 4px 0 2px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+.paleta__opcao { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 10px; border-radius: 10px; cursor: pointer; }
+.paleta__opcao[aria-selected="true"] { background: rgb(245 183 10 / 0.16); box-shadow: inset 3px 0 0 #f5b70a; }
+.paleta__tipo { flex: none; min-width: 52px; padding: 2px 6px; border-radius: 6px; background: rgb(127 127 127 / 0.16); font-size: 0.72rem; font-weight: 700; text-align: center; color: var(--texto-suave); }
+.paleta__texto { flex: 1; display: grid; min-width: 0; }
+.paleta__texto strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paleta__texto small { color: var(--texto-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paleta__fixar { flex: none; width: 36px; height: 36px; border-radius: 999px; border: 0; background: none; color: var(--texto-suave); font-size: 1.1rem; cursor: pointer; }
+.paleta__fixar[aria-pressed="true"] { color: #f5b70a; }
+.paleta__fixar:hover { background: rgb(127 127 127 / 0.15); }
+.paleta__estado, .paleta__vazio { margin: 0; color: var(--texto-suave); font-size: 0.9rem; }
+.paleta__dica { margin: 4px 0 0; font-size: 0.8rem; color: var(--texto-suave); display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+html[data-tema="claro"] .paleta kbd { border-color: #d8c9a8; background: #fff; }
+
+/* E05 · Ficha do cliente */
+.resumo-ficha { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.resumo-ficha > div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borda-suave); background: var(--superficie-2); }
+.resumo-ficha small { color: var(--texto-suave); font-weight: 600; }
+.linha-ficha { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 6px 0; border-bottom: 1px solid var(--borda-suave); }
+
+/* E05 · Funil de orçamentos em colunas */
+.funil { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 6px; max-width: 100%; }
+.funil__coluna { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border-radius: 14px; background: var(--superficie-2); border: 1px solid var(--borda-suave); border-top: 4px solid #6aa7ff; }
+.funil__coluna--em_analise { border-top-color: #b48cff; }
+.funil__coluna--orcamento_enviado { border-top-color: #f5b70a; }
+.funil__coluna--revisao_pedida { border-top-color: #ff8a5b; }
+.funil__coluna--aceita { border-top-color: #3ecf8e; }
+.funil__titulo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; font-size: 0.95rem; }
+.funil__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.funil__cartao { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; background: var(--superficie); border: 1px solid var(--borda-suave); font-size: 0.9rem; }
+.funil__cartao a { color: var(--texto); }
+.funil__valor { font-weight: 700; }
+
+/* E05 · Central de atividades */
+.atividades { display: grid; gap: 18px; }
+.atividade-dia h2 { margin: 0 0 6px; font-size: 1rem; text-transform: capitalize; color: var(--texto-suave); }
+.atividade { display: grid; grid-template-columns: 56px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borda-suave); }
+.atividade__hora { font-variant-numeric: tabular-nums; color: var(--texto-suave); font-weight: 600; }
+
+/* E06 · Ações rápidas (financeiro e outras telas) */
+.grade-acoes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+.cartao-acao { display: grid; gap: 4px; align-content: start; min-height: 84px; padding: 14px 16px; border-radius: 14px; text-align: left; cursor: pointer; text-decoration: none;
+  font: inherit; color: var(--texto); background: var(--superficie-2); border: 1px solid var(--borda-suave); border-left: 4px solid #f5b70a; }
+.cartao-acao strong { font-size: 1.02rem; }
+.cartao-acao span { color: var(--texto-suave); font-size: 0.88rem; }
+.cartao-acao:hover, .cartao-acao:focus-visible { border-color: rgb(245 183 10 / 0.7); background: color-mix(in srgb, var(--superficie-2) 88%, #f5b70a); }

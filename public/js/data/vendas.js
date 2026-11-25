@@ -104,3 +104,4 @@ export function dividirParcelas(totalCentavos, n) {
   const base = Math.floor(totalCentavos / n);
   return Array.from({ length: n }, (_, i) => base + (i === 0 ? totalCentavos - base * n : 0));
 }
+export const fichaCliente = (clienteId) => neon.rpc('ficha_cliente', { p_cliente_id: clienteId });

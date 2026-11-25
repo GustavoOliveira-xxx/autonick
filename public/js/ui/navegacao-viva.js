@@ -80,9 +80,34 @@ export function ehNavegacaoInterna(evento, link) {
   return !(url.pathname === location.pathname && url.search === location.search);
 }
 
+/**
+ * Âncora tardia: as telas montam o conteúdo depois de ler o banco, então "#titulo-novo-cliente" ainda não existe no carregamento.
+ * Espera o alvo aparecer (até 8 s), rola até ele e leva o foco; se o alvo tiver data-ancora-abre (ex.: "Novo compromisso"), abre.
+ */
+function seguirAncoraTardia() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id || !/^[a-z0-9_-]{2,60}$/i.test(id) || document.getElementById(id)) return;
+  const fim = Date.now() + 8000;
+  const obs = new MutationObserver(() => {
+    const alvo = document.getElementById(id);
+    if (!alvo && Date.now() < fim) return;
+    obs.disconnect();
+    if (!alvo) return;
+    requestAnimationFrame(() => {
+      alvo.scrollIntoView({ block: 'start', behavior: 'auto' });
+      if (alvo.hasAttribute('data-ancora-abre')) { alvo.click(); return; }
+      if (!alvo.matches('a, button, input, select, textarea, [tabindex]')) alvo.setAttribute('tabindex', '-1');
+      alvo.focus({ preventScroll: true });
+    });
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  setTimeout(() => obs.disconnect(), 8500);
+}
+
 export function iniciarNavegacaoViva() {
   if (document.documentElement.dataset.navegacaoViva) return;
   document.documentElement.dataset.navegacaoViva = 'sim';
+  seguirAncoraTardia();
   document.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     const alvo = e.target.closest?.(ALVOS_CLIQUE);

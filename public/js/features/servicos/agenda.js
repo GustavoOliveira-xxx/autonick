@@ -317,7 +317,7 @@ function painelCalendario(r, a, excecoes) {
     `Nº ${x.numero} · ${x.servico} · ${x.cliente_nome}`);
   const lembrete = el('div', { id: 'lembrete-agenda' });
   acompanharLembrete(a.confirmados, lembrete);
-  const novo = ctx.pode('agenda.alterar') ? el('button', { type: 'button', class: 'botao', id: 'novo-compromisso' }, 'Novo compromisso') : null;
+  const novo = ctx.pode('agenda.alterar') ? el('button', { type: 'button', class: 'botao', id: 'novo-compromisso', 'data-ancora-abre': '' }, 'Novo compromisso') : null;
   novo?.addEventListener('click', () => abrirCompromisso(null, a.equipe));
   equipeAtual = a.equipe;
   return el('div', { class: 'pilha-grande' },

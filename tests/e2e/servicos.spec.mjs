@@ -275,6 +275,21 @@ test('agenda E04: compromisso com conflito só grava depois de "Salvar mesmo ass
   await expect(page.locator('[data-interno="c1"]')).toContainText('Reunião com fornecedor');
 });
 
+test('orçamentos E05: visão Funil com colunas das etapas reais, contagens do banco e link para o orçamento [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/solicitacoes.html?id=${EMP}`);
+  await page.locator('[data-visao="funil"]').click();
+  await expect(page.locator('.funil__coluna')).toHaveCount(5);
+  await expect(page.locator('[data-etapa="em_analise"]')).toContainText('Nº 7');
+  await expect(page.locator('[data-etapa="em_analise"] .abas__contador')).toHaveText('1');
+  await expect(page.locator('[data-etapa="nova"]')).toContainText('Nada nesta etapa.');
+  await expect(page).toHaveURL(/#funil$/);
+  expect(estado.corpos['/api/rpc/solicitacoes_da_empresa']).toBeTruthy();
+  await page.reload();
+  await expect(page.locator('#funil')).toBeVisible();
+  await axe(page);
+});
+
 test('cliente pede orçamento: estimativa do banco, respostas sem preço, sem endereço, preferência opcional [simulação]', async ({ page, context }) => {
   const estado = await simular(context, { tipo: 'cliente' });
   // M11 (D11-03): a tela abre com a empresa vinda da vitrine; não há seletor avulso de empresas.

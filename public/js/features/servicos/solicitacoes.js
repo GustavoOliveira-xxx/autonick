@@ -19,6 +19,7 @@ const nav = document.getElementById('navegacao');
 const anunciar = criarAnunciador(document.getElementById('avisos'));
 let ctx = null;
 let filtro = 'abertas';
+let visao = location.hash === '#funil' ? 'funil' : 'lista';
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
 
 const FILTROS = [['abertas', 'Abertas'], ['nova', 'Novas'], ['revisao_pedida', 'Revisão pedida'], ['aceita', 'Aceitas'], ['', 'Todas']];
@@ -69,6 +70,34 @@ async function secaoInterna() {
   return el('details', { class: 'cartao', id: 'nova-interna' }, el('summary', {}, 'Registrar solicitação do balcão ou do telefone'), form);
 }
 
+// E05: funil em colunas sobre os estados reais. Mudar de etapa continua sendo pela tela do orçamento (regras do banco).
+const ETAPAS = [['nova', 'Novas'], ['em_analise', 'Em análise'], ['orcamento_enviado', 'Orçamento enviado'], ['revisao_pedida', 'Revisão pedida'], ['aceita', 'Aceitas']];
+function cartaoFunil(s) {
+  const href = `/business/solicitacao.html?id=${encodeURIComponent(ctx.id)}&solicitacao=${encodeURIComponent(s.id)}`;
+  return el('li', { class: 'funil__cartao', 'data-solicitacao': s.numero, 'data-conversa': `solicitacao:${s.id}` },
+    el('a', { href }, el('strong', {}, `Nº ${s.numero}`), ` · ${s.servico}`),
+    el('span', {}, s.cliente_nome),
+    el('span', { class: 'funil__valor' }, s.total_vigente_centavos ? dinheiro(s.total_vigente_centavos) : textoEstimativa(s.estimativa)),
+    el('span', { class: 'opcoes' }, s.estado_exibicao === 'vencido' ? chipSolicitacao('vencido') : null,
+      s.aguardando_aprovacao ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'aguarda aprovação') : null,
+      s.tem_rascunho ? el('span', { class: 'chip chip--neutro chip--pequeno' }, 'rascunho') : null,
+      s.horario ? el('span', { class: 'chip chip--info chip--pequeno' }, textoHorario(s.horario.inicio)) : null));
+}
+async function funil(contagem) {
+  const [abertas, aceitas] = await Promise.all([solicitacoesDaEmpresa(ctx.id, { estado: 'abertas' }, 100, 0), solicitacoesDaEmpresa(ctx.id, { estado: 'aceita' }, 20, 0)]);
+  const itens = [...abertas.itens, ...aceitas.itens];
+  const total = (e) => (e === 'aceita' ? aceitas.total : contagem?.[e] ?? 0);
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-funil', id: 'funil' },
+    el('h2', { id: 'titulo-funil', class: 'visualmente-oculto' }, 'Funil de orçamentos'),
+    el('p', { class: 'campo__ajuda' }, 'Cada coluna é uma etapa real. Para avançar, abra o orçamento: as regras de envio, aprovação e aceite continuam valendo. "Aceitas" mostra as 20 mais recentes.'),
+    el('div', { class: 'funil' }, ...ETAPAS.map(([e, nome]) => {
+      const daEtapa = itens.filter((s) => s.estado === e);
+      return el('section', { class: `funil__coluna funil__coluna--${e}`, 'aria-labelledby': `funil-${e}`, 'data-etapa': e },
+        el('h3', { id: `funil-${e}`, class: 'funil__titulo' }, nome, el('span', { class: 'abas__contador' }, String(total(e)))),
+        daEtapa.length ? el('ul', { class: 'funil__lista', role: 'list' }, ...daEtapa.map(cartaoFunil)) : el('p', { class: 'campo__ajuda' }, 'Nada nesta etapa.'));
+    })));
+}
+
 async function carregar() {
   mostrarCarregando(area, 'Carregando as solicitações');
   try {
@@ -89,9 +118,15 @@ async function carregar() {
       b.addEventListener('click', () => { filtro = v; carregar(); });
       return el('li', {}, b);
     }));
-    area.replaceChildren(interna ?? el('span'), filtros,
+    const alternar = el('div', { class: 'navegacao-periodo__visoes', role: 'group', 'aria-label': 'Forma de ver os orçamentos' }, ...[['lista', 'Lista'], ['funil', 'Funil']].map(([v, nome]) => {
+      const b = el('button', { type: 'button', class: 'botao botao--texto', 'aria-pressed': String(visao === v), 'data-visao': v }, nome);
+      b.addEventListener('click', () => { if (visao !== v) { visao = v; history.replaceState(history.state, '', `${location.pathname}${location.search}${v === 'funil' ? '#funil' : ''}`); carregar(); } });
+      return b;
+    }));
+    const conteudo = visao === 'funil' ? [await funil(r.contagem)] : [filtros,
       r.itens.length ? el('ul', { class: 'pilha', id: 'lista-solicitacoes' }, ...r.itens.map(linha))
-        : el('p', { id: 'lista-solicitacoes' }, `Nenhuma solicitação${filtro ? ` em "${(ESTADO_SOLICITACAO[filtro] ?? 'abertas').toLowerCase()}"` : ''}.`));
+        : el('p', { id: 'lista-solicitacoes' }, `Nenhuma solicitação${filtro ? ` em "${(ESTADO_SOLICITACAO[filtro] ?? 'abertas').toLowerCase()}"` : ''}.`)];
+    area.replaceChildren(interna ?? el('span'), alternar, ...conteudo);
     marcarNovas(area, ctx.id);
   } catch (erro) {
     tratarErro(area, erro, carregar);

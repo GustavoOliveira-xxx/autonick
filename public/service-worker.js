@@ -11,7 +11,7 @@
  *    (texto fixo, sem dado de ninguém); conversas, dados privados, relatórios
  *    e PDFs nunca entram no cache.
  */
-const VERSAO = 'autonick-estatico-v0.16.0';  // Evolução integrada: navegação viva, tema claro revisado e símbolo capacete-sino
+const VERSAO = 'autonick-estatico-v0.17.0';  // Evolução integrada: navegação viva, tema claro revisado e símbolo capacete-sino
 
 // Páginas que abrem sem conexão (a rede tem prioridade; o cache é só reserva).
 const PAGINAS_SEM_CONEXAO = ['/ajuda.html'];
@@ -32,6 +32,8 @@ const ARQUIVOS = [
   '/js/features/offline.js',
   '/js/ui/layout.js',
   '/js/ui/navegacao-viva.js',
+  '/js/ui/paleta.js',
+  '/js/ui/modal.js',
   '/js/tema-inicial.js',
   '/assets/brand/autonick-capacete-sino.svg',
   '/js/ui/dom.js',

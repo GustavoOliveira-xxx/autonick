@@ -7,6 +7,7 @@ import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { abrirDialogo } from '../../ui/dialogo.js';
+import { abrirModal } from '../../ui/modal.js';
 import { campoTexto, campoSelecao, grupoOpcoes, valores, erroNoCampo, limparErros, ocupado } from '../../ui/formulario.js';
 import {
   lancamentos as lerLancamentos, contas as lerContas, categorias as lerCategorias, registrarLancamento, estornarLancamento, transferir,
@@ -125,16 +126,14 @@ function secaoAvulso() {
     if (!d.descricao || d.descricao.length < 2) return erroNoCampo(form, 'descricao', 'Descreva o lançamento.');
     if (d.data > dataDeHoje()) return erroNoCampo(form, 'data', 'A data não pode estar no futuro. O que ainda vai acontecer é uma conta a pagar ou a receber.');
     return executar('avulso', form, (k) => registrarLancamento(ctx.id, { tipo: d.tipo, conta_id: d.conta_id, valor_centavos: centavos, data: d.data,
-      categoria_id: d.categoria_id, descricao: d.descricao }, k), () => anunciar('sucesso', 'Lançamento registrado.'));
+      categoria_id: d.categoria_id, descricao: d.descricao }, k), () => { fecharAcao(); anunciar('sucesso', 'Lançamento registrado.'); });
   });
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-avulso' }, el('h2', { id: 'titulo-avulso' }, 'Entrada ou saída avulsa'),
-    el('p', { class: 'campo__ajuda' }, 'Para algo pago ou recebido na hora, sem conta a pagar ou a receber.'), form);
+  return form;
 }
 
 function secaoTransferencia() {
   const ativas = opcoesContas(contas);
-  if (ativas.length < 2) return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-transferencia' }, el('h2', { id: 'titulo-transferencia' }, 'Transferência entre contas'),
-    el('p', {}, 'Cadastre uma segunda conta (por exemplo, a conta do banco) para transferir entre elas.'));
+  if (ativas.length < 2) return el('p', {}, 'Cadastre uma segunda conta (por exemplo, a conta do banco) para transferir entre elas.');
   const form = el('form', { id: 'form-transferencia', class: 'pilha', novalidate: true },
     el('div', { class: 'grade-filtros' },
       campoSelecao({ nome: 'conta_origem_id', rotulo: 'Sai de', opcoes: ativas, valor: contaPadrao(contas), obrigatorio: true, id: 'transf-origem' }),
@@ -157,9 +156,32 @@ function secaoTransferencia() {
     if (!ok) return null;
     return executar('transferencia', form, (k) => transferir(ctx.id, { conta_origem_id: d.conta_origem_id, conta_destino_id: d.conta_destino_id,
       valor_centavos: centavos, data: d.data, ...(d.descricao ? { descricao: d.descricao } : {}) }, k),
-    (t) => anunciar('sucesso', 'Transferência registrada.', el('p', {}, `${t.conta_origem}: ${dinheiro(t.saldo_origem_centavos)} · ${t.conta_destino}: ${dinheiro(t.saldo_destino_centavos)}.`)));
+    (t) => fecharAcao() || anunciar('sucesso', 'Transferência registrada.', el('p', {}, `${t.conta_origem}: ${dinheiro(t.saldo_origem_centavos)} · ${t.conta_destino}: ${dinheiro(t.saldo_destino_centavos)}.`)));
   });
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-transferencia' }, el('h2', { id: 'titulo-transferencia' }, 'Transferência entre contas'), form);
+  return form;
+}
+
+// E06: as ações do dia a dia abrem em modal a partir da barra de ações rápidas (e do Painel financeiro, pelo endereço).
+let acaoAberta = null;
+function fecharAcao() { acaoAberta?.fechar(); acaoAberta = null; }
+function abrirAcao(titulo, descricao, corpo) {
+  let alterado = false;
+  corpo.addEventListener?.('input', () => { alterado = true; });
+  acaoAberta = abrirModal({ titulo, descricao, corpo, tamanho: 'medio', protegerAlteracoes: () => alterado, aoFechar: () => { acaoAberta = null; } });
+  acaoAberta.dialogo.querySelector('input:not([type="radio"]), select')?.focus();
+}
+function barraAcoes() {
+  const b = (id, rotulo, ajuda, abrir) => {
+    const botao = el('button', { type: 'button', class: 'cartao-acao', id, 'data-ancora-abre': '' }, el('strong', {}, rotulo), el('span', {}, ajuda));
+    botao.addEventListener('click', abrir);
+    return botao;
+  };
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-acoes-fin' }, el('h2', { id: 'titulo-acoes-fin' }, 'Ações rápidas'),
+    el('div', { class: 'grade-acoes' },
+      b('acao-avulso', 'Entrada ou saída', 'Pago ou recebido na hora, sem conta a pagar ou receber.',
+        () => abrirAcao('Entrada ou saída avulsa', 'Para algo pago ou recebido na hora, sem conta a pagar ou a receber.', secaoAvulso())),
+      b('acao-transferencia', 'Transferir entre contas', 'Do caixa para o banco, por exemplo. Não é receita nem despesa.',
+        () => abrirAcao('Transferência entre contas', 'O total da empresa não muda.', secaoTransferencia()))));
 }
 
 function secaoProprietario() {
@@ -203,8 +225,7 @@ async function carregar() {
     categorias = cats;
     concluirCarregamento(area);
     area.append(...[avisoRegistro(),
-      ctx.pode('financeiro.aprovar') ? secaoAvulso() : null,
-      ctx.pode('financeiro.aprovar') ? secaoTransferencia() : null,
+      ctx.pode('financeiro.aprovar') ? barraAcoes() : null,
       secaoProprietario(),
       secaoLivro(r)].filter(Boolean));
   } catch (erro) {

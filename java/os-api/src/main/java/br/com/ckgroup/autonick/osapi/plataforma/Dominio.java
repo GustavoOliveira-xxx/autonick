@@ -24,7 +24,7 @@ public enum Dominio {
             "cancelar_convite", "desligar_membro", "alterar_perfil_do_membro", "criar_perfil_permissao",
             "alterar_perfil_permissao", "desativar_perfil_permissao", "definir_desconto_maximo", "meu_limite_desconto",
             "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa",
-            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro"),
+            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro", "busca_global", "atividades_da_empresa"),
 
     PRODUTOS_ESTOQUE(false, "produtos_da_empresa", "criar_produto", "alterar_produto", "definir_produto_ativo",
             "adicionar_variacao", "alterar_variacao", "definir_variacao_ativa", "alterar_preco", "alterar_custo",
@@ -35,7 +35,7 @@ public enum Dominio {
             "compras_para_conta_pagar", "gerar_titulo_compra", "definir_imagem_produto", "imagens_de_produtos"),
 
     VENDAS_PEDIDOS(false, "clientes_da_empresa", "criar_cliente", "alterar_cliente", "definir_cliente_ativo",
-            "historico_do_cliente", "catalogo_para_venda", "vendas_da_empresa", "venda_detalhe", "criar_venda",
+            "historico_do_cliente", "ficha_cliente", "catalogo_para_venda", "vendas_da_empresa", "venda_detalhe", "criar_venda",
             "alterar_venda", "confirmar_venda", "cancelar_venda", "descartar_venda", "registrar_venda_direta",
             "registrar_entrega", "pedidos_da_empresa", "aceitar_pedido", "recusar_pedido", "concluir_pedido",
             "cancelar_pedido", "criar_pedido", "meus_pedidos", "itens_para_pedido", "empresas_para_pedido"),

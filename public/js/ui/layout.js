@@ -13,6 +13,7 @@ import { registrarServiceWorker } from './sw-registro.js';
 import { iniciarConexao } from './conexao.js';
 import { capturarInstalacao, abertoComoApp } from './instalacao.js';
 import { iniciarNavegacaoViva } from './navegacao-viva.js';
+import { iniciarPaleta } from './paleta.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** Ícone do conjunto próprio do AutoniCK (assets/icons/icones.svg), sempre decorativo. */
@@ -130,14 +131,39 @@ function menuBusiness() {
       item('/business/minhas-empresas.html?cadastrar=1', 'Cadastrar empresa', 'i-escudo', false)))];
   const botaoSair = el('button', { type: 'button', class: 'menu-sair' }, icone('i-sair'), el('span', {}, 'Sair'));
   botaoSair.addEventListener('click', () => sair(botaoSair));
+  const fixados = ativa ? el('div', { class: 'menu-grupo', id: 'menu-fixados', hidden: true }) : null;
+  if (fixados) preencherFixados(fixados, ativa, chave);
   return el('nav', { class: 'menu-lateral', id: 'menu-principal', 'aria-label': 'Principal' },
-    ...[grupos].flat(),
+    fixados, ...[grupos].flat(),
     el('div', { class: 'menu-grupo menu-grupo--rodape' }, el('ul', { role: 'list' },
       ativa ? item('/business/minhas-empresas.html', 'Minhas empresas', 'i-vitrine', atual === '/business/minhas-empresas.html') : null,
       item('/business/conta.html', 'Minha conta', 'i-pessoa', atual === '/business/conta.html'),
       sessaoConfirmada ? null : item('/business/entrar.html', 'Entrar', 'i-seta', atual === '/business/entrar.html'),
       item('/ajuda.html', 'Ajuda', 'i-balao', false),
       el('li', {}, botaoSair))));
+}
+
+/** Grupo "Fixados" no topo do menu: áreas e ações marcadas com a estrela na paleta (favoritos no servidor). */
+function preencherFixados(caixa, ativa, chaveAtual) {
+  import('../data/favoritos.js').then(({ meusFavoritos }) => meusFavoritos(ativa.id)).then(async (f) => {
+    const { acoesRapidas } = await import('./paleta.js');
+    const pode = (c) => !ativa.permissoes || ativa.permissoes.includes(c);
+    const itens = [...gruposDaEmpresa(ativa.id, pode).flatMap(([, i]) => i).map((i) => ({ chave: `modulo:${i.chave}`, href: i.href, rotulo: i.rotulo, icone: i.icone, area: i.chave })),
+      ...acoesRapidas(ativa.id, pode).map((a) => ({ ...a, icone: 'i-raio' }))];
+    const marcados = (f ?? []).filter((x) => x.tipo === 'modulo' || x.tipo === 'acao').map((x) => itens.find((i) => i.chave === x.chave)).filter(Boolean);
+    if (!marcados.length) { caixa.hidden = true; return; }
+    caixa.replaceChildren(el('h2', { class: 'menu-grupo__titulo' }, 'Fixados'), el('ul', { role: 'list' }, ...marcados.map((i) => el('li', {},
+      el('a', { href: i.href, 'aria-current': i.area && i.area === chaveAtual ? 'page' : null }, icone(i.icone), el('span', {}, i.rotulo))))));
+    caixa.hidden = false;
+  }).catch(() => {});
+}
+
+function botaoBuscar() {
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform ?? '');
+  const b = el('button', { type: 'button', class: 'botao-buscar', id: 'abrir-paleta', 'aria-keyshortcuts': mac ? 'Meta+K' : 'Control+K' },
+    icone('i-lupa'), el('span', {}, 'Buscar ou ir para…'), el('kbd', { 'aria-hidden': 'true' }, mac ? '⌘K' : 'Ctrl K'));
+  b.addEventListener('click', () => import('./paleta.js').then((m) => m.abrirPaleta()));
+  return b;
 }
 
 function blocoEmpresaAtiva() {
@@ -178,7 +204,7 @@ function montarCabecalho(area) {
     });
     return [el('div', { class: 'cabecalho__interno' },
       el('div', { class: 'cabecalho__topo' }, marca(area), botaoLeitura(), botaoTema(), botaoMenu),
-      blocoEmpresaAtiva(), menuBusiness())];
+      blocoEmpresaAtiva(), obterEmpresaAtiva() ? botaoBuscar() : null, menuBusiness())];
   }
   // A Ajuda precisa abrir sem conexão: a casca não importa a configuração do ambiente (ela não fica no cache).
   const ambiente = area === 'ck' ? el('span', { class: 'ambiente' }, 'versão de desenvolvimento') : null;
@@ -246,6 +272,12 @@ export function iniciarLayout() {
   const atalhos = barraCelular(area);
   if (atalhos && !document.querySelector('.barra-celular')) { document.body.append(atalhos); document.body.classList.add('com-barra-celular'); }
   if (area === 'business') {
+    iniciarPaleta();
+    document.addEventListener('autonick:favoritos', () => {
+      const ativa = obterEmpresaAtiva();
+      const caixa = document.getElementById('menu-fixados');
+      if (ativa && caixa) preencherFixados(caixa, ativa, chaveDaPagina());
+    });
     aoTrocarEmpresa(() => atualizarEmpresaAtivaNoCabecalho());
     // Troca rápida: o bloco "Empresa ativa" abre o seletor (sem JavaScript, o link leva a Minhas empresas).
     document.addEventListener('click', (e) => {
@@ -264,6 +296,8 @@ export function iniciarLayout() {
 export function atualizarEmpresaAtivaNoCabecalho() {
   if (document.body.dataset.area !== 'business') return;
   document.getElementById('empresa-ativa')?.replaceWith(blocoEmpresaAtiva());
+  const busca = document.getElementById('abrir-paleta');
+  if (obterEmpresaAtiva() && !busca) document.getElementById('empresa-ativa')?.after(botaoBuscar());
   document.getElementById('menu-principal')?.replaceWith(menuBusiness());
 }
 

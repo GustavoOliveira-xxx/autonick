@@ -27,6 +27,7 @@ export function gruposDaEmpresa(id, pode) {
       ['clientes', L('clientes', id), 'Clientes', 'i-pessoa', pode('clientes.visualizar')],
       ['equipe', L('equipe', id), 'Equipe', 'i-equipe', pode('equipe.visualizar')],
       ['avaliacoes', L('avaliacoes', id), 'Avaliações', 'i-estrela', pode('vitrine.visualizar')],
+      ['atividades', L('atividades', id), 'Atividades', 'i-relogio', true],
       ['empresa', L('empresa', id), 'Empresa e vitrine', 'i-vitrine', true],
     ]],
   ];
@@ -42,6 +43,6 @@ export function chaveDaPagina(caminho = location.pathname) {
     solicitacao: 'solicitacoes', ordens: 'ordens', ordem: 'ordens', agenda: 'agenda', 'produtos-empresa': 'produtos', produto: 'produtos',
     'estoque-empresa': 'estoque', servicos: 'servicos', servico: 'servicos', fornecedores: 'fornecedores', financeiro: 'financeiro',
     'financeiro-contas': 'financeiro', 'financeiro-movimentacoes': 'financeiro', 'financeiro-relatorios': 'financeiro', 'financeiro-fechamento': 'financeiro',
-    'financeiro-configuracoes': 'financeiro', clientes: 'clientes', equipe: 'equipe', avaliacoes: 'avaliacoes', empresa: 'empresa',
+    'financeiro-configuracoes': 'financeiro', clientes: 'clientes', equipe: 'equipe', avaliacoes: 'avaliacoes', empresa: 'empresa', atividades: 'atividades',
   }[arquivo] ?? null;
 }

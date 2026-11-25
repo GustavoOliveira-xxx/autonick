@@ -1,13 +1,18 @@
 /**
  * Clientes da empresa (M06, RF-033 a RF-038): cadastro mínimo sem CPF (D6-10), busca, edição com versão,
- * desativação e histórico de vendas e pedidos. O vínculo com a conta pública só nasce do pedido aceito (D6-11).
+ * desativação e ficha do cliente (E05: resumo, vendas, pedidos, orçamentos e OS, cada parte com a permissão da área).
+ * O vínculo com a conta pública só nasce do pedido aceito (D6-11).
  */
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { campoTexto, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
-import { clientes as lerClientes, criarCliente, alterarCliente, definirClienteAtivo, historicoCliente } from '../../data/vendas.js';
-import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, dinheiro, chipEstadoVenda, chipPedido } from './comum.js';
+import { clientes as lerClientes, criarCliente, alterarCliente, definirClienteAtivo, fichaCliente, ESTADO_VENDA } from '../../data/vendas.js';
+import { ESTADO_OS } from '../../data/ordens.js';
+import { ESTADO_SOLICITACAO } from '../../data/servicos.js';
+import { abrirModal } from '../../ui/modal.js';
+import { abas } from '../../ui/abas.js';
+import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, dinheiro, chipPedido } from './comum.js';
 import { formatarDataHora } from '../empresa/comum.js';
 
 iniciarLayout();
@@ -77,33 +82,60 @@ function cartao(c) {
       () => anunciar('sucesso', c.ativo ? 'Cliente desativado. O histórico continua guardado.' : 'Cliente reativado.'))));
     acoes.push(ativar);
   }
-  const historico = el('div', { class: 'pilha', 'aria-live': 'polite' });
-  const detalhes = el('details', {}, el('summary', {}, 'Histórico de compras'), historico);
-  if (ctx.pode('vendas.visualizar')) {
-    detalhes.addEventListener('toggle', async () => {
-      if (!detalhes.open || historico.childElementCount) return;
-      historico.append(el('p', {}, 'Carregando…'));
-      try {
-        const h = await historicoCliente(c.id);
-        historico.replaceChildren(...[
-          h.vendas.length ? el('ul', { class: 'lista-simples' }, ...h.vendas.map((v) => el('li', {},
-            el('a', { href: `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(v.id)}` }, `Venda nº ${v.numero}`),
-            ` · ${dinheiro(v.total_centavos)} · ${formatarDataHora(v.confirmada_em)} `, chipEstadoVenda(v.estado))))
-            : el('p', {}, 'Nenhuma venda ainda.'),
-          h.pedidos.length ? el('ul', { class: 'lista-simples' }, ...h.pedidos.map((p) => el('li', {}, `Pedido de ${formatarDataHora(p.criado_em)} · ${dinheiro(p.total_centavos)} `, chipPedido(p.estado)))) : null].filter(Boolean));
-      } catch (erro) {
-        historico.replaceChildren(aviso('erro', erro.message));
-      }
-    });
-  }
+  const ficha = el('button', { type: 'button', class: 'botao botao--secundario', 'data-ficha': c.id }, 'Abrir ficha');
+  ficha.addEventListener('click', () => abrirFicha(c.id, ficha));
   return el('li', { class: 'cartao pilha', 'data-cliente': c.id },
     el('h3', { class: 'cartao__titulo' }, c.nome, c.ativo ? null : el('span', { class: 'chip chip--neutro chip--pequeno' }, 'desativado'),
       c.conta_vinculada ? el('span', { class: 'chip chip--info chip--pequeno' }, 'cliente do app') : null),
     el('p', { class: 'cartao__meta' }, [c.telefone, c.email].filter(Boolean).join(' · ') || 'Sem contato registrado',
       ` · ${c.vendas} ${c.vendas === 1 ? 'venda' : 'vendas'}`),
     c.observacoes ? el('p', {}, c.observacoes) : null,
-    ctx.pode('vendas.visualizar') ? detalhes : null,
+    el('div', { class: 'grupo-botoes' }, ficha),
     acoes.length ? el('div', { class: 'pilha' }, ...acoes) : null);
+}
+
+const q = encodeURIComponent;
+const linhaFicha = (href, titulo, extra, data) => el('li', { class: 'linha-ficha' }, el('a', { href }, titulo), el('span', { class: 'campo__ajuda' }, [extra, data && formatarDataHora(data)].filter(Boolean).join(' · ')));
+
+/** Ficha do cliente num modal: o banco decide quais partes a pessoa pode ver. */
+async function abrirFicha(clienteId, origem = null) {
+  const corpo = el('div', { class: 'pilha', 'aria-live': 'polite' }, el('p', {}, 'Carregando a ficha…'));
+  const modal = abrirModal({ titulo: 'Ficha do cliente', corpo, tamanho: 'grande', aoFechar: () => origem?.focus() });
+  try {
+    const f = await fichaCliente(clienteId);
+    const c = f.cliente;
+    modal.dialogo.querySelector('h2')?.replaceChildren(`Ficha de ${c.nome}`);
+    const id = ctx.id;
+    const blocos = [];
+    if (f.vendas) blocos.push({ chave: 'ficha-vendas', titulo: 'Vendas', contador: f.vendas.length, painel: f.vendas.length
+      ? el('ul', { class: 'lista-simples' }, ...f.vendas.map((v) => linhaFicha(`/business/venda.html?id=${q(id)}&venda=${q(v.id)}`, `Venda nº ${v.numero}`,
+        `${dinheiro(v.total_centavos)} · ${ESTADO_VENDA[v.estado] ?? v.estado}`, v.data))) : el('p', {}, 'Nenhuma venda ainda.') });
+    if (f.solicitacoes) blocos.push({ chave: 'ficha-orcamentos', titulo: 'Orçamentos', contador: f.solicitacoes.length, painel: f.solicitacoes.length
+      ? el('ul', { class: 'lista-simples' }, ...f.solicitacoes.map((x) => linhaFicha(`/business/solicitacao.html?id=${q(id)}&solicitacao=${q(x.id)}`,
+        `Nº ${x.numero} · ${x.servico}`, ESTADO_SOLICITACAO[x.estado] ?? x.estado, x.data))) : el('p', {}, 'Nenhum orçamento.') });
+    if (f.ordens) blocos.push({ chave: 'ficha-os', titulo: 'Ordens de serviço', contador: f.ordens.length, painel: f.ordens.length
+      ? el('ul', { class: 'lista-simples' }, ...f.ordens.map((o) => linhaFicha(`/business/ordem.html?id=${q(id)}&os=${q(o.id)}`,
+        `OS nº ${o.numero} · ${o.servico}`, ESTADO_OS[o.estado] ?? o.estado, o.data))) : el('p', {}, 'Nenhuma ordem de serviço.') });
+    if (f.pedidos) blocos.push({ chave: 'ficha-pedidos', titulo: 'Pedidos', contador: f.pedidos.length, painel: f.pedidos.length
+      ? el('ul', { class: 'lista-simples' }, ...f.pedidos.map((p) => el('li', { class: 'linha-ficha' }, el('span', {}, 'Pedido '), chipPedido(p.estado),
+        el('span', { class: 'campo__ajuda' }, `${dinheiro(p.total_centavos)} · ${formatarDataHora(p.data)}`)))) : el('p', {}, 'Nenhum pedido.') });
+    const resumo = el('div', { class: 'resumo-ficha' },
+      el('div', {}, el('small', {}, 'Contato'), el('strong', {}, [c.telefone, c.email].filter(Boolean).join(' · ') || 'Sem contato')),
+      el('div', {}, el('small', {}, 'Cliente desde'), el('strong', {}, formatarDataHora(c.desde).split(' ')[0])),
+      f.resumo ? el('div', {}, el('small', {}, 'Compras confirmadas'), el('strong', {}, `${f.resumo.vendas} · ${dinheiro(f.resumo.total_centavos)}`)) : null,
+      f.resumo ? el('div', {}, el('small', {}, 'Última compra'), el('strong', {}, f.resumo.ultima_compra ? formatarDataHora(f.resumo.ultima_compra) : 'Nenhuma')) : null);
+    const acoes = el('div', { class: 'grupo-botoes' },
+      ctx.pode('vendas.criar') ? el('a', { class: 'botao', href: `/business/venda-nova.html?id=${q(id)}` }, 'Nova venda') : null,
+      c.telefone ? el('a', { class: 'botao botao--secundario', href: `tel:+55${c.telefone}` }, 'Ligar') : null);
+    corpo.replaceChildren(resumo,
+      c.observacoes ? el('p', { class: 'campo__ajuda' }, `Observações: ${c.observacoes}`) : null,
+      c.conta_vinculada ? el('p', {}, el('span', { class: 'chip chip--info' }, 'Cliente do app')) : null,
+      acoes,
+      blocos.length ? abas({ rotulo: 'Histórico do cliente', itens: blocos, aoTrocar: () => {} }).elemento
+        : el('p', { class: 'campo__ajuda' }, 'Seu perfil não inclui vendas, orçamentos, ordens de serviço nem pedidos.'));
+  } catch (erro) {
+    corpo.replaceChildren(aviso('erro', erro.message || 'Não foi possível abrir a ficha.'));
+  }
 }
 
 function secaoLista() {
@@ -135,6 +167,11 @@ async function carregar() {
     document.getElementById('titulo-pagina').textContent = `Clientes de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
     area.append(...[secaoNovo(), secaoLista()].filter(Boolean));
+    const pedida = parametro('ficha');
+    if (pedida && /^[0-9a-f-]{36}$/.test(pedida)) {
+      history.replaceState(history.state, '', location.href.replace(/([?&])ficha=[^&#]*&?/, '$1').replace(/[?&]$/, ''));
+      abrirFicha(pedida, document.querySelector(`[data-ficha="${pedida}"]`));
+    }
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
       area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));

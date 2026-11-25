@@ -165,7 +165,7 @@ function secaoMembros() {
   const acoes = [];
   if (estado.pode('equipe.convidar')) {
     if (perfisConcediveis().length) {
-      const adicionar = el('button', { type: 'button', class: 'botao', id: 'adicionar-colaborador' }, 'Adicionar colaborador');
+      const adicionar = el('button', { type: 'button', class: 'botao', id: 'adicionar-colaborador', 'data-ancora-abre': '' }, 'Adicionar colaborador');
       adicionar.addEventListener('click', abrirConvite);
       acoes.push(adicionar);
     } else {

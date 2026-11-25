@@ -60,3 +60,23 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   Conflito (sobreposição, bloqueio, fora do horário, dia fechado) volta como aviso e nada é gravado; "Salvar mesmo assim" grava com
   outra chave de operação e guarda os avisos aceitos. Os avisos ao marcar horário de solicitação ou OS passam a considerar os compromissos.
 - Não implementado (registrado na matriz): agenda individual por funcionário com bloqueio automático.
+
+### E05 · Produtividade
+- Busca global no banco (`202611270001`, `busca_global`): clientes, produtos (inclusive SKU), serviços, OS, orçamentos, vendas e fornecedores;
+  sem acento, número ("nº 2" ou só "2"), curingas de LIKE tratados como texto; cada grupo só com a permissão da área.
+- Paleta Ctrl+K (ou o botão "Buscar ou ir para…" no menu): áreas permitidas, ações rápidas, fixados e registros; combobox acessível
+  (setas, Enter, Esc). A estrela fixa a área ou ação no topo do menu ("Fixados", guardados no servidor por pessoa e empresa).
+- Âncora tardia: links como `agenda.html#novo-compromisso` e `equipe.html#adicionar-colaborador` abrem a ação quando a tela termina de carregar.
+- Ficha do cliente (`202611270002`, `ficha_cliente`): resumo, vendas, orçamentos, OS e pedidos em abas, cada parte com a permissão da área;
+  a busca abre a ficha direto.
+- Funil de orçamentos em colunas sobre os estados reais (Novas, Em análise, Orçamento enviado, Revisão pedida, Aceitas). Mudar de etapa
+  continua sendo pela tela do orçamento, com as regras do banco (sem arrastar e soltar que pule regras).
+- Central de atividades (`202611270003`, `atividades_da_empresa`): registro de auditoria em linguagem simples, por dia, com links,
+  filtrado pela permissão de cada área; nova página "Atividades" no menu.
+
+### E06 · Financeiro (em andamento)
+- Ações rápidas no Painel financeiro e em Movimentações: "Entrada ou saída" e "Transferir" abrem em modal (com proteção de alterações);
+  os links do Painel abrem a ação já no formulário.
+
+### Testes nesta etapa
+- Unitários 141/141 · Banco 261/261 · Java 134/134 · Playwright: suíte completa 345/345 antes das telas do E05; specs afetados depois (155 + 21) verdes.
