@@ -79,4 +79,4 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   os links do Painel abrem a ação já no formulário.
 
 ### Testes nesta etapa
-- Unitários 141/141 · Banco 261/261 · Java 134/134 · Playwright: suíte completa 345/345 antes das telas do E05; specs afetados depois (155 + 21) verdes.
+- Unitários 141/141 (com os testes de menu ajustados para a nova área Atividades) · Banco 261/261 · Java 134/134 · Playwright: suíte completa 345/345 antes das telas do E05; specs afetados depois (155 + 21) verdes.

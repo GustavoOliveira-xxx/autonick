@@ -10,21 +10,21 @@ import { indiceNovas } from '../../public/js/data/painel.js';
 const ID = 'e0000000-0000-4000-8000-000000000013';
 const chaves = (grupos) => grupos.flatMap(([, itens]) => itens.map((i) => i.chave));
 
-test('sem nenhuma permissão: só Painel e Empresa e vitrine, e grupos vazios somem', () => {
+test('sem nenhuma permissão: só Painel, Atividades (o banco filtra o conteúdo) e Empresa e vitrine; grupos vazios somem', () => {
   const grupos = gruposDaEmpresa(ID, () => false);
-  assert.deepEqual(chaves(grupos), ['painel', 'empresa']);
+  assert.deepEqual(chaves(grupos), ['painel', 'atividades', 'empresa']);
   assert.deepEqual(grupos.map(([t]) => t), ['Operação', 'Gestão']);
 });
 
 test('cada módulo aparece só com a permissão que abre a tela', () => {
   const permissoes = new Set(['vendas.criar', 'orcamentos.visualizar', 'financeiro.visualizar']);
   const grupos = gruposDaEmpresa(ID, (c) => permissoes.has(c));
-  assert.deepEqual(chaves(grupos), ['painel', 'vendas', 'solicitacoes', 'financeiro', 'empresa']);
+  assert.deepEqual(chaves(grupos), ['painel', 'vendas', 'solicitacoes', 'financeiro', 'atividades', 'empresa']);
 });
 
 test('estoque.visualizar abre Produtos, Estoque e Fornecedores; a ordem dos grupos é fixa', () => {
   const grupos = gruposDaEmpresa(ID, (c) => c === 'estoque.visualizar');
-  assert.deepEqual(chaves(grupos), ['painel', 'produtos', 'estoque', 'fornecedores', 'empresa']);
+  assert.deepEqual(chaves(grupos), ['painel', 'produtos', 'estoque', 'fornecedores', 'atividades', 'empresa']);
   assert.deepEqual(grupos.map(([t]) => t), ['Operação', 'Catálogo', 'Gestão']);
 });
 
@@ -38,6 +38,7 @@ test('página atual: telas de detalhe marcam o módulo da lista', () => {
   assert.equal(chaveDaPagina('/business/venda-nova.html'), 'vendas');
   assert.equal(chaveDaPagina('/business/ordem.html'), 'ordens');
   assert.equal(chaveDaPagina('/business/financeiro-fechamento.html'), 'financeiro');
+  assert.equal(chaveDaPagina('/business/atividades.html'), 'atividades');
   assert.equal(chaveDaPagina('/business/minhas-empresas.html'), null);
 });
 
