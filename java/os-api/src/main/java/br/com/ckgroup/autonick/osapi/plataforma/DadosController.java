@@ -50,10 +50,13 @@ public class DadosController {
     private final ConsultaTabelas tabelas;
     private final LimiteUso limite;
 
-    public DadosController(ExecutorDados executor, ConsultaTabelas tabelas, LimiteUso limite) {
+    private final EnderecoCliente endereco;
+
+    public DadosController(ExecutorDados executor, ConsultaTabelas tabelas, LimiteUso limite, EnderecoCliente endereco) {
         this.executor = executor;
         this.tabelas = tabelas;
         this.limite = limite;
+        this.endereco = endereco;
     }
 
     @PostMapping(path = "/rpc/{funcao}")
@@ -85,11 +88,10 @@ public class DadosController {
         }
     }
 
-    private static String chaveDeLimite(Identidade quem, HttpServletRequest pedido) {
+    // Visitante anônimo: o endereço só vem do X-Forwarded-For quando a conexão é de um proxy confiável (EnderecoCliente).
+    private String chaveDeLimite(Identidade quem, HttpServletRequest pedido) {
         if (!quem.anonima()) return quem.sub();
-        String encaminhado = pedido.getHeader("X-Forwarded-For");
-        String origem = encaminhado == null ? pedido.getRemoteAddr() : encaminhado.split(",")[0].trim();
-        return "ip:" + origem;
+        return "ip:" + endereco.de(pedido);
     }
 
     private static ResponseEntity<String> json(String corpo) {

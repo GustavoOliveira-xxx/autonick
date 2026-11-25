@@ -49,6 +49,8 @@ class DemonstracaoPublicaTest {
         registro.add("autonick.dados.demonstracao-publica", () -> "true");
         registro.add("autonick.dados.escritas-por-minuto", () -> "200");
         registro.add("autonick.demo.cenarios-por-origem-dia", () -> "2");
+        // Os visitantes chegam "por um proxy" local: o X-Forwarded-For só vale porque 127.0.0.1 está declarado como proxy confiável (E11).
+        registro.add("autonick.rede.proxies-confiaveis", () -> "127.0.0.1,::1");
     }
 
     /** Visitante com cookies próprios e endereço de origem próprio. */

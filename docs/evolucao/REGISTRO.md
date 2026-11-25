@@ -96,3 +96,11 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   Comunicação e histórico. O cliente vê as "Etapas do serviço" visíveis.
 - Validado no app real: conclusão recusada com obrigatórios pendentes e aceita depois; cliente vê só os itens visíveis.
 - Testes: banco 271/271 (inclui `checklists-os.test.mjs` e o caso de `nome_da_pessoa`), unitários 141/141, ordens e2e 15/15.
+
+### E11 · Segurança (parcial)
+- `X-Forwarded-For` e `X-Forwarded-Host` só são lidos quando a conexão vem de um proxy declarado em `AUTONICK_PROXIES_CONFIAVEIS`
+  (IPs ou faixas CIDR; vazio por padrão). A cadeia é lida da direita para a esquerda, pulando proxies confiáveis; entrada que não é IP
+  literal invalida a cadeia (sem DNS). Vale para o limite de uso de visitantes, a origem da demonstração pública e a checagem de origem do login.
+  No AutoniCK local (sem proxy) nada muda. Atrás de um proxy reverso, declare o IP dele. Testes: `EnderecoClienteTest` (3) e a demonstração pública.
+- Uploads (E03): conteúdo pelos primeiros bytes, regravação de imagens, PDF ativo recusado, nomes saneados, caminho só pelo id, CSP sandbox no download.
+- Java 137/137.

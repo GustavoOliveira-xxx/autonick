@@ -53,9 +53,12 @@ public class AutenticacaoDemoController {
     private final Clock relogio;
     private final Set<String> origensPermitidas;
 
+    private final br.com.ckgroup.autonick.osapi.plataforma.EnderecoCliente endereco;
+
     public AutenticacaoDemoController(TokensDemonstracao tokens, ContasDemonstracao contas, AutenticacaoProperties contrato,
             Optional<EntradaVisitante> visitantes, Clock relogio,
-            @Value("${autonick.auth.origens-permitidas:}") String origens) {
+            @Value("${autonick.auth.origens-permitidas:}") String origens, br.com.ckgroup.autonick.osapi.plataforma.EnderecoCliente endereco) {
+        this.endereco = endereco;
         this.origensPermitidas = Arrays.stream(origens.split(",")).map(String::trim).filter(o -> !o.isEmpty())
                 .collect(Collectors.toUnmodifiableSet());
         this.tokens = tokens;
@@ -193,7 +196,8 @@ public class AutenticacaoDemoController {
     private void exigirMesmaOrigem(HttpServletRequest pedido) {
         String origem = pedido.getHeader("Origin");
         if (origem == null || origensPermitidas.contains(origem)) return;
-        String host = pedido.getHeader("X-Forwarded-Host");
+        // X-Forwarded-Host só vale quando a conexão vem de um proxy confiável configurado (E11).
+        String host = endereco.conexaoDeProxyConfiavel(pedido) ? pedido.getHeader("X-Forwarded-Host") : null;
         if (host == null) host = pedido.getHeader("Host");
         try {
             if (host != null && !host.equalsIgnoreCase(URI.create(origem).getAuthority())) {

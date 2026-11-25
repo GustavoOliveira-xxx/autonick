@@ -35,5 +35,8 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
 | E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |
 | E10 | Bong e luva na home, Animation Lab | Não iniciado | |
-| E11 | Revisão de segurança (IDOR, XSS, CSRF, uploads, X-Forwarded-For) | Parcial | uploads revisados no E03 |
+| E11 | X-Forwarded-For e X-Forwarded-Host só de proxy confiável | Concluído e validado | EnderecoClienteTest, DemonstracaoPublicaTest |
+| E11 | Uploads seguros | Concluído e validado | ConteudoArquivoTest, ArquivosApiTest |
+| E11 | IDOR (outra empresa) nas funções novas | Concluído e validado | testes de banco de cada migration (outra empresa e anônimo negados) |
+| E11 | Revisão ampla de XSS, CSRF e sessões | Parcial | sem HTML vindo de dados (el() usa textContent); revisão completa não feita |
 | E12 | Regressão completa, documentação, instruções Windows | Não iniciado | |

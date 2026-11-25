@@ -45,8 +45,8 @@ public class DemonstracaoConfig {
             AutenticacaoProperties contrato,
             @Value("${autonick.demo.validade-cenario:24h}") java.time.Duration validade,
             @Value("${autonick.demo.cenarios-por-origem-dia:3}") int porOrigem,
-            @Value("${autonick.demo.cenarios-ativos-maximo:150}") int ativos) {
-        return new CenariosVisitantes(cenario, contas, jdbc, relogio, validade, porOrigem, ativos, contrato.segredoDemo());
+            @Value("${autonick.demo.cenarios-ativos-maximo:150}") int ativos, br.com.ckgroup.autonick.osapi.plataforma.EnderecoCliente endereco) {
+        return new CenariosVisitantes(cenario, contas, jdbc, relogio, validade, porOrigem, ativos, contrato.segredoDemo(), endereco);
     }
 
     @Bean

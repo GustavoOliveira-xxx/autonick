@@ -39,8 +39,11 @@ public class CenariosVisitantes implements EntradaVisitante {
     private final int ativosNoMaximo;
     private final byte[] sal;
 
+    private final br.com.ckgroup.autonick.osapi.plataforma.EnderecoCliente enderecoCliente;
+
     public CenariosVisitantes(CenarioDemonstracao cenario, ContasDemonstracao contas, JdbcTemplate jdbc, Clock relogio,
-            Duration validade, int porOrigemPorDia, int ativosNoMaximo, String segredo) {
+            Duration validade, int porOrigemPorDia, int ativosNoMaximo, String segredo, br.com.ckgroup.autonick.osapi.plataforma.EnderecoCliente enderecoCliente) {
+        this.enderecoCliente = enderecoCliente;
         this.cenario = cenario;
         this.contas = contas;
         this.jdbc = jdbc;
@@ -99,8 +102,7 @@ public class CenariosVisitantes implements EntradaVisitante {
 
     /** Origem do visitante resumida por hash com segredo (o endereço não é guardado). */
     private String origem(HttpServletRequest pedido) {
-        String encaminhado = pedido.getHeader("X-Forwarded-For");
-        String endereco = encaminhado == null ? pedido.getRemoteAddr() : encaminhado.split(",")[0].trim();
+        String endereco = enderecoCliente.de(pedido);
         try {
             MessageDigest sha = MessageDigest.getInstance("SHA-256");
             sha.update(sal);
