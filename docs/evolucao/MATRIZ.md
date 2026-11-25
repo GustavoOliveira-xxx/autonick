@@ -28,7 +28,10 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E06 | Financeiro: ações rápidas em modal a partir do painel | Implementado aguardando validação manual | financeiro e2e (21) |
 | E06 | Metas mensais com realizado dos dados reais e comemoração só ao atingir | Concluído e validado | metas.test (4), painel-m13b e2e, app real |
 | E06 | Painel orientado a ação | Parcial | já existia "Precisa da sua ação"; somadas metas e ações rápidas |
-| E07 | OS simplificada, checklists, "Sem responsável definido", documentos | Não iniciado | |
+| E07 | "Sem responsável definido" (sem pessoa, desligado e sem nome diferenciados) | Concluído e validado | metas.test (E07), ordens e2e (2), app real |
+| E07 | Checklist persistente com obrigatórios bloqueando a conclusão no banco | Concluído e validado | checklists-os.test (5), ordens e2e, app real |
+| E07 | Detalhe da OS em abas e central de documentos da OS | Implementado aguardando validação manual | ordens e2e (15) |
+| E07 | Lista de OS com próximas ações | Parcial | lista já mostra estado e responsável; "próxima ação" por OS não foi feita |
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
 | E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |
 | E10 | Bong e luva na home, Animation Lab | Não iniciado | |

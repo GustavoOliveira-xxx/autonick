@@ -641,3 +641,12 @@ html[data-tema="claro"] .paleta kbd { border-color: #d8c9a8; background: #fff; }
 .meta--atingida .meta__barra i { background: linear-gradient(90deg, #3ecf8e, #9cf0c8); }
 .meta--atingida .campo__ajuda { color: #3ecf8e; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .meta__barra i { transition: none; } }
+
+/* E07 · Checklist da OS */
+.checklist { display: grid; gap: 10px; }
+.checklist__item { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borda-suave); background: var(--superficie-2); border-left: 4px solid #6aa7ff; }
+.checklist__item--feito { border-left-color: #3ecf8e; }
+.checklist__item--feito label { text-decoration: line-through; text-decoration-color: rgb(127 127 127 / 0.7); }
+.checklist__item .opcao input[type="checkbox"] { inline-size: 24px; block-size: 24px; }
+.checklist__item p { margin: 0; }
+.checklist__mais > summary { cursor: pointer; color: var(--texto-suave); font-weight: 600; min-height: 28px; }

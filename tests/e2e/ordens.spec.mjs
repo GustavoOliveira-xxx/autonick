@@ -75,6 +75,23 @@ async function simular(context, { permissoes = GERENTE, tipo = 'business', os = 
         return json(200, { gravado: true, estado: 'pendente', avisos: [{ tipo: 'sobreposicao' }], reagendamento_id: 'g1' });
       case '/api/rpc/cancelar_os': os.estado = 'cancelada'; return json(200, os);
       case '/api/rpc/propor_custos_cancelamento': return json(200, os);
+      case '/api/rpc/checklist_os': return json(200, estado.checklist ?? { itens: [], pendentes_obrigatorios: 0, pode_alterar: true, historico: [] });
+      case '/api/rpc/modelos_checklist': return json(200, [{ id: 'mc1', nome: 'Instalação padrão', itens: [{ texto: 'Desligar o disjuntor', obrigatorio: true, visivel_cliente: false }], versao: 1 }]);
+      case '/api/rpc/adicionar_itens_checklist': {
+        const atual = estado.checklist ?? { itens: [], pendentes_obrigatorios: 0, pode_alterar: true, historico: [] };
+        for (const it of corpo.p_itens) atual.itens.push({ id: `i${atual.itens.length + 1}`, texto: it.texto, obrigatorio: it.obrigatorio, visivel_cliente: it.visivel_cliente,
+          responsavel_auth_id: it.responsavel_auth_id ?? null, responsavel: it.responsavel_auth_id ? 'Técnico Téo' : null, concluido: false, versao: 1 });
+        atual.pendentes_obrigatorios = atual.itens.filter((x) => x.obrigatorio && !x.concluido).length;
+        estado.checklist = atual;
+        return json(200, { adicionados: corpo.p_itens.length });
+      }
+      case '/api/rpc/alterar_item_checklist': {
+        const it = estado.checklist.itens.find((x) => x.id === corpo.p_item_id);
+        if (corpo.p_dados.concluido !== undefined) Object.assign(it, { concluido: corpo.p_dados.concluido, concluido_por: 'Gerente Gil', concluido_em: '2026-11-25T13:00:00Z' });
+        it.versao += 1;
+        estado.checklist.pendentes_obrigatorios = estado.checklist.itens.filter((x) => x.obrigatorio && !x.concluido).length;
+        return json(200, it);
+      }
       case '/api/rpc/agenda_operacional': return json(200, { periodo: { de: corpo.p_de, ate: corpo.p_ate }, aviso: 'Filtro por responsável é informativo.',
         grade: Array.from({ length: 7 }, (_, d) => ({ dia_semana: d, intervalos: [] })), equipe: os.equipe,
         confirmados: [{ solicitacao_id: 's1', solicitacao_numero: 5, os_id: OS, os_numero: 2, os_estado: 'aguardando_inicio', servico: 'Instalação elétrica',
@@ -141,7 +158,8 @@ test('OS para o gerente: versão em cada estado, pausa pede motivo, horário com
   await page.locator('#aviso-horario').getByRole('button', { name: 'Confirmar' }).click();
   await expect(page.locator('#avisos')).toContainText(/proposto/);
   expect(estado.corpos['/api/rpc/propor_horario_os']).toMatchObject({ p_aceitar_avisos: true, p_justificativa: 'Dois técnicos no dia', p_inicio: '2099-01-10T09:00:00-03:00' });
-  // Sinal: centavos, nunca o valor contratado.
+  // Sinal: centavos, nunca o valor contratado (E07: na aba Financeiro).
+  await page.getByRole('tab', { name: 'Financeiro' }).click();
   await page.locator('#sinal-valor').fill('100,00');
   await page.locator('#form-sinal [type="submit"]').click();
   await expect(page.locator('#avisos')).toContainText('Sinal registrado');
@@ -149,6 +167,7 @@ test('OS para o gerente: versão em cada estado, pausa pede motivo, horário com
   expect(JSON.stringify(estado.corpos['/api/rpc/gerar_antecipacao_os'])).not.toMatch(/contratado|total/);
   await axe(page);
   // Cancelamento: motivo obrigatório (10 a 300).
+  await page.getByRole('tab', { name: 'Garantia e cancelamento' }).click();
   await page.locator('#cancelar-os').click();
   await page.locator('#cancelar-os-motivo').fill('curto');
   await page.getByRole('button', { name: 'Cancelar a OS' }).click();
@@ -170,6 +189,7 @@ test('técnico: registra uso (fica pendente) mas não vê sinal, cancelamento, r
   await expect(page.locator('[data-reservar]')).toHaveCount(0);
   await expect(page.locator('#form-horario')).toHaveCount(0);
   await expect(page.locator('#materiais')).not.toContainText('Custo');
+  await page.getByRole('tab', { name: /Materiais/ }).click();
   await page.locator('#material-acao').selectOption('uso');
   await page.locator('#material-qtd').fill('2');
   await page.locator('#form-material [type="submit"]').click();
@@ -183,6 +203,7 @@ test('OS cancelada pelo cliente: custos item por item, total calculado pelo banc
   const estado = await simular(context, { os });
   await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}`);
   await expect(page.locator('#cancelamento')).toContainText('a pedido do cliente');
+  await page.getByRole('tab', { name: 'Garantia e cancelamento' }).click();
   await page.locator('#propor-custos').click();
   await page.locator('#custo-d0').fill('Ida e volta');
   await page.locator('#custo-v0').fill('30,00');
@@ -193,6 +214,42 @@ test('OS cancelada pelo cliente: custos item por item, total calculado pelo banc
   const c = estado.corpos['/api/rpc/propor_custos_cancelamento'];
   expect(c.p_itens).toEqual([{ tipo: 'material_usado', descricao: 'Ida e volta', valor_centavos: 3000, justificativa: 'Equipe foi ao endereço.' }]);
   expect(JSON.stringify(c)).not.toMatch(/total|percentual/);
+});
+
+test('E07: sem responsável, responsável desligado e responsável ativo aparecem de formas diferentes [simulação]', async ({ page, context }) => {
+  await simular(context, { os: ordem({ pode: { ...ordem().pode, alterar: false } }) });
+  await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}`);
+  await expect(page.locator('main')).toContainText('Sem responsável definido');
+  await expect(page.locator('main')).not.toContainText('Pessoa sem nome');
+});
+
+test('E07: responsável que saiu da equipe é marcado como tal [simulação]', async ({ page, context }) => {
+  await simular(context, { os: ordem({ responsavel_auth_id: 'u-saiu', responsavel: 'Ex Funcionária', pode: { ...ordem().pode, alterar: false } }) });
+  await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}`);
+  await expect(page.locator('main')).toContainText('Ex Funcionária (não faz mais parte da equipe)');
+});
+
+test('E07: checklist da OS: item obrigatório com responsável, modelo, concluir e aviso de pendência [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}#checklist`);
+  await expect(page.locator('#lista-checklist')).toContainText('Nenhum item ainda');
+  await page.locator('#item-texto').fill('Testar as tomadas');
+  await page.locator('#item-obrigatorio').check();
+  await page.locator('#item-responsavel').selectOption('u-tec');
+  await page.locator('#form-novo-item [type="submit"]').click();
+  await expect(page.locator('#avisos')).toContainText('Item adicionado');
+  expect(estado.corpos['/api/rpc/adicionar_itens_checklist'].p_itens).toEqual([{ texto: 'Testar as tomadas', obrigatorio: true, visivel_cliente: false, responsavel_auth_id: 'u-tec' }]);
+  await expect(page.getByRole('tab', { name: /Checklist/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#painel-checklist')).toContainText('1 item obrigatório pendente');
+  await expect(page.locator('#lista-checklist')).toContainText('Responsável: Técnico Téo');
+  await page.locator('#item-modelo').selectOption('mc1');
+  await page.locator('#form-modelo [type="submit"]').click();
+  await expect(page.locator('#lista-checklist')).toContainText('Desligar o disjuntor');
+  await page.getByLabel('Testar as tomadas').check();
+  await expect(page.locator('#avisos')).toContainText('Concluído: Testar as tomadas');
+  expect(estado.corpos['/api/rpc/alterar_item_checklist']).toMatchObject({ p_dados: { concluido: true }, p_expected_version: 1 });
+  await expect(page.locator('#lista-checklist')).toContainText('concluído por Gerente Gil');
+  await axe(page);
 });
 
 test('agenda operacional: confirmados por dia, propostos e OS sem horário; filtro por responsável [simulação]', async ({ page, context }) => {
@@ -272,7 +329,8 @@ for (const [caminho, tipo] of [[`/business/ordens.html?id=${EMP}`, 'business'], 
 
 test('M13: resumo da OS em PDF sem notas internas; registro com a OS; sem servicos.visualizar não há tela [simulação]', async ({ page, context }) => {
   const estado = await simular(context);
-  await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}`);
+  await page.goto(`/business/ordem.html?id=${EMP}&os=${OS}#documentos`);
+  await expect(page.getByRole('tab', { name: /Documentos/ })).toHaveAttribute('aria-selected', 'true');
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Baixar resumo da OS (PDF)' }).click();
   const arquivo = await download;

@@ -1,0 +1,17 @@
+BEGIN;
+DROP TRIGGER IF EXISTS os_checklist_antes_de_concluir ON public.ordens_servico;
+DROP FUNCTION IF EXISTS app_private.os_checklist_bloqueia_conclusao();
+DROP FUNCTION IF EXISTS public.salvar_modelo_checklist(uuid, uuid, text, jsonb, integer, text);
+DROP FUNCTION IF EXISTS public.modelos_checklist(uuid);
+DROP FUNCTION IF EXISTS public.remover_item_checklist(uuid, integer, text);
+DROP FUNCTION IF EXISTS public.alterar_item_checklist(uuid, jsonb, integer, text);
+DROP FUNCTION IF EXISTS public.adicionar_itens_checklist(uuid, jsonb, text);
+DROP FUNCTION IF EXISTS public.checklist_os_cliente(uuid);
+DROP FUNCTION IF EXISTS public.checklist_os(uuid);
+DROP FUNCTION IF EXISTS app_private.checklist_os_para_alterar(uuid, text);
+DROP FUNCTION IF EXISTS app_private.ler_item_checklist(uuid, jsonb);
+DROP FUNCTION IF EXISTS app_private.checklist_item_json(public.os_checklist_itens);
+DROP TABLE IF EXISTS public.modelos_checklist;
+DROP TABLE IF EXISTS public.os_checklist_itens;
+DELETE FROM app_private.historico_migracoes WHERE id = '202611290001';
+COMMIT;

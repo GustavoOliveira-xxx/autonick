@@ -29,7 +29,7 @@ function linha(o) {
     el('h3', {}, el('a', { href }, `OS nº ${o.numero} · ${o.servico}`), ' ', chipOs(o.estado)),
     el('p', {}, `${o.cliente_nome}${o.origem === 'interna' ? ' (balcão ou telefone)' : ''} · solicitação nº ${o.solicitacao_numero} · ${dinheiro(o.contratado_centavos)}`),
     el('p', {}, o.horario ? `Horário: ${textoHorario(o.horario.inicio, o.horario.fim)}` : 'Sem horário confirmado',
-      o.responsavel ? ` · responsável: ${o.responsavel}` : '', o.previsao_conclusao ? ` · previsão ${formatarData(o.previsao_conclusao)}` : ''),
+      o.responsavel ? ` · responsável: ${o.responsavel}` : ' · sem responsável definido', o.previsao_conclusao ? ` · previsão ${formatarData(o.previsao_conclusao)}` : ''),
     pendencias.length ? el('p', { class: 'campo__ajuda', 'data-pendencias': '' }, `Pendências: ${pendencias.join('; ')}.`) : null);
 }
 

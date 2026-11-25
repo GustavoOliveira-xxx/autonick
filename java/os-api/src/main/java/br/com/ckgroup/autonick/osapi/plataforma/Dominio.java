@@ -58,7 +58,7 @@ public enum Dominio {
             "salvar_rascunho_orcamento", "enviar_orcamento", "aprovar_orcamento", "aceitar_orcamento",
             "recusar_orcamento", "pedir_revisao", "agenda_basica", "agenda_operacional"),
 
-    ORDENS_SERVICO(false, "ordens_da_empresa", "os_detalhe", "minhas_os", "minha_os", "mudar_estado_os",
+    ORDENS_SERVICO(false, "ordens_da_empresa", "os_detalhe", "minhas_os", "minha_os", "mudar_estado_os", "checklist_os", "checklist_os_cliente", "adicionar_itens_checklist", "alterar_item_checklist", "remover_item_checklist", "modelos_checklist", "salvar_modelo_checklist",
             "publicar_atualizacao_os", "atualizar_dados_os", "registrar_garantia_os", "adicionar_material_os",
             "reservar_material_os", "registrar_uso_material", "decidir_uso_material", "devolver_material_os",
             "confirmar_recebimento_servico", "pedir_revisao_os", "cancelar_os", "propor_horario_os",

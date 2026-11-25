@@ -100,6 +100,18 @@ test('ver: cada meta só com a permissão da área; outra empresa e anônimo neg
   falha(comoPapel(banco.url, { papel: 'authenticated', sub: P.O.id }, 'SELECT count(*) FROM public.metas_empresa'), 'permission denied');
 });
 
+test('E07 (202611280002): sem pessoa não vira "Pessoa sem nome"; cadastro sem nome é identificado', opcoes, () => {
+  assert.equal(adm("SELECT coalesce(app_private.nome_da_pessoa(NULL), '<nulo>')"), '<nulo>');
+  assert.equal(adm("SELECT coalesce(app_private.nome_da_pessoa(''), '<nulo>')"), '<nulo>');
+  assert.equal(adm(`SELECT app_private.nome_da_pessoa(${q(P.O.id)})`), 'Dona Olga');
+  adm("INSERT INTO neon_auth.\"user\" (id, email, name, \"emailVerified\") VALUES ('ea060000-0000-4000-8000-000000000099', 'sem-nome-e07@teste.example', ' ', true)");
+  assert.equal(adm("SELECT app_private.nome_da_pessoa('ea060000-0000-4000-8000-000000000099')"), 'Cadastro sem nome');
+  aplicarArquivo(banco.url, 'db/migrations_propostas/202611280002_responsavel_ausente.down.sql');
+  assert.equal(adm('SELECT app_private.nome_da_pessoa(NULL)'), 'Pessoa sem nome', 'rollback volta ao comportamento anterior');
+  aplicarArquivo(banco.url, 'db/migrations_propostas/202611280002_responsavel_ausente.sql');
+  assert.equal(adm("SELECT coalesce(app_private.nome_da_pessoa(NULL), '<nulo>')"), '<nulo>');
+});
+
 test('rollback da 202611280001 sem resíduo e reaplicação', opcoes, () => {
   const impressao = readFileSync(new URL('../../db/tests/impressao-esquema.sql', import.meta.url), 'utf8').trim().replace(/;$/, '');
   const foto = () => adm(`SELECT md5(string_agg(tipo || '|' || objeto || '|' || impressao, E'\\n' ORDER BY tipo, objeto)) FROM (${impressao}) x`);

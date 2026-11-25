@@ -20,6 +20,7 @@ import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { secaoConversa } from '../comunicacao/conversa.js';
 import { secaoAvaliacaoCliente } from '../comunicacao/avaliacao.js';
 import { dialogoFormulario } from '../servicos/comum.js';
+import { checklistOsCliente } from '../../data/ordens.js';
 import { chipOs, blocoValores, linhaDoTempoOs, blocoHorarioOs, itemReagendamento, cartaoCustos, blocoCancelamento, blocoGarantia, blocoCondicoes } from '../servicos/ordens-comum.js';
 
 iniciarLayout();
@@ -167,6 +168,13 @@ function detalhe(o) {
       el('p', {}, 'Confirme se recebeu ou peça revisão. Sem resposta, a empresa pode encerrar a OS 7 dias depois da conclusão.')),
     el('div', { class: 'grupo-botoes' }, confirmar, ...botoes));
   }
+  // E07: etapas do checklist que a empresa marcou como visíveis ao cliente (só texto e situação).
+  if (o.etapas?.length) {
+    const feitas = o.etapas.filter((x) => x.concluido).length;
+    partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-etapas' }, el('h2', { id: 'titulo-etapas' }, `Etapas do serviço (${feitas} de ${o.etapas.length})`),
+      el('ul', { class: 'lista-simples checklist', id: 'etapas-servico' }, ...o.etapas.map((x) => el('li', { class: `checklist__item${x.concluido ? ' checklist__item--feito' : ''}` },
+        el('span', {}, el('span', { 'aria-hidden': 'true' }, x.concluido ? '✓ ' : '○ '), x.texto, el('span', { class: 'visualmente-oculto' }, x.concluido ? ' (feito)' : ' (pendente)')))))));
+  }
   partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-valores' }, el('h2', { id: 'titulo-valores' }, 'Valor e pagamento'), blocoValores(o.valores)));
   partes.push(secaoHorario(o));
   if (o.garantia) partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-garantia' }, el('h2', { id: 'titulo-garantia' }, 'Garantia'), blocoGarantia(o.garantia)));
@@ -202,6 +210,7 @@ async function carregar() {
     if (!(await exigirSessao(area, { perfil: 'cliente', entrada: '/cliente/entrar.html' }))) return;
     if (aberta) {
       const o = await minhaOrdem(aberta);
+      o.etapas = await checklistOsCliente(o.id).catch(() => []);
       concluirCarregamento(area);
       area.replaceChildren(...detalhe(o));
       return;

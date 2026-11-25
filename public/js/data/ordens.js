@@ -133,3 +133,14 @@ export const ESTADO_CUSTO = { pendente: 'Aguardando resposta do cliente', aceita
 export const ESTADO_REAGENDAMENTO = { pendente: 'Aguardando resposta', aceito: 'Aceito', recusado: 'Recusado', retirado: 'Retirado', substituido: 'Substituído' };
 export const RECORRENCIA = { semanal: 'Semanal', quinzenal: 'Quinzenal', mensal: 'Mensal' };
 export const ESTADOS_ATIVOS = ['aguardando_inicio', 'em_execucao', 'pausada'];
+
+// --- Checklist da OS (E07) ----------------------------------------------------------------------
+export const checklistOs = (osId) => neon.rpc('checklist_os', { p_os_id: osId });
+export const checklistOsCliente = (osId) => neon.rpc('checklist_os_cliente', { p_os_id: osId });
+export const adicionarItensChecklist = (osId, itens, chave) => neon.rpc('adicionar_itens_checklist', { p_os_id: osId, p_itens: itens, p_operation_key: chave });
+export const alterarItemChecklist = (itemId, dados, versao, chave) =>
+  neon.rpc('alterar_item_checklist', { p_item_id: itemId, p_dados: dados, p_expected_version: versao, p_operation_key: chave });
+export const removerItemChecklist = (itemId, versao, chave) => neon.rpc('remover_item_checklist', { p_item_id: itemId, p_expected_version: versao, p_operation_key: chave });
+export const modelosChecklist = (empresaId) => neon.rpc('modelos_checklist', { p_empresa_id: empresaId });
+export const salvarModeloChecklist = (empresaId, modeloId, nome, itens, versao, chave) =>
+  neon.rpc('salvar_modelo_checklist', { p_empresa_id: empresaId, p_modelo_id: modeloId, p_nome: nome, p_itens: itens, p_expected_version: versao, p_operation_key: chave });

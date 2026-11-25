@@ -85,3 +85,14 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
 
 ### Testes nesta etapa
 - Unitários 141/141 (com os testes de menu ajustados para a nova área Atividades) · Banco 261/261 · Java 134/134 · Playwright: suíte completa 345/345 antes das telas do E05; specs afetados depois (155 + 21) verdes.
+
+### E07 · Ordens de serviço
+- `202611280002_responsavel_ausente`: `nome_da_pessoa(NULL)` devolvia "Pessoa sem nome"; agora devolve NULL e as telas mostram
+  "Sem responsável definido". Cadastro sem nome vira "Cadastro sem nome"; quem saiu da equipe aparece com "(não faz mais parte da equipe)".
+- `202611290001_checklists_os`: checklist persistente (itens, obrigatório/opcional, interno/visível ao cliente, responsável, conclusão com
+  autor e data, observação, evidência anexada, modelos por empresa, histórico na linha do tempo). Gatilho na tabela de OS: com item
+  obrigatório pendente a OS não é concluída, por qualquer caminho (inclusive a rota Java, que devolve 409 com a mensagem). Opcionais não bloqueiam.
+- Detalhe da OS em abas: Geral, Checklist, Materiais, Financeiro, Documentos (PDF e arquivos anexados), Garantia e cancelamento,
+  Comunicação e histórico. O cliente vê as "Etapas do serviço" visíveis.
+- Validado no app real: conclusão recusada com obrigatórios pendentes e aceita depois; cliente vê só os itens visíveis.
+- Testes: banco 271/271 (inclui `checklists-os.test.mjs` e o caso de `nome_da_pessoa`), unitários 141/141, ordens e2e 15/15.

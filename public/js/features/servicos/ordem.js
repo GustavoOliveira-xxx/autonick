@@ -23,6 +23,10 @@ import { botaoPdf, nomeDeQuemGera } from '../../pdf/baixar.js';
 import { registrarExportacaoPdf } from '../../data/exportacao.js';
 import { resumoOs } from '../../pdf/documentos.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
+import { abas } from '../../ui/abas.js';
+import { checklistOs, adicionarItensChecklist, alterarItemChecklist, removerItemChecklist, modelosChecklist, salvarModeloChecklist } from '../../data/ordens.js';
+import { arquivosDisponiveis, enviarArquivo, arquivosDoRegistro, urlDeImagem, LIMITES_PADRAO } from '../../data/arquivos.js';
+import { novaChave } from '../../data/empresas.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -32,6 +36,10 @@ const osId = parametro('os');
 let ctx = null;
 let o = null;
 let catalogo = null;
+let checklist = null;
+let modelos = [];
+let documentos = [];
+let abaOs = ['geral', 'checklist', 'materiais', 'financeiro', 'documentos', 'garantia', 'comunicacao'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'geral';
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
 const ativa = () => ESTADOS_ATIVOS.includes(o.estado);
 const secao = (id, titulo, ...partes) => el('section', { class: 'pilha', 'aria-labelledby': id }, el('h2', { id }, titulo), ...partes.filter(Boolean));
@@ -85,8 +93,15 @@ function botoesEstado() {
 }
 
 // --- Dados ---------------------------------------------------------------------
+// E07: ausência de responsável, pessoa desligada da equipe e cadastro sem nome são situações diferentes.
+function textoResponsavel() {
+  if (!o.responsavel_auth_id) return 'Sem responsável definido';
+  if (!Array.isArray(o.equipe)) return o.responsavel ?? 'Cadastro sem nome';
+  const ativo = o.equipe.some((m) => m.auth_user_id === o.responsavel_auth_id);
+  return ativo ? o.responsavel : `${o.responsavel ?? 'Cadastro sem nome'} (não faz mais parte da equipe)`;
+}
 function secaoDados() {
-  const dl = el('dl', { class: 'dados' }, el('dt', {}, 'Responsável'), el('dd', {}, o.responsavel ?? 'Sem responsável definido'),
+  const dl = el('dl', { class: 'dados' }, el('dt', {}, 'Responsável'), el('dd', {}, textoResponsavel()),
     el('dt', {}, 'Previsão de conclusão'), el('dd', {}, o.previsao_conclusao ? o.previsao_conclusao.split('-').reverse().join('/') : 'Sem previsão informada'),
     el('dt', {}, 'Recorrência'), el('dd', {}, o.recorrencia ? RECORRENCIA[o.recorrencia] : 'Não recorrente'));
   if (!o.pode.alterar || o.estado === 'cancelada') return secao('titulo-dados', 'Dados da OS', dl);
@@ -482,6 +497,139 @@ function secaoGarantia() {
   return secao('titulo-garantia', 'Garantia e recorrência', ...partes);
 }
 
+// --- Checklist (E07) -------------------------------------------------------------
+function secaoChecklist() {
+  if (!checklist) return secao('titulo-checklist', 'Checklist', el('p', { class: 'campo__ajuda' }, 'O checklist não pôde ser carregado agora.'));
+  const pode = checklist.pode_alterar;
+  const pendentes = checklist.pendentes_obrigatorios;
+  const linha = (i) => {
+    const marcar = el('input', { type: 'checkbox', id: `chk-${i.id}`, checked: i.concluido, disabled: !pode, 'aria-describedby': `chk-${i.id}-info` });
+    marcar.addEventListener('change', () => ocupado(marcar, () => executar(`chk-${i.id}`, null, (k) => alterarItemChecklist(i.id, { concluido: marcar.checked }, i.versao, k),
+      () => anunciar('sucesso', marcar.checked ? `Concluído: ${i.texto}.` : `Reaberto: ${i.texto}.`))));
+    const detalhes = pode ? el('details', { class: 'checklist__mais' }, el('summary', {}, 'Observação, responsável e evidência'), formItem(i)) : null;
+    return el('li', { class: `checklist__item${i.concluido ? ' checklist__item--feito' : ''}`, 'data-item': i.id },
+      el('div', { class: 'opcao' }, marcar, el('label', { for: `chk-${i.id}` }, i.texto)),
+      el('p', { class: 'opcoes', id: `chk-${i.id}-info` },
+        i.obrigatorio ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'obrigatório') : el('span', { class: 'chip chip--neutro chip--pequeno' }, 'opcional'),
+        i.visivel_cliente ? el('span', { class: 'chip chip--info chip--pequeno' }, 'o cliente vê') : el('span', { class: 'chip chip--neutro chip--pequeno' }, 'interno'),
+        el('span', { class: 'campo__ajuda' }, [i.responsavel ? `Responsável: ${i.responsavel}` : 'Sem responsável definido',
+          i.concluido ? `concluído por ${i.concluido_por ?? 'Cadastro sem nome'} em ${formatarQuando(i.concluido_em)}` : null].filter(Boolean).join(' · '))),
+      i.observacao ? el('p', { class: 'campo__ajuda' }, `Observação: ${i.observacao}`) : null,
+      i.evidencia_url ? el('p', {}, linkEvidencia(i.evidencia_url)) : null,
+      detalhes);
+  };
+  const partes = [
+    pendentes ? aviso('alerta', `${pendentes} ${pendentes === 1 ? 'item obrigatório pendente' : 'itens obrigatórios pendentes'}.`, el('p', {}, 'A OS só pode ser concluída depois deles. Itens opcionais não bloqueiam.'))
+      : checklist.itens.length ? el('p', { class: 'campo__ajuda' }, 'Nenhum item obrigatório pendente.') : null,
+    checklist.itens.length ? el('ul', { class: 'lista-simples checklist', id: 'lista-checklist' }, ...checklist.itens.map(linha))
+      : el('p', { id: 'lista-checklist' }, 'Nenhum item ainda. Adicione os passos do serviço ou use um modelo.'),
+    pode ? formNovoItem() : null,
+    pode && modelos.length ? formModelo() : null,
+    pode && checklist.itens.length && ctx.pode('servicos.alterar') ? botaoSalvarModelo() : null,
+    checklist.historico.length ? el('details', {}, el('summary', {}, `Histórico do checklist (${checklist.historico.length})`),
+      el('ul', { class: 'lista-simples' }, ...checklist.historico.map((h) => el('li', {}, `${formatarQuando(h.criado_em)} · ${h.autor ?? 'Equipe'} · ${h.texto}${h.publico ? ' (o cliente vê)' : ''}`)))) : null];
+  return secao('titulo-checklist', 'Checklist', ...partes);
+}
+const formatarQuando = (iso) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso));
+function linkEvidencia(url) {
+  const a = el('a', { href: '#', class: 'link-evidencia' }, 'Ver evidência');
+  a.addEventListener('click', async (e) => { e.preventDefault(); const src = await urlDeImagem(url); if (src) window.open(src, '_blank', 'noopener'); });
+  return a;
+}
+function opcoesEquipe() { return (o.equipe ?? []).map((m) => [m.auth_user_id, m.nome]); }
+function formNovoItem() {
+  const botao = el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Adicionar item');
+  const form = el('form', { class: 'pilha cartao', id: 'form-novo-item', novalidate: true },
+    el('h3', {}, 'Novo item'),
+    campoTexto({ nome: 'texto', rotulo: 'O que precisa ser feito', obrigatorio: true, max: 200, id: 'item-texto' }),
+    el('div', { class: 'opcoes' },
+      el('span', { class: 'opcao' }, el('input', { type: 'checkbox', id: 'item-obrigatorio', name: 'obrigatorio' }), el('label', { for: 'item-obrigatorio' }, 'Obrigatório para concluir a OS')),
+      el('span', { class: 'opcao' }, el('input', { type: 'checkbox', id: 'item-visivel', name: 'visivel_cliente' }), el('label', { for: 'item-visivel' }, 'O cliente pode ver'))),
+    campoSelecao({ nome: 'responsavel_auth_id', rotulo: 'Responsável (opcional)', opcoes: opcoesEquipe(), vazio: 'Sem responsável', id: 'item-responsavel' }),
+    el('div', { class: 'grupo-botoes' }, botao));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    limparErros(form);
+    const d = valores(form);
+    if ((d.texto ?? '').trim().length < 2) return erroNoCampo(form, 'texto', 'Descreva o item (2 a 200 caracteres).');
+    return ocupado(botao, () => executar('chk-novo', form, (k) => adicionarItensChecklist(o.id, [{ texto: d.texto.trim(), obrigatorio: Boolean(d.obrigatorio),
+      visivel_cliente: Boolean(d.visivel_cliente), responsavel_auth_id: d.responsavel_auth_id || null }], k), () => anunciar('sucesso', 'Item adicionado ao checklist.')));
+  });
+  return form;
+}
+function formItem(i) {
+  const botao = el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Salvar item');
+  const remover = el('button', { type: 'button', class: 'botao botao--texto' }, 'Remover item');
+  const evid = arquivosDisponiveis ? el('input', { type: 'file', id: `evid-${i.id}`, accept: 'image/png,image/jpeg,image/webp,application/pdf', class: 'campo__entrada' }) : null;
+  const form = el('form', { class: 'pilha', novalidate: true, 'data-form-item': i.id },
+    campoTexto({ nome: 'observacao', rotulo: 'Observação', linhas: 2, max: 500, valor: i.observacao ?? '', id: `obs-${i.id}` }),
+    campoSelecao({ nome: 'responsavel_auth_id', rotulo: 'Responsável', opcoes: opcoesEquipe(), valor: i.responsavel_auth_id ?? '', vazio: 'Sem responsável', id: `resp-${i.id}` }),
+    evid ? el('div', { class: 'campo' }, el('label', { for: `evid-${i.id}` }, i.evidencia_url ? 'Trocar evidência (foto ou PDF)' : 'Anexar evidência (foto ou PDF)'), evid,
+      el('span', { class: 'campo__ajuda' }, `Até ${LIMITES_PADRAO.imagemKb / 1024} MB para imagens e ${LIMITES_PADRAO.documentoKb / 1024} MB para PDF. Só a equipe vê.`)) : null,
+    el('div', { class: 'grupo-botoes' }, botao, remover));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    limparErros(form);
+    const d = valores(form);
+    return ocupado(botao, async () => {
+      const dados = { observacao: d.observacao ?? '', responsavel_auth_id: d.responsavel_auth_id || null };
+      const arq = evid?.files?.[0];
+      if (arq) {
+        try {
+          const env = await enviarArquivo(arq, { finalidade: 'evidencia_os', empresaId: ctx.id, referenciaTipo: 'ordem_servico', referenciaId: o.id, chave: novaChave() });
+          dados.evidencia_arquivo_id = env.id;
+        } catch (erro) { erroNoCampo(form, null, erro.message); anunciar('erro', erro.message); return; }
+      }
+      await executar(`chk-item-${i.id}`, form, (k) => alterarItemChecklist(i.id, dados, i.versao, k), () => anunciar('sucesso', 'Item atualizado.'));
+    });
+  });
+  remover.addEventListener('click', () => ocupado(remover, async () => {
+    const ok = await abrirDialogo({ titulo: 'Remover este item?', mensagens: [i.texto, 'O registro continua no histórico do checklist.'], rotuloConfirmar: 'Remover', rotuloCancelar: 'Manter' });
+    if (!ok) return;
+    await executar(`chk-rem-${i.id}`, null, (k) => removerItemChecklist(i.id, i.versao, k), () => anunciar('sucesso', 'Item removido.'));
+  }));
+  return form;
+}
+function formModelo() {
+  const botao = el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Aplicar modelo');
+  const form = el('form', { class: 'grade-filtros', id: 'form-modelo', novalidate: true },
+    campoSelecao({ nome: 'modelo', rotulo: 'Usar um modelo', opcoes: modelos.map((m) => [m.id, `${m.nome} (${m.itens.length})`]), id: 'item-modelo' }),
+    el('div', { class: 'grupo-botoes' }, botao));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const m = modelos.find((x) => x.id === valores(form).modelo);
+    if (!m) return erroNoCampo(form, 'modelo', 'Escolha um modelo.');
+    return ocupado(botao, () => executar('chk-modelo', form, (k) => adicionarItensChecklist(o.id, m.itens, k), (r) => anunciar('sucesso', `${r.adicionados} itens do modelo "${m.nome}" adicionados.`)));
+  });
+  return form;
+}
+function botaoSalvarModelo() {
+  const b = el('button', { type: 'button', class: 'botao botao--texto' }, 'Salvar estes itens como modelo');
+  b.addEventListener('click', async () => {
+    const dados = await dialogoFormulario({ id: 'dialogo-modelo', titulo: 'Salvar como modelo', rotuloConfirmar: 'Salvar modelo',
+      campos: [campoTexto({ nome: 'nome', rotulo: 'Nome do modelo', obrigatorio: true, max: 80, id: 'modelo-nome', ajuda: 'Por exemplo: "Instalação elétrica padrão".' })],
+      validar: (f) => { const v = valores(f); if ((v.nome ?? '').trim().length < 2) { erroNoCampo(f, 'nome', 'Dê um nome ao modelo.'); return null; } return v; } });
+    if (!dados) return;
+    const itens = checklist.itens.map((i) => ({ texto: i.texto, obrigatorio: i.obrigatorio, visivel_cliente: i.visivel_cliente }));
+    await executar('chk-salvar-modelo', null, (k) => salvarModeloChecklist(ctx.id, null, dados.nome.trim(), itens, null, k), () => anunciar('sucesso', `Modelo "${dados.nome.trim()}" salvo.`));
+  });
+  return el('div', { class: 'grupo-botoes' }, b);
+}
+
+// --- Documentos (E07): PDF da OS e arquivos anexados à OS -----------------------------------------
+function secaoDocumentos() {
+  const lista = documentos.length ? el('ul', { class: 'lista-simples', id: 'lista-documentos' }, ...documentos.map((d) => el('li', { class: 'linha-ficha' },
+    el('span', {}, d.nome_original ?? (d.tipo_mime === 'application/pdf' ? 'Documento PDF' : 'Imagem')), linkEvidencia(d.url),
+    el('span', { class: 'campo__ajuda' }, `${d.finalidade === 'evidencia_os' ? 'Evidência' : 'Documento'} · ${formatarQuando(d.criado_em)} · ${Math.ceil(d.tamanho_bytes / 1024)} KB`))))
+    : el('p', { id: 'lista-documentos' }, 'Nenhum arquivo anexado a esta OS.');
+  return secao('titulo-documentos', 'Documentos',
+    el('p', {}, botaoPdf({ rotulo: 'Baixar resumo da OS (PDF)', id: 'baixar-pdf-os', anunciar,
+      montar: async () => resumoOs(o, { empresa: ctx.empresa?.nome_publico ?? 'Empresa', usuario: await nomeDeQuemGera(), agora: new Date() }),
+      registrar: (chave) => registrarExportacaoPdf(ctx.id, 'os', o.id, null, null, chave) })),
+    el('p', { class: 'campo__ajuda' }, 'Fotos e PDFs anexados como evidência no checklist ficam aqui. Arquivos são privados da equipe.'),
+    lista);
+}
+
 function secaoLinhaDoTempo() {
   const partes = [linhaDoTempoOs(o.eventos)];
   if (o.pode.alterar && o.estado !== 'cancelada') {
@@ -511,19 +659,24 @@ function desenhar() {
     el('p', {}, `Cliente: ${o.cliente_nome}${o.origem === 'interna' ? ' (balcão ou telefone)' : ''} · `,
       el('a', { href: `/business/solicitacao.html?id=${encodeURIComponent(ctx.id)}&solicitacao=${encodeURIComponent(o.solicitacao_id)}` }, `solicitação nº ${o.solicitacao_numero}`)),
     o.revisao_pendente ? aviso('alerta', 'O cliente pediu revisão. Reabra a OS para atender.') : null,
-    // M13 (D13-08): resumo da OS em PDF, para quem vê as ordens de serviço; sem notas internas.
-    el('p', {}, botaoPdf({ rotulo: 'Baixar resumo da OS (PDF)', id: 'baixar-pdf-os', anunciar,
-      montar: async () => resumoOs(o, { empresa: ctx.empresa?.nome_publico ?? 'Empresa', usuario: await nomeDeQuemGera(), agora: new Date() }),
-      registrar: (chave) => registrarExportacaoPdf(ctx.id, 'os', o.id, null, null, chave) })),
     o.estado === 'concluida' && !o.encerramento.empresa_pode_encerrar && o.encerramento.motivo ? el('p', { class: 'campo__ajuda' }, o.encerramento.motivo) : null);
   const botoes = botoesEstado();
-  area.replaceChildren(topo, botoes.length ? el('div', { class: 'grupo-botoes', id: 'acoes-estado' }, ...botoes) : el('span'),
-    secaoDados(), secaoHorario(), secaoMateriais(), secaoValores(), secaoCancelamento(), secaoGarantia(),
-    // M12: conversa com o cliente, a mesma da solicitação (com as atualizações públicas desta OS).
-    ...(o.origem === 'plataforma' ? [secaoConversa({ tipo: 'os', id: o.id, titulo: 'Conversa com o cliente', anunciar }).secao] : []),
-    secaoLinhaDoTempo(),
-    el('details', {}, el('summary', {}, 'Orçamento aceito'), el('p', {}, `Versão ${o.versao_aceita.numero}: ${dinheiro(o.versao_aceita.total_centavos)}`),
-      el('ul', {}, ...o.versao_aceita.componentes.map((c) => el('li', {}, `${c.descricao}: ${dinheiro(c.total_centavos)}`)))));
+  // E07: detalhes organizados em abas; a aba fica no endereço e é mantida ao recarregar depois de uma ação.
+  const grupo = abas({ rotulo: 'Partes da ordem de serviço', ativa: abaOs, aoTrocar: (k) => { abaOs = k; },
+    itens: [
+      { chave: 'geral', titulo: 'Geral', painel: el('div', { class: 'pilha-grande' }, secaoDados(), secaoHorario(),
+        el('details', {}, el('summary', {}, 'Orçamento aceito'), el('p', {}, `Versão ${o.versao_aceita.numero}: ${dinheiro(o.versao_aceita.total_centavos)}`),
+          el('ul', {}, ...o.versao_aceita.componentes.map((c) => el('li', {}, `${c.descricao}: ${dinheiro(c.total_centavos)}`))))) },
+      { chave: 'checklist', titulo: 'Checklist', contador: checklist ? checklist.itens.filter((i) => !i.concluido).length : null, painel: secaoChecklist() },
+      { chave: 'materiais', titulo: 'Materiais', contador: o.materiais.length, painel: secaoMateriais() },
+      { chave: 'financeiro', titulo: 'Financeiro', painel: secaoValores() },
+      { chave: 'documentos', titulo: 'Documentos', contador: documentos.length || null, painel: secaoDocumentos() },
+      { chave: 'garantia', titulo: 'Garantia e cancelamento', painel: el('div', { class: 'pilha-grande' }, secaoGarantia(), secaoCancelamento()) },
+      // M12: conversa com o cliente, a mesma da solicitação (com as atualizações públicas desta OS).
+      { chave: 'comunicacao', titulo: 'Comunicação e histórico', painel: el('div', { class: 'pilha-grande' },
+        ...(o.origem === 'plataforma' ? [secaoConversa({ tipo: 'os', id: o.id, titulo: 'Conversa com o cliente', anunciar }).secao] : []), secaoLinhaDoTempo()) },
+    ] });
+  area.replaceChildren(topo, botoes.length ? el('div', { class: 'grupo-botoes', id: 'acoes-estado' }, ...botoes) : el('span'), grupo.elemento);
 }
 
 async function carregar() {
@@ -537,6 +690,10 @@ async function carregar() {
       return;
     }
     o = await lerOrdem(osId);
+    [checklist, modelos, documentos] = await Promise.all([checklistOs(o.id).catch(() => null), modelosChecklist(ctx.id).catch(() => []),
+      arquivosDisponiveis ? arquivosDoRegistro('ordem_servico', o.id).catch(() => []) : Promise.resolve([])]);
+    if (!Array.isArray(modelos)) modelos = [];
+    if (!Array.isArray(documentos)) documentos = [];
     if (catalogo === null) catalogo = ctx.pode('produtos.visualizar') || ctx.pode('estoque.visualizar') ? await produtosDaEmpresa(ctx.id).catch(() => []) : [];
     concluirCarregamento(area);
     document.getElementById('titulo-pagina').textContent = `Ordem de serviço nº ${o.numero}`;
