@@ -26,7 +26,8 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E05 | Central de atividades | Implementado aguardando validação manual | busca-global.test (atividades), painel-m13b e2e |
 | E05 | Vendas "consulta primeiro" e modelos reutilizáveis | Não iniciado | |
 | E06 | Financeiro: ações rápidas em modal a partir do painel | Implementado aguardando validação manual | financeiro e2e (21) |
-| E06 | Painel orientado a ação e metas com métricas reais | Não iniciado | |
+| E06 | Metas mensais com realizado dos dados reais e comemoração só ao atingir | Concluído e validado | metas.test (4), painel-m13b e2e, app real |
+| E06 | Painel orientado a ação | Parcial | já existia "Precisa da sua ação"; somadas metas e ações rápidas |
 | E07 | OS simplificada, checklists, "Sem responsável definido", documentos | Não iniciado | |
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
 | E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |

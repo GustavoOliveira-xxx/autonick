@@ -20,7 +20,22 @@ const TEXTOS = {
   'agenda.excecao_salva': 'registrou um feriado ou exceção na agenda', 'agenda.excecao_removida': 'removeu uma exceção da agenda',
   'agenda.compromisso_criado': 'criou um compromisso na agenda', 'agenda.compromisso_alterado': 'alterou um compromisso da agenda', 'agenda.compromisso_cancelado': 'cancelou um compromisso',
   'empresa.criada': 'cadastrou a empresa', 'empresa.alterada': 'alterou os dados da empresa', 'empresa.logo_definida': 'trocou a logo da empresa',
-  'arquivo.enviado': 'enviou um arquivo', 'arquivo.removido': 'removeu um arquivo', 'perfil.limite_desconto': 'mudou o limite de desconto de um perfil',
+  'arquivo.enviado': 'enviou um arquivo',
+  'empresa.meta_definida': 'definiu uma meta do mês', 'empresa.meta_removida': 'removeu uma meta do mês',
+  'servicos.os_iniciar': 'iniciou uma ordem de serviço', 'servicos.os_pausar': 'pausou uma ordem de serviço', 'servicos.os_retomar': 'retomou uma ordem de serviço',
+  'servicos.os_concluir': 'concluiu uma ordem de serviço', 'servicos.os_reabrir': 'reabriu uma ordem de serviço', 'servicos.os_encerrar': 'encerrou uma ordem de serviço',
+  'servicos.os_encerrada_pelo_cliente': 'registrou o encerramento de uma OS pelo cliente', 'servicos.proxima_execucao': 'marcou a próxima execução de um serviço',
+  'servicos.custos_propostos': 'propôs custos de cancelamento', 'servicos.custos_revisados': 'revisou custos de cancelamento', 'servicos.custos_retirados': 'retirou custos de cancelamento',
+  'servicos.formulario_salvo': 'salvou o formulário de um serviço', 'servicos.regras_salvas': 'salvou as regras de preço de um serviço', 'servicos.pacote_salvo': 'salvou um pacote de serviço',
+  'financeiro.titulo_de_servico': 'gerou uma conta a receber de serviço', 'financeiro.titulo_de_compra': 'gerou uma conta a pagar de compra',
+  'financeiro.titulo_de_custos': 'gerou uma conta de custos de cancelamento', 'financeiro.titulo_cancelado': 'cancelou uma conta a pagar ou receber',
+  'financeiro.titulo_reparcelado': 'reparcelou uma conta', 'financeiro.transferencia_estornada': 'estornou uma transferência',
+  'financeiro.categoria_criada': 'criou uma categoria do financeiro', 'financeiro.categoria_alterada': 'alterou uma categoria do financeiro',
+  'financeiro.conta_criada': 'cadastrou uma conta (caixa ou banco)', 'financeiro.conta_alterada': 'alterou uma conta (caixa ou banco)',
+  'financeiro.conta_desativada': 'desativou uma conta (caixa ou banco)', 'financeiro.conta_reativada': 'reativou uma conta (caixa ou banco)', 'financeiro.conta_padrao': 'mudou a conta padrão',
+  'financeiro.recorrencia_criada': 'criou uma despesa recorrente', 'financeiro.recorrencia_alterada': 'alterou uma despesa recorrente',
+  'financeiro.recorrencia_pausada': 'pausou uma despesa recorrente', 'financeiro.recorrencia_retomada': 'retomou uma despesa recorrente',
+  'financeiro.recorrencias_geradas': 'gerou as contas recorrentes do mês', 'financeiro.diferenca_caixa': 'registrou uma diferença de caixa', 'arquivo.removido': 'removeu um arquivo', 'perfil.limite_desconto': 'mudou o limite de desconto de um perfil',
 };
 
 export function textoAtividade(a) {

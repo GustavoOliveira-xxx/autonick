@@ -24,7 +24,7 @@ public enum Dominio {
             "cancelar_convite", "desligar_membro", "alterar_perfil_do_membro", "criar_perfil_permissao",
             "alterar_perfil_permissao", "desativar_perfil_permissao", "definir_desconto_maximo", "meu_limite_desconto",
             "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa",
-            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro", "busca_global", "atividades_da_empresa"),
+            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro", "busca_global", "atividades_da_empresa", "metas_da_empresa", "definir_meta"),
 
     PRODUTOS_ESTOQUE(false, "produtos_da_empresa", "criar_produto", "alterar_produto", "definir_produto_ativo",
             "adicionar_variacao", "alterar_variacao", "definir_variacao_ativa", "alterar_preco", "alterar_custo",

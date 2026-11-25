@@ -631,3 +631,13 @@ html[data-tema="claro"] .paleta kbd { border-color: #d8c9a8; background: #fff; }
 .cartao-acao strong { font-size: 1.02rem; }
 .cartao-acao span { color: var(--texto-suave); font-size: 0.88rem; }
 .cartao-acao:hover, .cartao-acao:focus-visible { border-color: rgb(245 183 10 / 0.7); background: color-mix(in srgb, var(--superficie-2) 88%, #f5b70a); }
+
+/* E06 · Metas do mês */
+.metas { display: grid; gap: 14px; }
+.meta { display: grid; gap: 6px; }
+.meta__topo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.meta__barra { display: block; height: 12px; border-radius: 999px; overflow: hidden; background: rgb(127 127 127 / 0.2); }
+.meta__barra i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #f5b70a, #ffd567); transition: width 900ms var(--ease-forja, ease-out); }
+.meta--atingida .meta__barra i { background: linear-gradient(90deg, #3ecf8e, #9cf0c8); }
+.meta--atingida .campo__ajuda { color: #3ecf8e; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .meta__barra i { transition: none; } }

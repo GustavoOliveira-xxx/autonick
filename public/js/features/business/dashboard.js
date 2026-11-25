@@ -158,6 +158,7 @@ const semMovimento = (p) => !(p.pedidos?.aguardando || p.orcamentos?.abertas || 
  * acontece sozinha, uma vez, sincronizada com a contagem. Sem meta, nada é celebrado.
  */
 async function celebrarMeta(p) {
+  // E06: a celebração das metas agora fica no bloco "Metas" (dados reais); aqui só se o painel trouxer a meta junto.
   const meta = p.vendas?.meta_centavos;
   if (!Number.isFinite(meta) || meta <= 0 || p.vendas.total_centavos < meta) return;
   const lugar = area.querySelector('.escudo--vendas-wrap .escudo__corpo');
@@ -165,6 +166,82 @@ async function celebrarMeta(p) {
   const { montarMomento } = await import('../../ui/forja3d/momentos.js');
   lugar.classList.add('com-momento');
   montarMomento(lugar, 'IB01', { tamanho: 'p' }).disparar();
+}
+
+// E06: metas do mês. O realizado vem do banco (vendas e OS reais); a comemoração acontece uma vez por meta, só quando atingida.
+const fmtNumero = new Intl.NumberFormat('pt-BR');
+const valorMeta = (tipo, v) => (tipo === 'receita_vendas' ? dinheiro(v) : fmtNumero.format(v));
+function lembrarComemoracao(chave) {
+  try { if (localStorage.getItem(chave)) return false; localStorage.setItem(chave, '1'); return true; } catch { return true; }
+}
+async function blocoMetas(ctx) {
+  const [{ metasDaEmpresa, definirMeta, TIPOS_META }, { abrirModal }, { campoTexto, limparErros, erroNoCampo, ocupado, valores }, { novaChave }, { lerValorEmReais }] = await Promise.all([
+    import('../../data/metas.js'), import('../../ui/modal.js'), import('../../ui/formulario.js'), import('../../data/empresas.js'), import('../../domain/moeda.js')]);
+  const m = await metasDaEmpresa(ctx.id).catch(() => null);
+  if (!m || (!m.metas.length && !m.pode_definir) || !m.tipos_visiveis.length) return null;
+  const mesNome = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' }).format(new Date(`${m.mes}T12:00:00Z`));
+  const lista = m.metas.map((x) => el('li', { class: `meta${x.atingida ? ' meta--atingida' : ''}`, 'data-meta': x.tipo },
+    el('div', { class: 'meta__topo' }, el('strong', {}, TIPOS_META[x.tipo]?.nome ?? x.tipo),
+      el('span', {}, `${valorMeta(x.tipo, x.realizado)} de ${valorMeta(x.tipo, x.alvo)}`)),
+    el('span', { class: 'meta__barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.min(100, x.percentual)),
+      'aria-label': `${TIPOS_META[x.tipo]?.nome}: ${x.percentual}%` }, el('i', { 'data-nivel': String(Math.min(100, x.percentual)) })),
+    el('span', { class: 'campo__ajuda' }, x.atingida ? 'Meta atingida!' : `${x.percentual}% · faltam ${valorMeta(x.tipo, x.alvo - x.realizado)}`)));
+  const definir = m.pode_definir ? el('button', { type: 'button', class: 'botao botao--secundario' }, m.metas.length ? 'Ajustar metas' : 'Definir metas do mês') : null;
+  definir?.addEventListener('click', () => {
+    const tipos = m.tipos_visiveis.length ? m.tipos_visiveis : Object.keys(TIPOS_META);
+    const atual = Object.fromEntries(m.metas.map((x) => [x.tipo, x.alvo]));
+    const salvar = el('button', { type: 'submit', class: 'botao', form: 'form-metas' }, 'Salvar metas');
+    const form = el('form', { id: 'form-metas', class: 'pilha', novalidate: true },
+      el('p', { class: 'campo__ajuda' }, 'Deixe em branco para não ter meta. O realizado é calculado das vendas e OS do mês; ninguém digita.'),
+      ...tipos.map((t) => campoTexto({ nome: t, rotulo: `${TIPOS_META[t].nome} (${TIPOS_META[t].unidade})`, id: `meta-${t}`, ajuda: TIPOS_META[t].ajuda,
+        valor: atual[t] ? (t === 'receita_vendas' ? (atual[t] / 100).toFixed(2).replace('.', ',') : String(atual[t])) : '' })));
+    const modal = abrirModal({ titulo: `Metas de ${mesNome}`, corpo: form, rodape: [salvar], tamanho: 'estreito' });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      limparErros(form);
+      const d = valores(form);
+      const pedidos = [];
+      for (const t of tipos) {
+        const bruto = (d[t] ?? '').trim();
+        let alvo = null;
+        if (bruto) {
+          if (t === 'receita_vendas') {
+            const r = lerValorEmReais(bruto);
+            if (!r.ok || r.centavos <= 0) { erroNoCampo(form, t, r.ok ? 'Informe um valor maior que zero.' : r.erro); return; }
+            alvo = r.centavos;
+          } else {
+            alvo = /^\d+$/.test(bruto) ? Number(bruto) : NaN;
+            if (!Number.isSafeInteger(alvo) || alvo <= 0) { erroNoCampo(form, t, 'Use um número inteiro maior que zero.'); return; }
+          }
+        }
+        if ((atual[t] ?? null) !== alvo) pedidos.push([t, alvo]);
+      }
+      ocupado(salvar, async () => {
+        try {
+          for (const [t, alvo] of pedidos) await definirMeta(ctx.id, t, m.mes, alvo, novaChave());
+          modal.fechar();
+          carregar();
+        } catch (erro) {
+          if (!(erro.codigo === 'VALIDATION_ERROR' && erroNoCampo(form, erro.campo === 'alvo' ? pedidos[0]?.[0] : erro.campo, erro.message))) form.prepend(aviso('erro', erro.message));
+        }
+      });
+    });
+  });
+  const bloco = escudo(`Metas de ${mesNome}`,
+    lista.length ? el('ul', { class: 'lista-simples metas', role: 'list' }, ...lista) : el('p', {}, 'Nenhuma meta para este mês. Defina uma para acompanhar o progresso aqui.'),
+    definir);
+  bloco.id = 'bloco-metas';
+  const atingidas = m.metas.filter((x) => x.atingida && lembrarComemoracao(`autonick.metaComemorada.${ctx.id}.${m.mes}.${x.tipo}.${x.alvo}`));
+  if (atingidas.length) {
+    queueMicrotask(async () => {
+      const lugar = bloco.querySelector(`[data-meta="${atingidas[0].tipo}"]`);
+      if (!lugar) return;
+      const { montarMomento } = await import('../../ui/forja3d/momentos.js');
+      lugar.classList.add('com-momento');
+      montarMomento(lugar, 'IB01', { tamanho: 'p' }).disparar();
+    });
+  }
+  return bloco;
 }
 
 async function carregar() {
@@ -192,7 +269,8 @@ async function carregar() {
       avisos.replaceChildren(el('div', { role: 'status' }, aviso('sucesso', 'Empresa cadastrada.', el('p', {}, 'O sistema já pode ser usado. A vitrine aparece para o público depois da revisão da CK.'))));
     }
     mostrarMensagensNovasNoMenu(p.mensagens?.total ?? 0);
-    const partes = [blocoAcao(p, ctx.id), semMovimento(p) ? primeirosPassos(ctx) : null, blocoNumeros(p, ctx.id), blocoMensagens(p), blocoAgenda(p, ctx.id)].filter(Boolean);
+    const metas = await blocoMetas(ctx).catch(() => null);
+    const partes = [blocoAcao(p, ctx.id), semMovimento(p) ? primeirosPassos(ctx) : null, metas, blocoNumeros(p, ctx.id), blocoMensagens(p), blocoAgenda(p, ctx.id)].filter(Boolean);
     area.append(...(partes.length ? partes : [aviso('info', 'Seu perfil de acesso não inclui nenhum indicador do painel.',
       el('p', {}, el('a', { href: L('empresa', ctx.id) }, 'Ir para a página da empresa')))]));
     // Alturas das barras e níveis: aplicadas pelo CSSOM (a política de segurança bloqueia o atributo style).

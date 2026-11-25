@@ -78,5 +78,10 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
 - Ações rápidas no Painel financeiro e em Movimentações: "Entrada ou saída" e "Transferir" abrem em modal (com proteção de alterações);
   os links do Painel abrem a ação já no formulário.
 
+- Metas do mês (`202611280001`, `metas_da_empresa` e `definir_meta`): receita de vendas, quantidade de vendas e OS concluídas.
+  O realizado é calculado das vendas confirmadas e OS concluídas do mês (fuso de São Paulo); ninguém digita. "Meta atingida!" e a
+  comemoração (moeda CK, IB01) só quando o realizado alcança o alvo, uma vez por meta e aparelho. Definir: proprietário ou empresa.alterar.
+  Validado no app real: venda de R$ 304,00 contra alvo de R$ 100,00 marcou a meta como atingida; OS 1 de 3.
+
 ### Testes nesta etapa
 - Unitários 141/141 (com os testes de menu ajustados para a nova área Atividades) · Banco 261/261 · Java 134/134 · Playwright: suíte completa 345/345 antes das telas do E05; specs afetados depois (155 + 21) verdes.

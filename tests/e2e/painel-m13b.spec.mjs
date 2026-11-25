@@ -56,6 +56,12 @@ async function simular(context, { permissoes = TODAS, painel = painelCheio, loga
       case '/api/rpc/painel_empresa': return json(painel());
       case '/api/rpc/busca_global': return json({ texto: corpo.p_texto, grupos: { clientes: [{ id: 'c1', titulo: 'Cida Ramos', detalhe: '19999990000' }], ordens: [] } });
       case '/api/rpc/meus_favoritos': return json(estado.favoritos ?? []);
+      case '/api/rpc/metas_da_empresa': return json({ mes: '2026-11-01', pode_definir: true, tipos_visiveis: ['receita_vendas', 'vendas_qtd', 'os_concluidas'],
+        metas: estado.metas ?? [] });
+      case '/api/rpc/definir_meta': {
+        estado.definidas = [...(estado.definidas ?? []), corpo];
+        return json({ tipo: corpo.p_tipo, mes: corpo.p_mes, alvo: corpo.p_alvo, removida: corpo.p_alvo === null });
+      }
       case '/api/rpc/atividades_da_empresa': return json(corpo.p_antes ? { itens: [], mais: false } : { mais: true, itens: [
         { id: 'a1', tipo: 'venda.confirmada', recurso_tipo: 'vendas', recurso_id: 'b1000000-0000-4000-8000-000000000001', ator: 'Bia Vendas', voce: false, dados: {}, criado_em: agora.toISOString() },
         { id: 'a2', tipo: 'agenda.compromisso_criado', recurso_tipo: 'compromissos_agenda', recurso_id: 'c1000000-0000-4000-8000-000000000001', ator: 'Pessoa fictícia', voce: true, dados: {}, criado_em: agora.toISOString() },
@@ -211,6 +217,28 @@ test('paleta: sem empresa ativa o atalho não abre nada; Esc fecha e devolve o f
   await expect(page.getByRole('dialog', { name: 'Buscar e ir para' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('metas: progresso do banco, "Meta atingida!" só quando alcança; definir pelo modal em centavos [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  estado.metas = [{ id: 'm1', tipo: 'receita_vendas', alvo: 1000000, realizado: 842050, atingida: false, percentual: 84, versao: 1 },
+    { id: 'm2', tipo: 'vendas_qtd', alvo: 20, realizado: 21, atingida: true, percentual: 105, versao: 1 }];
+  await page.goto(`/business/dashboard.html?id=${EMP}`);
+  const bloco = page.locator('#bloco-metas');
+  await expect(bloco).toContainText('R$ 8.420,50 de R$ 10.000,00');
+  await expect(bloco.locator('[data-meta="receita_vendas"]')).toContainText('84% · faltam R$ 1.579,50');
+  await expect(bloco.locator('[data-meta="receita_vendas"]')).not.toContainText('Meta atingida');
+  await expect(bloco.locator('[data-meta="vendas_qtd"]')).toContainText('Meta atingida!');
+  await expect(bloco.getByRole('progressbar').first()).toHaveAttribute('aria-valuenow', '84');
+  await bloco.getByRole('button', { name: 'Ajustar metas' }).click();
+  await page.locator('#meta-receita_vendas').fill('12.000,00');
+  await page.locator('#meta-os_concluidas').fill('abc');
+  await page.getByRole('button', { name: 'Salvar metas' }).click();
+  await expect(page.locator('#meta-os_concluidas-erro')).toContainText('número inteiro');
+  await page.locator('#meta-os_concluidas').fill('5');
+  await page.getByRole('button', { name: 'Salvar metas' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(estado.definidas.map((d) => [d.p_tipo, d.p_alvo])).toEqual([['receita_vendas', 1200000], ['os_concluidas', 5]]);
 });
 
 test('atividades: textos simples, "Você" para a própria ação, links para o registro e "mais antigas" [simulação]', async ({ page, context }) => {

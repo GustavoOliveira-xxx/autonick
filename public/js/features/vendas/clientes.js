@@ -121,18 +121,18 @@ async function abrirFicha(clienteId, origem = null) {
         el('span', { class: 'campo__ajuda' }, `${dinheiro(p.total_centavos)} · ${formatarDataHora(p.data)}`)))) : el('p', {}, 'Nenhum pedido.') });
     const resumo = el('div', { class: 'resumo-ficha' },
       el('div', {}, el('small', {}, 'Contato'), el('strong', {}, [c.telefone, c.email].filter(Boolean).join(' · ') || 'Sem contato')),
-      el('div', {}, el('small', {}, 'Cliente desde'), el('strong', {}, formatarDataHora(c.desde).split(' ')[0])),
+      el('div', {}, el('small', {}, 'Cliente desde'), el('strong', {}, new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(new Date(c.desde)))),
       f.resumo ? el('div', {}, el('small', {}, 'Compras confirmadas'), el('strong', {}, `${f.resumo.vendas} · ${dinheiro(f.resumo.total_centavos)}`)) : null,
       f.resumo ? el('div', {}, el('small', {}, 'Última compra'), el('strong', {}, f.resumo.ultima_compra ? formatarDataHora(f.resumo.ultima_compra) : 'Nenhuma')) : null);
     const acoes = el('div', { class: 'grupo-botoes' },
       ctx.pode('vendas.criar') ? el('a', { class: 'botao', href: `/business/venda-nova.html?id=${q(id)}` }, 'Nova venda') : null,
       c.telefone ? el('a', { class: 'botao botao--secundario', href: `tel:+55${c.telefone}` }, 'Ligar') : null);
-    corpo.replaceChildren(resumo,
+    corpo.replaceChildren(...[resumo,
       c.observacoes ? el('p', { class: 'campo__ajuda' }, `Observações: ${c.observacoes}`) : null,
       c.conta_vinculada ? el('p', {}, el('span', { class: 'chip chip--info' }, 'Cliente do app')) : null,
       acoes,
       blocos.length ? abas({ rotulo: 'Histórico do cliente', itens: blocos, aoTrocar: () => {} }).elemento
-        : el('p', { class: 'campo__ajuda' }, 'Seu perfil não inclui vendas, orçamentos, ordens de serviço nem pedidos.'));
+        : el('p', { class: 'campo__ajuda' }, 'Seu perfil não inclui vendas, orçamentos, ordens de serviço nem pedidos.')].filter(Boolean));
   } catch (erro) {
     corpo.replaceChildren(aviso('erro', erro.message || 'Não foi possível abrir a ficha.'));
   }
