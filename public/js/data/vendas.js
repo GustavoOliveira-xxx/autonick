@@ -11,6 +11,10 @@ import { neon } from './sessao.js';
 // --- Clientes da empresa --------------------------------------------------------
 export const clientes = (empresaId, busca = null, limite = 50, deslocamento = 0) =>
   neon.rpc('clientes_da_empresa', { p_empresa_id: empresaId, p_busca: busca || null, p_limite: limite, p_deslocamento: deslocamento });
+export const buscarClientes = (empresaId, busca = null, limite = 8, deslocamento = 0) =>
+  neon.rpc('buscar_clientes', { p_empresa_id: empresaId, p_busca: busca || null, p_limite: limite, p_deslocamento: deslocamento });
+export const documentoEmUso = (empresaId, tipo, documento, ignorar = null) =>
+  neon.rpc('documento_em_uso', { p_empresa_id: empresaId, p_tipo: tipo, p_documento: documento, p_ignorar: ignorar });
 export const historicoCliente = (clienteId) => neon.rpc('historico_do_cliente', { p_cliente_id: clienteId });
 export const criarCliente = (empresaId, dados, chave) => neon.rpc('criar_cliente', { p_empresa_id: empresaId, p_dados: dados, p_operation_key: chave });
 export const alterarCliente = (clienteId, dados, versao, chave) =>

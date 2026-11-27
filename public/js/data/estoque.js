@@ -19,6 +19,8 @@ export const custosDaVariacao = (variacaoId) => neon.rpc('custos_da_variacao', {
 export const compras = (empresaId) => neon.rpc('compras_da_empresa', { p_empresa_id: empresaId });
 export const fornecedores = (empresaId) =>
   neon.consultar(`/fornecedores?empresa_id=eq.${enc(empresaId)}&select=id,nome,documento,telefone,email,observacoes,ativo,versao&order=nome.asc`);
+export const fornecedoresDaEmpresa = (empresaId, busca = null, situacao = 'ativos') =>
+  neon.rpc('fornecedores_da_empresa', { p_empresa_id: empresaId, p_busca: busca || null, p_situacao: situacao });
 export const historicoPrecos = (variacaoId) =>
   neon.consultar(`/historico_precos?variacao_id=eq.${enc(variacaoId)}&select=preco_anterior,preco_novo,motivo,criado_em&order=criado_em.desc`);
 

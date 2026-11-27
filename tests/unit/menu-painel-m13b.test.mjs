@@ -22,9 +22,11 @@ test('cada módulo aparece só com a permissão que abre a tela', () => {
   assert.deepEqual(chaves(grupos), ['painel', 'vendas', 'solicitacoes', 'financeiro', 'atividades', 'empresa']);
 });
 
-test('estoque.visualizar abre Produtos, Estoque e Fornecedores; a ordem dos grupos é fixa', () => {
+test('estoque.visualizar abre Produtos, Estoque e Compras; Fornecedores é destino separado (pacote 27/11); a ordem dos grupos é fixa', () => {
   const grupos = gruposDaEmpresa(ID, (c) => c === 'estoque.visualizar');
-  assert.deepEqual(chaves(grupos), ['painel', 'produtos', 'estoque', 'fornecedores', 'atividades', 'empresa']);
+  assert.deepEqual(chaves(grupos), ['painel', 'produtos', 'estoque', 'compras', 'atividades', 'empresa']);
+  const fornecedores = gruposDaEmpresa(ID, (c) => c === 'fornecedores.visualizar');
+  assert.deepEqual(chaves(fornecedores), ['painel', 'fornecedores', 'atividades', 'empresa']);
   assert.deepEqual(grupos.map(([t]) => t), ['Operação', 'Catálogo', 'Gestão']);
 });
 
@@ -39,6 +41,8 @@ test('página atual: telas de detalhe marcam o módulo da lista', () => {
   assert.equal(chaveDaPagina('/business/ordem.html'), 'ordens');
   assert.equal(chaveDaPagina('/business/financeiro-fechamento.html'), 'financeiro');
   assert.equal(chaveDaPagina('/business/atividades.html'), 'atividades');
+  assert.equal(chaveDaPagina('/business/compras.html'), 'compras');
+  assert.equal(chaveDaPagina('/business/fornecedores.html'), 'fornecedores');
   assert.equal(chaveDaPagina('/business/minhas-empresas.html'), null);
 });
 

@@ -1,13 +1,18 @@
 /**
- * Clientes da empresa (M06, RF-033 a RF-038): cadastro mínimo sem CPF (D6-10), busca, edição com versão,
+ * Clientes da empresa (M06; pacote 27/11): consulta primeiro (lista com busca sem acento por nome, documento, telefone e
+ * e-mail), "Adicionar cliente" em modal (PF/PJ, CPF/CNPJ opcional, endereço com CEP), edição com versão,
  * desativação e ficha do cliente (E05: resumo, vendas, pedidos, orçamentos e OS, cada parte com a permissão da área).
  * O vínculo com a conta pública só nasce do pedido aceito (D6-11).
  */
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
-import { campoTexto, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
-import { clientes as lerClientes, criarCliente, alterarCliente, definirClienteAtivo, fichaCliente, ESTADO_VENDA } from '../../data/vendas.js';
+import { campoSelecao, erroNoCampo, ocupado } from '../../ui/formulario.js';
+import { barraConsulta, vazio } from '../../ui/consulta.js';
+import { documentoParaLista, mascararDocumento } from '../../domain/documentos.js';
+import { enderecoEmLinha } from '../../ui/cadastro-pessoa.js';
+import { abrirCadastroCliente } from './cliente-modal.js';
+import { clientes as lerClientes, definirClienteAtivo, fichaCliente, ESTADO_VENDA } from '../../data/vendas.js';
 import { ESTADO_OS } from '../../data/ordens.js';
 import { ESTADO_SOLICITACAO } from '../../data/servicos.js';
 import { abrirModal } from '../../ui/modal.js';
@@ -25,73 +30,43 @@ let busca = parametro('busca') ?? '';
 
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
 
-/** Lê o formulário de cliente; devolve os dados ou null (com o erro ao lado do campo). */
-function dadosCliente(form) {
-  const d = valores(form);
-  if (!d.nome || d.nome.length < 2) return erroNoCampo(form, 'nome', 'Informe o nome (pelo menos 2 letras).') && null;
-  if (d.telefone && !/^\d{10,13}$/.test(d.telefone.replace(/\D/g, ''))) return erroNoCampo(form, 'telefone', 'Informe o telefone com DDD.') && null;
-  if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return erroNoCampo(form, 'email', 'Informe um e-mail válido.') && null;
-  return { nome: d.nome, telefone: d.telefone || null, email: d.email || null, observacoes: d.observacoes || null };
+function abrirEdicao(c, origem) {
+  abrirCadastroCliente({ ctx, atual: c, origem, aoSalvar: async () => { await carregar(); anunciar('sucesso', 'Cliente atualizado.'); } });
 }
 
-function camposCliente(prefixo, c = {}) {
-  return [
-    campoTexto({ nome: 'nome', rotulo: 'Nome', obrigatorio: true, max: 120, valor: c.nome, id: `${prefixo}-nome`, autocomplete: 'off' }),
-    el('div', { class: 'grade-filtros' },
-      campoTexto({ nome: 'telefone', rotulo: 'Telefone com DDD', tipo: 'tel', max: 20, valor: c.telefone, id: `${prefixo}-telefone` }),
-      campoTexto({ nome: 'email', rotulo: 'E-mail', tipo: 'email', max: 254, valor: c.email, id: `${prefixo}-email` })),
-    campoTexto({ nome: 'observacoes', rotulo: 'Observações', max: 500, linhas: 2, valor: c.observacoes, id: `${prefixo}-observacoes`,
-      ajuda: 'Só o necessário para atender. Não registre CPF nem dados sensíveis.' }),
-  ];
+function abrirNovo(origem) {
+  abrirCadastroCliente({ ctx, origem, aoSalvar: async (r) => { await carregar(); anunciar('sucesso', `Cliente "${r.nome}" cadastrado.`); },
+    usarExistente: (item) => abrirFicha(item.id) });
 }
 
-function secaoNovo() {
-  if (!ctx.pode('clientes.criar')) return null;
-  const botao = el('button', { type: 'submit', class: 'botao' }, 'Cadastrar cliente');
-  const form = el('form', { id: 'form-cliente', class: 'pilha', novalidate: true }, ...camposCliente('novo'), el('div', { class: 'grupo-botoes' }, botao));
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    limparErros(form);
-    const d = dadosCliente(form);
-    if (!d) return;
-    ocupado(botao, () => executar('criar', form, (k) => criarCliente(ctx.id, d, k), (r) => {
-      form.reset();
-      anunciar('sucesso', `Cliente "${r.nome}" cadastrado.`);
-    }));
-  });
-  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-cliente' },
-    el('h2', { id: 'titulo-novo-cliente' }, 'Novo cliente'),
-    el('p', {}, 'Só o nome é obrigatório. Para vender sem identificar ninguém, use "Consumidor não identificado" na venda.'), form);
-}
-
-function cartao(c) {
-  const acoes = [];
+function linha(c) {
+  const ficha = el('button', { type: 'button', class: 'botao botao--secundario', 'data-ficha': c.id }, 'Abrir ficha', el('span', { class: 'visualmente-oculto' }, ` de ${c.nome}`));
+  ficha.addEventListener('click', () => abrirFicha(c.id, ficha));
+  const acoes = [ficha];
   if (ctx.pode('clientes.alterar')) {
-    const botao = el('button', { type: 'submit', class: 'botao' }, 'Salvar alterações');
-    const form = el('form', { class: 'pilha', novalidate: true }, ...camposCliente(`c-${c.id}`, c), el('div', { class: 'grupo-botoes' }, botao));
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      limparErros(form);
-      const d = dadosCliente(form);
-      if (!d) return;
-      ocupado(botao, () => executar(`alterar-${c.id}`, form, (k) => alterarCliente(c.id, d, c.versao, k), () => anunciar('sucesso', 'Cliente atualizado.')));
-    });
-    acoes.push(el('details', {}, el('summary', {}, 'Editar'), form));
-    const ativar = el('button', { type: 'button', class: 'botao botao--texto' }, c.ativo ? 'Desativar' : 'Reativar');
+    const editar = el('button', { type: 'button', class: 'botao botao--secundario', 'data-editar': c.id }, 'Editar', el('span', { class: 'visualmente-oculto' }, ` ${c.nome}`));
+    editar.addEventListener('click', () => abrirEdicao(c, editar));
+    const ativar = el('button', { type: 'button', class: 'botao botao--texto', 'data-ativo': c.id }, c.ativo ? 'Desativar' : 'Reativar', el('span', { class: 'visualmente-oculto' }, ` ${c.nome}`));
     ativar.addEventListener('click', () => ocupado(ativar, () => executar(`ativo-${c.id}`, null, (k) => definirClienteAtivo(c.id, !c.ativo, c.versao, k),
       () => anunciar('sucesso', c.ativo ? 'Cliente desativado. O histórico continua guardado.' : 'Cliente reativado.'))));
-    acoes.push(ativar);
+    acoes.push(editar, ativar);
   }
-  const ficha = el('button', { type: 'button', class: 'botao botao--secundario', 'data-ficha': c.id }, 'Abrir ficha');
-  ficha.addEventListener('click', () => abrirFicha(c.id, ficha));
-  return el('li', { class: 'cartao pilha', 'data-cliente': c.id },
-    el('h3', { class: 'cartao__titulo' }, c.nome, c.ativo ? null : el('span', { class: 'chip chip--neutro chip--pequeno' }, 'desativado'),
+  const doc = c.documento ? documentoParaLista(c.documento) : null;
+  return el('tr', { 'data-cliente': c.id, class: c.ativo ? null : 'inativo' },
+    el('th', { scope: 'row' }, el('strong', {}, c.nome),
+      c.nome_fantasia ? el('span', { class: 'sub' }, c.nome_fantasia) : null,
+      el('span', { class: 'sub' }, [c.tipo_pessoa === 'pj' ? 'Pessoa jurídica' : 'Pessoa física', doc].filter(Boolean).join(' · ')),
+      c.ativo ? null : el('span', { class: 'chip chip--neutro chip--pequeno' }, 'desativado'),
       c.conta_vinculada ? el('span', { class: 'chip chip--info chip--pequeno' }, 'cliente do app') : null),
-    el('p', { class: 'cartao__meta' }, [c.telefone, c.email].filter(Boolean).join(' · ') || 'Sem contato registrado',
-      ` · ${c.vendas} ${c.vendas === 1 ? 'venda' : 'vendas'}`),
-    c.observacoes ? el('p', {}, c.observacoes) : null,
-    el('div', { class: 'grupo-botoes' }, ficha),
-    acoes.length ? el('div', { class: 'pilha' }, ...acoes) : null);
+    el('td', { 'data-rotulo': 'Contato' }, [formatarTelefone(c.telefone), c.email].filter(Boolean).join(' · ') || 'Sem contato'),
+    el('td', { 'data-rotulo': 'Cidade' }, [c.cidade, c.uf].filter(Boolean).join('/') || '—'),
+    el('td', { 'data-rotulo': 'Vendas', class: 'numero' }, String(c.vendas ?? 0)),
+    el('td', { 'data-rotulo': 'Ações' }, el('div', { class: 'acoes-linha' }, ...acoes)));
+}
+
+function formatarTelefone(t) {
+  if (!t) return '';
+  return t.length >= 10 ? `(${t.slice(0, 2)}) ${t.slice(2, -4)}-${t.slice(-4)}` : t;
 }
 
 const q = encodeURIComponent;
@@ -121,6 +96,9 @@ async function abrirFicha(clienteId, origem = null) {
         el('span', { class: 'campo__ajuda' }, `${dinheiro(p.total_centavos)} · ${formatarDataHora(p.data)}`)))) : el('p', {}, 'Nenhum pedido.') });
     const resumo = el('div', { class: 'resumo-ficha' },
       el('div', {}, el('small', {}, 'Contato'), el('strong', {}, [c.telefone, c.email].filter(Boolean).join(' · ') || 'Sem contato')),
+      c.documento ? el('div', {}, el('small', {}, c.tipo_pessoa === 'pj' ? 'CNPJ' : 'CPF'), el('strong', {}, mascararDocumento(c.documento, c.tipo_pessoa))) : null,
+      enderecoEmLinha(c) ? el('div', {}, el('small', {}, 'Endereço'), el('strong', {}, enderecoEmLinha(c))) : null,
+      c.nome_fantasia ? el('div', {}, el('small', {}, 'Nome fantasia'), el('strong', {}, c.nome_fantasia)) : null,
       el('div', {}, el('small', {}, 'Cliente desde'), el('strong', {}, new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(new Date(c.desde)))),
       f.resumo ? el('div', {}, el('small', {}, 'Compras confirmadas'), el('strong', {}, `${f.resumo.vendas} · ${dinheiro(f.resumo.total_centavos)}`)) : null,
       f.resumo ? el('div', {}, el('small', {}, 'Última compra'), el('strong', {}, f.resumo.ultima_compra ? formatarDataHora(f.resumo.ultima_compra) : 'Nenhuma')) : null);
@@ -138,19 +116,36 @@ async function abrirFicha(clienteId, origem = null) {
   }
 }
 
+let situacao = 'ativos';
+const corpoLista = el('div', { id: 'resultado-clientes', 'aria-live': 'polite' });
+
+function desenharLista() {
+  const visiveis = lista.filter((c) => situacao === 'todos' || (situacao === 'ativos' ? c.ativo : !c.ativo));
+  document.getElementById('titulo-clientes')?.replaceChildren(`Clientes (${visiveis.length}${lista.length >= 100 ? '+' : ''})`);
+  corpoLista.replaceChildren(visiveis.length
+    ? el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: 'lista-clientes' },
+      el('caption', { class: 'visualmente-oculto' }, 'Clientes da empresa'),
+      el('thead', {}, el('tr', {}, ...['Cliente', 'Contato', 'Cidade', 'Vendas', 'Ações'].map((c) => el('th', { scope: 'col', class: c === 'Vendas' ? 'numero' : null }, c)))),
+      el('tbody', {}, ...visiveis.map(linha))))
+    : vazio(busca ? `Nenhum cliente encontrado para "${busca}".` : (situacao === 'inativos' ? 'Nenhum cliente desativado.' : 'Nenhum cliente cadastrado ainda.'),
+      !busca && ctx.pode('clientes.criar') && situacao !== 'inativos' ? botaoNovo('nao-ha-clientes') : null, 'lista-clientes'));
+}
+
+function botaoNovo(id = 'novo-cliente') {
+  const b = el('button', { type: 'button', class: 'botao', id }, 'Adicionar cliente');
+  b.addEventListener('click', () => abrirNovo(b));
+  return b;
+}
+
 function secaoLista() {
-  const form = el('form', { class: 'grade-filtros', role: 'search', id: 'form-busca' },
-    campoTexto({ nome: 'busca', rotulo: 'Buscar por nome ou telefone', valor: busca, id: 'busca-cliente' }),
-    el('div', { class: 'grupo-botoes' }, el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Buscar')));
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    busca = valores(form).busca ?? '';
-    carregar();
-  });
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-clientes' },
-    el('h2', { id: 'titulo-clientes' }, `Clientes (${lista.length})`), form,
-    lista.length ? el('ul', { class: 'lista-simples', id: 'lista-clientes' }, ...lista.map(cartao))
-      : el('p', { id: 'lista-clientes' }, busca ? 'Nenhum cliente encontrado com essa busca.' : 'Nenhum cliente cadastrado ainda.'));
+  const filtroSituacao = campoSelecao({ nome: 'situacao', rotulo: 'Situação', opcoes: [['ativos', 'Ativos'], ['inativos', 'Desativados'], ['todos', 'Todos']], valor: situacao, vazio: null, id: 'filtro-situacao' });
+  filtroSituacao.querySelector('select').addEventListener('change', (e) => { situacao = e.target.value; desenharLista(); });
+  const barra = barraConsulta({ id: 'busca-cliente', rotulo: 'Buscar clientes', valor: busca, dica: 'Nome, razão social, CPF/CNPJ, telefone ou e-mail',
+    aoBuscar: async (v) => { busca = v; lista = await lerClientes(ctx.id, busca, 100, 0); desenharLista(); barra.anunciar(`${lista.length} clientes encontrados.`); },
+    acoes: [ctx.pode('clientes.criar') ? botaoNovo() : null], filtros: [filtroSituacao] });
+  const secao = el('section', { class: 'pilha', 'aria-labelledby': 'titulo-clientes' }, el('h2', { id: 'titulo-clientes' }, 'Clientes'), barra.elemento,
+    el('p', { class: 'campo__ajuda' }, 'Para vender sem identificar ninguém, use "Consumidor não identificado" na venda.'), corpoLista);
+  return secao;
 }
 
 async function carregar() {
@@ -166,7 +161,8 @@ async function carregar() {
     lista = await lerClientes(ctx.id, busca, 100, 0);
     document.getElementById('titulo-pagina').textContent = `Clientes de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
-    area.append(...[secaoNovo(), secaoLista()].filter(Boolean));
+    area.append(secaoLista());
+    desenharLista();
     const pedida = parametro('ficha');
     if (pedida && /^[0-9a-f-]{36}$/.test(pedida)) {
       history.replaceState(history.state, '', location.href.replace(/([?&])ficha=[^&#]*&?/, '$1').replace(/[?&]$/, ''));

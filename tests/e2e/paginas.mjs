@@ -20,6 +20,7 @@ export const PAGINAS = [
   '/business/produto.html?id=00000000-0000-4000-8000-000000000000&produto=00000000-0000-4000-8000-000000000000',
   '/business/estoque-empresa.html?id=00000000-0000-4000-8000-000000000000',
   '/business/fornecedores.html?id=00000000-0000-4000-8000-000000000000',
+  '/business/compras.html?id=00000000-0000-4000-8000-000000000000',
   '/business/clientes.html?id=00000000-0000-4000-8000-000000000000',
   '/business/vendas.html?id=00000000-0000-4000-8000-000000000000',
   '/business/venda-nova.html?id=00000000-0000-4000-8000-000000000000',

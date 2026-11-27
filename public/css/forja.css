@@ -668,3 +668,51 @@ ul.opcoes:has(> li > .botao--texto[aria-pressed]) { gap: 8px; }
 /* Ajuda colada ao rótulo (print 06): rótulo e ajuda do campo de imagem em linhas próprias. */
 .campo-imagem .pilha > strong, .campo-imagem .pilha > .campo__ajuda, .pilha > .campo__ajuda { display: block; }
 .campo-imagem .pilha > .campo__ajuda { margin-top: 4px; }
+
+/* Consulta primeiro (pacote 27/11): barra de busca com a ação principal ao lado e filtros sob demanda. */
+.barra-consulta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.barra-consulta__busca { position: relative; flex: 1 1 18rem; min-width: 0; margin: 0; }
+.barra-consulta__busca input { width: 100%; min-height: 46px; padding-left: 42px; border-radius: 12px; }
+.barra-consulta__lupa { position: absolute; left: 14px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); border: 2px solid var(--texto-suave); border-radius: 50%; pointer-events: none; }
+.barra-consulta__lupa::after { content: ""; position: absolute; right: -6px; bottom: -5px; width: 7px; height: 2px; background: var(--texto-suave); transform: rotate(45deg); }
+.barra-consulta__acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.barra-consulta__acoes .botao { margin: 0; }
+.barra-consulta__filtros > summary { cursor: pointer; display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--borda-suave); background: var(--superficie); font-weight: 600; list-style: none; }
+.barra-consulta__filtros > summary::-webkit-details-marker { display: none; }
+.barra-consulta__filtros > summary::before { content: "▸"; margin-right: 8px; transition: transform 160ms; }
+.barra-consulta__filtros[open] > summary::before { transform: rotate(90deg); }
+.barra-consulta__filtros > .grade-filtros { margin-top: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--borda-suave); background: var(--superficie); }
+.estado-vazio { padding: 22px; border: 1px dashed var(--borda); border-radius: 14px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.estado-vazio p { margin: 0; color: var(--texto-suave); }
+.tabela .acoes-linha { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.tabela .acoes-linha .botao { min-height: 36px; padding: 0 12px; margin: 0; }
+.tabela .sub { display: block; color: var(--texto-suave); font-size: 0.875rem; }
+.tabela tr.inativo td, .tabela tr.inativo th { opacity: 0.72; }
+/* Cadastro de pessoa e endereço */
+.linha-cep { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.linha-cep .campo { flex: 0 1 22rem; margin: 0; }
+.linha-cep .botao { margin: 0 0 2px; }
+.grade-endereco { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.grade-endereco > .campo:first-child { grid-column: 1 / -1; }
+.cadastro-endereco > summary, .detalhes-opcionais > summary { cursor: pointer; font-weight: 700; min-height: 40px; display: flex; align-items: center; }
+.estado-cep:empty { display: none; }
+.aviso--compacto { padding: 10px 12px; margin: 8px 0 0; border-radius: 10px; background: var(--alerta-fundo); border: 1px solid var(--alerta); }
+.resumo-pessoa { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borda-suave); background: var(--superficie-2); }
+.resumo-pessoa strong { font-size: 1.05rem; }
+.resumo-pessoa span { color: var(--texto-suave); font-size: 0.9rem; }
+/* Auditoria de sublinhados (pacote 27/11, item 6): ação é botão; botão de texto não imita hiperlink. Contorno discreto
+   identifica o alvo; foco visível continua. Links de verdade dentro de texto corrido continuam sublinhados. */
+html body .botao--texto:not([aria-pressed]) { text-decoration: none; border: 1px solid var(--borda-suave); border-radius: 9px; }
+html body .botao--texto:not([aria-pressed]):hover { border-color: rgb(245 183 10 / 0.6); }
+html[data-tema="claro"] body .botao--texto:not([aria-pressed]):hover { border-color: #b97813; }
+/* Autocompletar */
+.autocompletar__caixa { position: relative; }
+.autocompletar__painel { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); padding: 4px; border-radius: 12px; border: 1px solid var(--borda);
+  background: var(--superficie); box-shadow: 0 12px 28px rgb(0 0 0 / 0.35); }
+.autocompletar__lista { max-height: 18rem; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.autocompletar__rodape { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 4px 4px; border-top: 1px solid var(--borda-suave); margin-top: 4px; }
+.autocompletar__opcao { display: grid; gap: 2px; padding: 10px 12px; border-radius: 9px; cursor: pointer; min-height: 44px; }
+.autocompletar__opcao:hover, .autocompletar__opcao[aria-selected="true"] { background: rgb(245 183 10 / 0.16); outline: 1px solid rgb(245 183 10 / 0.6); }
+.autocompletar__titulo { font-weight: 700; }
+.autocompletar__detalhe { color: var(--texto-suave); font-size: 0.875rem; }
+.autocompletar__vazio { padding: 10px 12px; color: var(--texto-suave); }

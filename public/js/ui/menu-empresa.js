@@ -20,7 +20,8 @@ export function gruposDaEmpresa(id, pode) {
       ['produtos', L('produtos-empresa', id), 'Produtos', 'i-caixa', pode('produtos.visualizar') || pode('estoque.visualizar')],
       ['estoque', L('estoque-empresa', id), 'Estoque', 'i-caixa', pode('estoque.visualizar')],
       ['servicos', L('servicos', id), 'Serviços', 'i-tesoura', pode('catalogo_servicos.visualizar')],
-      ['fornecedores', L('fornecedores', id), 'Fornecedores e compras', 'i-carro', pode('fornecedores.visualizar') || pode('estoque.visualizar')],
+      ['fornecedores', L('fornecedores', id), 'Fornecedores', 'i-carro', pode('fornecedores.visualizar')],
+      ['compras', L('compras', id), 'Compras', 'i-sacola', pode('estoque.visualizar')],
     ]],
     ['Gestão', [
       ['financeiro', L('financeiro', id), 'Financeiro', 'i-moeda', pode('financeiro.visualizar')],
@@ -41,7 +42,7 @@ export function chaveDaPagina(caminho = location.pathname) {
   return {
     dashboard: 'painel', vendas: 'vendas', 'venda-nova': 'vendas', venda: 'vendas', 'pedidos-empresa': 'pedidos', solicitacoes: 'solicitacoes',
     solicitacao: 'solicitacoes', ordens: 'ordens', ordem: 'ordens', agenda: 'agenda', 'produtos-empresa': 'produtos', produto: 'produtos',
-    'estoque-empresa': 'estoque', servicos: 'servicos', servico: 'servicos', fornecedores: 'fornecedores', financeiro: 'financeiro',
+    'estoque-empresa': 'estoque', servicos: 'servicos', servico: 'servicos', fornecedores: 'fornecedores', compras: 'compras', financeiro: 'financeiro',
     'financeiro-contas': 'financeiro', 'financeiro-movimentacoes': 'financeiro', 'financeiro-relatorios': 'financeiro', 'financeiro-fechamento': 'financeiro',
     'financeiro-configuracoes': 'financeiro', clientes: 'clientes', equipe: 'equipe', avaliacoes: 'avaliacoes', empresa: 'empresa', atividades: 'atividades',
   }[arquivo] ?? null;
