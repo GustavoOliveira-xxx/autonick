@@ -114,7 +114,7 @@ test('movimento reduzido: começa estático, sem baixar o 3D; toca uma vez sob p
   await expect(page.locator(CONTROLE)).toHaveCount(0);
   expect(pedidos.filter((p) => p.endsWith('.glb') || p.includes('/vendor/three/'))).toEqual([]);
   // o próprio sino toca a cena uma vez (teclado: Enter com ele em foco)
-  const sino = page.getByRole('button', { name: 'Ver a animação do sino' });
+  const sino = page.getByRole('button', { name: 'Ver a animação do Bong' });
   await sino.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator(SINO)).toHaveAttribute('data-estado', 'pronto', { timeout: 60_000 });

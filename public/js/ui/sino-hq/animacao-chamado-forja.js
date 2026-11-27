@@ -45,20 +45,86 @@ const B12F = {
 export const CHAMADO = Object.freeze({ dur: B12F.dur, fimMovimento: B12F.fimMovimento, enquadramento: Object.freeze(B12F.enquadramento), pose: (t) => B12F.quadro(t) });
 
 /*
+ * E10 · Cena "Bong e a luva" (complementa o Chamado da Forja, não o substitui): a luva clássica do Bong entra pela direita,
+ * fica um instante, dá um peteleco no aro ("BONG!"), comemora com joinha e sai. O sino reage ao golpe e volta ao repouso.
+ * A geometria e os gestos da luva vêm do Animation Lab aprovado (forja3d/mao.js, objeto `mao_luva`). Módulo puro.
+ */
+let defLuva = null;
+export function usarLuva(definicao) { defLuva = definicao; }
+const BONG = {
+  dur: 4.6, fimMovimento: 4.3, enquadramento: { meiaAltura: 1.78, meiaLargura: 2.4, deslocX: 0.35, deslocY: 0.05 },
+  quadro(t) {
+    const p = poseNeutra();
+    if (!defLuva) return p;
+    const E = 0.55, O = 1.15, I = 3.35, S = 3.8; // entrada, ocioso, interação (peteleco + joinha), saída
+    let estado = null;
+    if (t < E) estado = defLuva.entrada(t);
+    else if (t < O) estado = defLuva.ocioso(t - E);
+    else if (t < I) estado = defLuva.interacao(t - O, p);
+    else if (t < S) estado = defLuva.saida(t - I);
+    if (estado) p.objetos.push({ id: 'mao_luva', ...estado });
+    for (const g of p.hq) if (g.tipo === 'texto' && g.texto === 'PLIM!') g.texto = 'BONG!';
+    if (t > 2.2 && t < 3.6) p.boca = 'canto';
+    return p;
+  },
+};
+export const BONG_LUVA = Object.freeze({ dur: BONG.dur, fimMovimento: BONG.fimMovimento, enquadramento: Object.freeze(BONG.enquadramento), pose: (t) => BONG.quadro(t) });
+
+/*
  * Laço da página inicial (ritmo C04): o sino fica cerca de 2,9 s parado entre um chamado e outro
  * (cauda imóvel da cena + pausa na pose final), depois volta suave à pose inicial e recomeça.
  */
 const PARADO = 2.9;
 export const LACO = Object.freeze({ cena: CHAMADO.dur, pausaFinal: PARADO - (CHAMADO.dur - CHAMADO.fimMovimento), retorno: 1.0 });
-export const DURACAO_CICLO = LACO.cena + LACO.pausaFinal + LACO.retorno;
+// E10: o segundo trecho do laço é a cena da luva, com o mesmo descanso de ~2,9 s. Sem a luva carregada, só o Chamado.
+export const LACO_LUVA = Object.freeze({ cena: BONG_LUVA.dur, pausaFinal: PARADO - (BONG_LUVA.dur - BONG_LUVA.fimMovimento), retorno: 1.0 });
+const CICLO_CHAMADO = LACO.cena + LACO.pausaFinal + LACO.retorno;
+const CICLO_LUVA = LACO_LUVA.cena + LACO_LUVA.pausaFinal + LACO_LUVA.retorno;
+export const DURACAO_CICLO = CICLO_CHAMADO;
+export const duracaoDoLaco = () => CICLO_CHAMADO + (defLuva ? CICLO_LUVA : 0);
 
-/** Pose num instante do laço. Com `soUmaVez`, para na pose final (uso manual com movimento reduzido). */
+function trecho(cena, laco, u) {
+  if (u <= laco.cena) return cena.quadro(u);
+  const final = cena.quadro(laco.cena);
+  if (u <= laco.cena + laco.pausaFinal) return final;
+  const k = suave(clamp((u - laco.cena - laco.pausaFinal) / laco.retorno));
+  return misturarPoses(final, cena.quadro(0), k);
+}
+
+/** Ciclos completos até o instante t: cada cena (Chamado ou luva, com seu descanso e retorno) conta como um ciclo. */
+export function ciclosCompletos(t) {
+  if (!defLuva) return Math.floor(t / CICLO_CHAMADO);
+  const total = duracaoDoLaco();
+  const voltas = Math.floor(t / total);
+  const u = t - voltas * total;
+  return voltas * 2 + (u >= CICLO_CHAMADO + CICLO_LUVA - 1e-9 ? 2 : u >= CICLO_CHAMADO ? 1 : 0);
+}
+
+/** Qual cena está no ar num instante do laço. */
+export function cenaDoLaco(t) {
+  const total = duracaoDoLaco();
+  const u = ((t % total) + total) % total;
+  return u < CICLO_CHAMADO ? CHAMADO : BONG_LUVA;
+}
+
+/** Enquadramento da câmera: muda de uma cena para a outra só durante o retorno suave (sem salto de câmera). */
+export function enquadramentoDoLaco(t) {
+  if (!defLuva) return CHAMADO.enquadramento;
+  const total = duracaoDoLaco();
+  const u = ((t % total) + total) % total;
+  const A = CHAMADO.enquadramento, B = BONG_LUVA.enquadramento;
+  const mistura = (x, y, k) => Object.fromEntries(Object.keys(x).map((c) => [c, mix(x[c], y[c], k)]));
+  const iniRetornoA = LACO.cena + LACO.pausaFinal;
+  if (u < CICLO_CHAMADO) return u < iniRetornoA ? A : mistura(A, B, suave(clamp((u - iniRetornoA) / LACO.retorno)));
+  const v = u - CICLO_CHAMADO, iniRetornoB = LACO_LUVA.cena + LACO_LUVA.pausaFinal;
+  return v < iniRetornoB ? B : mistura(B, A, suave(clamp((v - iniRetornoB) / LACO_LUVA.retorno)));
+}
+
+/** Pose num instante do laço. Com `soUmaVez`, toca só o Chamado e para na pose final (uso manual com movimento reduzido). */
 export function poseDoLaco(t, { reduzido = false, soUmaVez = false } = {}) {
   AMBIENTE.reduzido = reduzido;
-  const u = soUmaVez ? Math.min(t, LACO.cena + LACO.pausaFinal) : ((t % DURACAO_CICLO) + DURACAO_CICLO) % DURACAO_CICLO;
-  if (u <= LACO.cena) return B12F.quadro(u);
-  const final = B12F.quadro(LACO.cena);
-  if (u <= LACO.cena + LACO.pausaFinal) return final;
-  const k = suave(clamp((u - LACO.cena - LACO.pausaFinal) / LACO.retorno));
-  return misturarPoses(final, B12F.quadro(0), k);
+  if (soUmaVez) return trecho(B12F, LACO, Math.min(t, LACO.cena + LACO.pausaFinal));
+  const total = duracaoDoLaco();
+  const u = ((t % total) + total) % total;
+  return u < CICLO_CHAMADO ? trecho(B12F, LACO, u) : trecho(BONG, LACO_LUVA, u - CICLO_CHAMADO);
 }

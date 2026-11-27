@@ -1,5 +1,5 @@
 /**
- * Sino HQ do herói da página de apresentação (cena "Chamado da Forja" em laço, direção CK Forja Noturna).
+ * Sino HQ do herói da página de apresentação ("Chamado da Forja" e, em seguida, "Bong e a luva", em laço; direção CK Forja Noturna).
  *
  * - A imagem estática já vem no HTML: reserva o espaço e é o plano B. Nada de "Carregando".
  * - O 3D (Three.js + GLB do próprio app) só carrega com a seção visível e depois do texto e dos botões.
@@ -14,7 +14,7 @@
  * encerrado), data-rodando (sim | nao), data-ciclos (ciclos completos), data-t (tempo da cena, em décimos de segundo),
  * data-motivo (quando falha).
  */
-import { DURACAO_CICLO, LACO, CHAMADO, poseDoLaco } from './animacao-chamado-forja.js';
+import { LACO, CHAMADO, poseDoLaco, enquadramentoDoLaco, ciclosCompletos, usarLuva } from './animacao-chamado-forja.js';
 
 const LIMITE_CARGA_MS = 20000;
 
@@ -56,6 +56,11 @@ export function montarHeroiSino(raiz, opcoes = {}) {
         if (est.encerrado) return;
         palco = new PalcoSino({ palco: palcoEl, canvas: cena, camadaHq: hq });
         await palco.montar(bytes);
+        // E10: a luva do Bong entra no laço como segunda cena. Se não carregar, o laço segue só com o Chamado da Forja.
+        try {
+          const [{ OBJETOS }] = await Promise.all([import('../forja3d/objetos.js'), import('../forja3d/mao.js')]);
+          if (OBJETOS.mao_luva) usarLuva(OBJETOS.mao_luva);
+        } catch (erro) { console.warn('Luva do Bong indisponível; o laço segue só com o Chamado da Forja.', erro); }
         if (est.encerrado) { palco.liberar(); return; }
         est.palco = palco;
         desenharAgora();
@@ -90,7 +95,7 @@ export function montarHeroiSino(raiz, opcoes = {}) {
     est.ultimo = agora;
     est.t += dt;
     if (est.umaVez && est.t >= LACO.cena + LACO.pausaFinal) { est.t = LACO.cena + LACO.pausaFinal; est.umaVez = false; }
-    definir('ciclos', String(Math.floor(est.t / DURACAO_CICLO)));
+    definir('ciclos', String(ciclosCompletos(est.t)));
     const tempo = est.t.toFixed(1); if (raiz.dataset.t !== tempo) definir('t', tempo);
     desenharAgora();
     agendar();
@@ -98,7 +103,7 @@ export function montarHeroiSino(raiz, opcoes = {}) {
   function desenharAgora() {
     if (!est.palco) return;
     const pose = poseDoLaco(est.t, { reduzido: est.reduzido, soUmaVez: est.reduzido });
-    est.palco.desenhar(pose, CHAMADO.enquadramento);
+    est.palco.desenhar(pose, est.reduzido ? CHAMADO.enquadramento : enquadramentoDoLaco(est.t));
     posicionarFundo(est.palco.projecao(), pose.impacto || 0);
   }
 
@@ -127,7 +132,7 @@ export function montarHeroiSino(raiz, opcoes = {}) {
     const ativo = est.reduzido && !est.encerrado && raiz.dataset.estado !== 'falhou';
     if (ativo) {
       palcoEl.setAttribute('role', 'button'); palcoEl.tabIndex = 0;
-      palcoEl.setAttribute('aria-label', 'Ver a animação do sino');
+      palcoEl.setAttribute('aria-label', 'Ver a animação do Bong');
     } else {
       palcoEl.removeAttribute('role'); palcoEl.removeAttribute('tabindex'); palcoEl.removeAttribute('aria-label');
     }

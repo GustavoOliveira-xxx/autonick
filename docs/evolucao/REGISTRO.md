@@ -104,3 +104,12 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   No AutoniCK local (sem proxy) nada muda. Atrás de um proxy reverso, declare o IP dele. Testes: `EnderecoClienteTest` (3) e a demonstração pública.
 - Uploads (E03): conteúdo pelos primeiros bytes, regravação de imagens, PDF ativo recusado, nomes saneados, caminho só pelo id, CSP sandbox no download.
 - Java 137/137.
+
+### E10 · Bong e a luva
+- Nome oficial do personagem: **Bong** (texto alternativo do herói e rótulo do controle de animação).
+- A luva aprovada no Animation Lab foi portada para o motor público (`public/js/ui/forja3d/mao.js`, objetos `mao_luva`, `mao_manopla`, `mao_vinho`).
+- Página inicial: o laço passa a alternar "Chamado da Forja" (B12, sem mudança) e "Bong e a luva" (a luva entra, dá um peteleco no aro, "BONG!",
+  joinha e sai), cada cena com o descanso de ~2,9 s (ritmo C04). A câmera muda de enquadramento só durante o retorno suave (sem salto).
+  Cada cena conta como um ciclo. Movimento reduzido continua estático e, ao tocar, mostra só o Chamado. Se a luva não carregar, o laço segue só com o Chamado.
+- Testes: `tests/unit/bong-luva.test.mjs` (alternância, BONG!, luva só na cena dela, emendas sem salto de pose e câmera) e apresentação e2e 12/12.
+- Não feito nesta etapa: controles extras do Animation Lab (intervalo, intensidade, exportação) e outras cenas com o Bong em telas internas.

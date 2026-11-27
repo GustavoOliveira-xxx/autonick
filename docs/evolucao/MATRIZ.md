@@ -34,7 +34,9 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E07 | Lista de OS com próximas ações | Parcial | lista já mostra estado e responsável; "próxima ação" por OS não foi feita |
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
 | E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |
-| E10 | Bong e luva na home, Animation Lab | Não iniciado | |
+| E10 | Bong e a luva na página inicial, complementando o Chamado da Forja | Implementado aguardando validação manual | bong-luva.test, apresentacao e2e, capturas |
+| E10 | Nome oficial Bong na interface | Concluído e validado | index.html, heroi-sino.js |
+| E10 | Animation Lab evoluído (intervalo, intensidade, exportação, estúdio) | Não iniciado | |
 | E11 | X-Forwarded-For e X-Forwarded-Host só de proxy confiável | Concluído e validado | EnderecoClienteTest, DemonstracaoPublicaTest |
 | E11 | Uploads seguros | Concluído e validado | ConteudoArquivoTest, ArquivosApiTest |
 | E11 | IDOR (outra empresa) nas funções novas | Concluído e validado | testes de banco de cada migration (outra empresa e anônimo negados) |
