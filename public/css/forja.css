@@ -716,3 +716,14 @@ html[data-tema="claro"] body .botao--texto:not([aria-pressed]):hover { border-co
 .autocompletar__titulo { font-weight: 700; }
 .autocompletar__detalhe { color: var(--texto-suave); font-size: 0.875rem; }
 .autocompletar__vazio { padding: 10px 12px; color: var(--texto-suave); }
+/* Estoque simples (pacote 27/11, item 3) */
+.aviso-estoque { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--alerta); background: var(--alerta-fundo); }
+.aviso-estoque > span:nth-child(2) { flex: 1 1 12rem; }
+.aviso-estoque .botao { margin: 0; min-height: 36px; }
+.secao-recolhida > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; }
+.secao-recolhida > summary::-webkit-details-marker { display: none; }
+.secao-recolhida > summary::before { content: "▸"; font-size: 1.2rem; transition: transform 160ms; }
+.secao-recolhida[open] > summary::before { transform: rotate(90deg); }
+.secao-recolhida > summary h2 { margin: 0; }
+.tabela a.link-tabela { color: var(--texto); font-weight: 700; text-decoration: none; border-bottom: 1px dashed rgb(245 183 10 / 0.6); }
+.tabela a.link-tabela:hover { color: var(--link); border-bottom-style: solid; }

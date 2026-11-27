@@ -9,9 +9,11 @@ import { campoTexto, grupoOpcoes, limparErros, erroNoCampo, ocupado, valores } f
 import { abrirDialogo } from '../../ui/dialogo.js';
 import { lerValorEmReais, formatarCentavos } from '../../domain/moeda.js';
 import { lerQuantidade } from '../../domain/variacoes.js';
+import { origemDoMovimento } from '../../domain/estoque.js';
 import {
   produtosDaEmpresa, alterarProduto, pausarVenda, definirProdutoAtivo, adicionarVariacao, alterarVariacao,
   definirVariacaoAtiva, alterarPreco, alterarCusto, custosDaVariacao, historicoPrecos, FINALIDADES,
+  historicoMovimentacoes,
 } from '../../data/estoque.js';
 import { definirVitrineProduto } from '../../data/vitrine.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
@@ -188,6 +190,26 @@ function historico(v) {
   return det;
 }
 
+/** Histórico de estoque da variação com a origem de cada movimento (venda, compra, OS, ajuste); sem novo registro. */
+function historicoEstoque(v) {
+  if (!ctx.pode('estoque.visualizar')) return null;
+  const det = el('details', { 'data-historico-estoque': v.id }, el('summary', {}, 'Movimentações de estoque'));
+  let carregado = false;
+  det.addEventListener('toggle', async () => {
+    if (!det.open || carregado) return;
+    carregado = true;
+    try {
+      const h = await historicoMovimentacoes(ctx.id, v.id, 30);
+      det.append(h.length ? el('ul', { class: 'lista-simples' }, ...h.map((m) => el('li', {},
+        `${formatarDataHora(m.criado_em)}: ${origemDoMovimento(m)} ${m.quantidade > 0 ? '+' : '−'}${quantidadeLegivel(Math.abs(m.quantidade))} (físico ${quantidadeLegivel(m.fisico_apos)}) por ${m.ator_nome}${m.motivo ? `. ${m.motivo}` : ''}`)))
+        : el('p', {}, 'Nenhuma movimentação registrada.'));
+    } catch (erro) {
+      det.append(aviso('erro', erro.message));
+    }
+  });
+  return det;
+}
+
 function linhaVariacao(v) {
   const verEstoque = ctx.pode('estoque.visualizar');
   const acoes = [];
@@ -210,7 +232,7 @@ function linhaVariacao(v) {
     verEstoque ? el('td', { class: 'numero', 'data-rotulo': 'Disponível' }, quantidadeLegivel(v.disponivel), v.abaixo_minimo ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'abaixo do mínimo') : null) : null,
     verEstoque ? el('td', { class: 'numero', 'data-rotulo': 'Físico / reservado' }, `${quantidadeLegivel(v.fisico)} / ${quantidadeLegivel(v.reservado)}`) : null,
     el('td', { class: 'numero', 'data-rotulo': 'Mínimo' }, v.estoque_minimo ?? '—'),
-    el('td', { 'data-rotulo': 'Ações' }, acoes.length ? el('details', {}, el('summary', {}, 'Alterar'), ...acoes) : null, historico(v)));
+    el('td', { 'data-rotulo': 'Ações' }, acoes.length ? el('details', {}, el('summary', {}, 'Alterar'), ...acoes) : null, historico(v), historicoEstoque(v)));
 }
 
 function secaoVariacoes() {

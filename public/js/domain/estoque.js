@@ -63,3 +63,10 @@ export function resumirProduto(produto) {
   const abaixoDoMinimo = Number.isSafeInteger(minimo) ? disponivel < minimo : false;
   return { fisico, reservado, disponivel, abaixoDoMinimo };
 }
+
+/** Origem legível de um movimento (o histórico é um só; a origem diz de onde veio). */
+export function origemDoMovimento(m) {
+  if (m.tipo === 'estorno' || m.origem_tipo === 'estorno') return 'Estorno';
+  return ({ venda: 'Venda', devolucao_venda: 'Devolução de venda', os: 'Ordem de serviço', reserva: 'Reserva' })[m.origem_tipo]
+    ?? (/^Compra de fornecedor/.test(m.motivo ?? '') ? 'Compra' : m.tipo === 'saldo_inicial' ? 'Estoque inicial' : 'Ajuste manual');
+}

@@ -1,15 +1,19 @@
 /**
- * Estoque da empresa (M05, UI-029 e UI-031): alertas por variação (D5-02), saldos físico,
- * reservado e disponível, lançamento (direto para quem aprova, proposta para os demais; D5-04),
- * aprovações pendentes e histórico com estorno.
+ * Estoque da empresa (M05; pacote 27/11, item 3): consulta primeiro. Abre numa tabela simples (produto/variação, código,
+ * disponível e mínimo), com busca, filtro de estoque baixo e físico/reservado sob demanda. Vendas, compras recebidas,
+ * reservas, devoluções e OS já movimentam o estoque sozinhas; por isso o lançamento manual saiu do fluxo padrão e virou
+ * a ação secundária "Ajustar estoque" (só com permissão, motivo e aprovação conforme a regra D5-04), para inventário
+ * inicial, contagem, perda e exceções. Histórico com a origem de cada movimento (venda, compra, OS, ajuste) por produto.
  */
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { campoTexto, campoSelecao, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
-import { abrirDialogo } from '../../ui/dialogo.js';
+import { abrirModal } from '../../ui/modal.js';
+import { barraConsulta, vazio } from '../../ui/consulta.js';
 import { lerValorEmReais, formatarCentavos } from '../../domain/moeda.js';
 import { lerQuantidade } from '../../domain/variacoes.js';
+import { origemDoMovimento } from '../../domain/estoque.js';
 import {
   produtosDaEmpresa, alertasEstoque, historicoMovimentacoes, propostas as lerPropostas, movimentar,
   aprovarProposta, decidirSemAplicar, estornar, TIPOS_MOVIMENTACAO,
@@ -17,8 +21,6 @@ import {
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, quantidadeLegivel } from './comum.js';
 import { formatarDataHora } from '../empresa/comum.js';
 import { vazioComMomento } from '../../ui/forja3d/momentos.js';
-import { comFioDourado } from '../../ui/pecas-forja.js';
-const areaDosSaldos = () => document.getElementById('titulo-saldos')?.parentElement ?? null;
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -30,65 +32,113 @@ let dados = null; // { produtos, alertas, pendentes, historico }
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
 const nomeVariacao = (p, v) => (v.padrao ? p.nome : `${p.nome} (${v.rotulo})`);
 
-function secaoAlertas() {
-  const lista = dados.alertas;
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-alertas' },
-    el('h2', { id: 'titulo-alertas' }, `Alertas de estoque mínimo (${lista.length})`),
-    lista.length
-      ? el('ul', { class: 'lista-simples', id: 'lista-alertas' }, ...lista.map((a) => el('li', { class: 'cartao' },
-        el('p', {}, el('span', { class: 'chip chip--alerta' }, el('span', { 'aria-hidden': 'true' }, '!'), 'Estoque baixo'), ' ',
-          el('strong', {}, a.rotulo === 'Padrão' ? a.produto_nome : `${a.produto_nome} (${a.rotulo})`),
-          `: ${quantidadeLegivel(a.disponivel)} disponíveis para um mínimo de ${quantidadeLegivel(a.estoque_minimo)}.`,
-          a.sob_encomenda ? ' Produto também feito sob encomenda.' : ''))))
-      : el('p', { id: 'lista-alertas' }, 'Nenhuma variação abaixo do mínimo.'));
-}
+let filtro = { busca: '', baixo: false, detalhes: false };
+const corpoSaldos = el('div', { id: 'resultado-estoque', 'aria-live': 'polite' });
+const semAcento = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-function secaoSaldos() {
+function linhasDeSaldo() {
+  const t = semAcento(filtro.busca);
   const linhas = [];
   for (const p of dados.produtos.filter((x) => x.ativo)) {
     for (const v of p.variacoes.filter((x) => x.ativo)) {
-      linhas.push(el('tr', { 'data-variacao': v.id },
-        el('th', { scope: 'row' }, el('a', { href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(p.id)}` }, nomeVariacao(p, v)),
-          p.venda_pausada ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'venda pausada') : null,
-          p.sob_encomenda ? el('span', { class: 'chip chip--info chip--pequeno' }, 'sob encomenda') : null),
-        el('td', { class: 'numero', 'data-rotulo': 'Físico' }, quantidadeLegivel(v.fisico)),
-        el('td', { class: 'numero', 'data-rotulo': 'Reservado' }, quantidadeLegivel(v.reservado)),
-        el('td', { class: 'numero', 'data-rotulo': 'Disponível' }, el('span', { class: 'numero-grande' }, quantidadeLegivel(v.disponivel)),
-          v.abaixo_minimo ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'abaixo do mínimo') : null),
-        el('td', { class: 'numero', 'data-rotulo': 'Mínimo' }, v.estoque_minimo ?? '—')));
+      if (filtro.baixo && !v.abaixo_minimo) continue;
+      if (t && !semAcento(`${p.nome} ${v.rotulo} ${v.sku ?? ''}`).includes(t)) continue;
+      linhas.push({ p, v });
     }
   }
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-saldos' },
-    el('h2', { id: 'titulo-saldos' }, 'Saldos por variação'),
-    linhas.length ? el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: 'tabela-saldos' },
-      el('caption', { class: 'visualmente-oculto' }, 'Estoque físico, reservado e disponível por variação'),
-      el('thead', {}, el('tr', {}, ...['Produto', 'Físico', 'Reservado', 'Disponível', 'Mínimo'].map((c) => el('th', { scope: 'col' }, c)))),
-      el('tbody', {}, ...linhas))) : vazioComMomento('IB02', null, 'Nenhum produto ativo. Cadastre produtos na tela de produtos.'));
+  return linhas;
 }
 
-function secaoLancamento() {
+function desenharSaldos() {
+  const linhas = linhasDeSaldo();
+  const cab = ['Produto', 'Código', 'Disponível', ...(filtro.detalhes ? ['Físico', 'Reservado'] : []), 'Mínimo', 'Ações'];
+  corpoSaldos.replaceChildren(linhas.length ? el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: 'tabela-saldos' },
+    el('caption', { class: 'visualmente-oculto' }, 'Quantidade disponível por produto e variação'),
+    el('thead', {}, el('tr', {}, ...cab.map((c) => el('th', { scope: 'col', class: ['Disponível', 'Físico', 'Reservado', 'Mínimo'].includes(c) ? 'numero' : null }, c)))),
+    el('tbody', {}, ...linhas.map(({ p, v }) => {
+      const hist = el('button', { type: 'button', class: 'botao botao--secundario', 'data-historico': v.id }, 'Histórico', el('span', { class: 'visualmente-oculto' }, ` de ${nomeVariacao(p, v)}`));
+      hist.addEventListener('click', () => abrirHistorico(p, v, hist));
+      return el('tr', { 'data-variacao': v.id },
+        el('th', { scope: 'row' }, el('a', { class: 'link-tabela', href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(p.id)}` }, nomeVariacao(p, v)),
+          p.venda_pausada ? el('span', { class: 'chip chip--alerta chip--pequeno' }, 'venda pausada') : null,
+          p.sob_encomenda ? el('span', { class: 'chip chip--info chip--pequeno' }, 'sob encomenda') : null),
+        el('td', { 'data-rotulo': 'Código' }, v.sku ?? '—'),
+        el('td', { class: 'numero', 'data-rotulo': 'Disponível' }, el('span', { class: 'numero-grande' }, quantidadeLegivel(v.disponivel)),
+          v.abaixo_minimo ? el('span', { class: 'chip chip--alerta chip--pequeno' }, el('span', { 'aria-hidden': 'true' }, '! '), 'abaixo do mínimo') : null),
+        ...(filtro.detalhes ? [el('td', { class: 'numero', 'data-rotulo': 'Físico' }, quantidadeLegivel(v.fisico)),
+          el('td', { class: 'numero', 'data-rotulo': 'Reservado' }, quantidadeLegivel(v.reservado))] : []),
+        el('td', { class: 'numero', 'data-rotulo': 'Mínimo' }, v.estoque_minimo ?? '—'),
+        el('td', { 'data-rotulo': 'Ações' }, el('div', { class: 'acoes-linha' }, hist)));
+    }))))
+    : dados.produtos.some((x) => x.ativo) ? vazio(filtro.baixo ? 'Nenhum produto abaixo do mínimo. Tudo certo!' : `Nenhum produto encontrado para "${filtro.busca}".`, null, 'tabela-saldos')
+      : vazioComMomento('IB02', null, 'Nenhum produto ativo. Cadastre produtos na tela de produtos.'));
+}
+
+function secaoSaldos() {
+  const baixo = el('label', { class: 'opcao', for: 'filtro-baixo' }, el('input', { type: 'checkbox', id: 'filtro-baixo', checked: filtro.baixo }), 'Só estoque baixo');
+  const detalhes = el('label', { class: 'opcao', for: 'filtro-detalhes' }, el('input', { type: 'checkbox', id: 'filtro-detalhes', checked: filtro.detalhes }), 'Mostrar físico e reservado');
+  baixo.querySelector('input').addEventListener('change', (e) => { filtro.baixo = e.target.checked; desenharSaldos(); });
+  detalhes.querySelector('input').addEventListener('change', (e) => { filtro.detalhes = e.target.checked; desenharSaldos(); });
+  const ajustar = podeAjustar() ? el('button', { type: 'button', class: 'botao botao--secundario', id: 'ajustar-estoque' }, 'Ajustar estoque') : null;
+  ajustar?.addEventListener('click', () => abrirAjuste(ajustar));
+  const barra = barraConsulta({ id: 'busca-estoque', rotulo: 'Buscar no estoque', valor: filtro.busca, dica: 'Produto, variação ou código',
+    aoBuscar: (v) => { filtro.busca = v; desenharSaldos(); barra.anunciar(`${linhasDeSaldo().length} itens.`); },
+    acoes: [ajustar, el('a', { class: 'botao botao--secundario', href: `/business/compras.html?id=${encodeURIComponent(ctx.id)}` }, 'Compras')],
+    filtros: [baixo, detalhes], filtrosAbertos: filtro.baixo || filtro.detalhes });
+  const alertas = dados.alertas.length ? (() => {
+    const ver = el('button', { type: 'button', class: 'botao botao--secundario', id: 'ver-alertas' }, 'Ver só esses');
+    ver.addEventListener('click', () => { filtro.baixo = true; baixo.querySelector('input').checked = true; barra.elemento.querySelector('details')?.setAttribute('open', ''); desenharSaldos(); });
+    return el('div', { class: 'aviso-estoque', id: 'lista-alertas', role: 'status' }, el('span', { class: 'chip chip--alerta' }, el('span', { 'aria-hidden': 'true' }, '!'), ` ${dados.alertas.length} abaixo do mínimo`),
+      el('span', {}, dados.alertas.slice(0, 3).map((a) => (a.rotulo === 'Padrão' ? a.produto_nome : `${a.produto_nome} (${a.rotulo})`)).join(', ') + (dados.alertas.length > 3 ? '…' : '')), ver);
+  })() : null;
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-saldos' },
+    el('h2', { id: 'titulo-saldos' }, 'O que tenho em estoque'), barra.elemento, alertas,
+    el('p', { class: 'campo__ajuda' }, 'Vendas confirmadas, compras recebidas, reservas, devoluções e ordens de serviço já atualizam o estoque sozinhas.'),
+    corpoSaldos);
+}
+
+const podeAjustar = () => ctx.pode('estoque.aprovar') || ctx.pode('estoque.propor');
+
+async function abrirHistorico(p, v, origem) {
+  const corpo = el('div', { class: 'pilha', 'aria-live': 'polite' }, el('p', {}, 'Carregando…'));
+  abrirModal({ titulo: `Histórico de ${nomeVariacao(p, v)}`, descricao: `${quantidadeLegivel(v.disponivel)} disponíveis agora (${quantidadeLegivel(v.fisico)} no físico, ${quantidadeLegivel(v.reservado)} reservados).`,
+    corpo, tamanho: 'grande', aoFechar: () => origem?.focus() });
+  try {
+    const h = await historicoMovimentacoes(ctx.id, v.id, 100);
+    corpo.replaceChildren(h.length ? tabelaHistorico(h, false) : el('p', {}, 'Nenhuma movimentação registrada para este item.'));
+  } catch (erro) { corpo.replaceChildren(aviso('erro', erro.message)); }
+}
+
+/** Ajuste excepcional (inventário, contagem, perda): direto para quem aprova, proposta para os demais (D5-04). */
+function abrirAjuste(origem) {
   const direto = ctx.pode('estoque.aprovar');
-  if (!direto && !ctx.pode('estoque.propor')) return null;
   const opcoes = [];
   for (const p of dados.produtos.filter((x) => x.ativo)) {
     for (const v of p.variacoes.filter((x) => x.ativo)) opcoes.push([v.id, `${nomeVariacao(p, v)}: ${quantidadeLegivel(v.disponivel)} disponíveis`]);
   }
-  if (!opcoes.length) return null;
   const comCusto = ctx.pode('produtos.ver_custo');
-  const botao = el('button', { type: 'submit', class: 'botao' }, direto ? 'Lançar no estoque' : 'Enviar para aprovação');
   const form = el('form', { id: 'form-movimentacao', class: 'pilha', novalidate: true },
+    el('p', { class: 'aviso aviso--alerta aviso--compacto' }, el('strong', {}, 'Não use para vendas nem compras: '),
+      'a venda confirmada já baixa o estoque e a compra recebida já dá entrada. Aqui ficam só as exceções, como inventário inicial, contagem, perda, avaria ou consumo interno.'),
     el('div', { class: 'grade-filtros' },
-      campoSelecao({ nome: 'tipo', rotulo: 'Tipo', obrigatorio: true, id: 'mov-tipo', opcoes: [['entrada', 'Entrada'], ['saida', 'Saída'], ['ajuste', 'Ajuste de contagem']] }),
+      campoSelecao({ nome: 'tipo', rotulo: 'O que aconteceu', obrigatorio: true, id: 'mov-tipo', opcoes: [['ajuste', 'Contagem diferente do sistema (ajuste)'], ['saida', 'Perda, avaria ou consumo (saída)'], ['entrada', 'Entrada sem compra (ex.: estoque inicial, doação)']] }),
       campoSelecao({ nome: 'variacao_id', rotulo: 'Produto', obrigatorio: true, id: 'mov-variacao', opcoes }),
       campoTexto({ nome: 'quantidade', rotulo: 'Quantidade', obrigatorio: true, id: 'mov-quantidade', ajuda: 'No ajuste, use negativo para retirar (ex.: -2).' }),
       comCusto ? campoTexto({ nome: 'custo', rotulo: 'Custo unitário (R$), só em entradas', id: 'mov-custo' }) : null),
-    campoTexto({ nome: 'motivo', rotulo: 'Motivo', max: 300, id: 'mov-motivo', ajuda: 'Obrigatório em saídas e ajustes (no ajuste, pelo menos 10 caracteres).' }),
-    el('div', { class: 'grupo-botoes' }, botao));
+    campoTexto({ nome: 'motivo', rotulo: 'Motivo', max: 300, id: 'mov-motivo', ajuda: 'Obrigatório em saídas e ajustes (no ajuste, pelo menos 10 caracteres). Fica no histórico.' }));
+  const botao = el('button', { type: 'submit', class: 'botao', form: 'form-movimentacao' }, direto ? 'Lançar no estoque' : 'Enviar para aprovação');
+  const cancelar = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Cancelar');
+  let sujo = false;
+  form.addEventListener('input', () => { sujo = true; });
+  const modal = abrirModal({ titulo: 'Ajustar estoque', descricao: direto ? 'Você tem permissão de aprovar: o lançamento vale na hora e fica registrado como aprovação sua.'
+    : 'O ajuste só muda o estoque depois de aprovado por quem tem permissão.', corpo: form, rodape: [cancelar, botao], tamanho: 'grande',
+  protegerAlteracoes: () => sujo, aoFechar: () => origem?.focus() });
+  cancelar.addEventListener('click', () => modal.dialogo.querySelector('.modal__fechar').click());
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     limparErros(form);
     const d = valores(form);
-    if (!d.tipo) return erroNoCampo(form, 'tipo', 'Escolha o tipo.');
+    if (!d.tipo) return erroNoCampo(form, 'tipo', 'Escolha o que aconteceu.');
     if (!d.variacao_id) return erroNoCampo(form, 'variacao_id', 'Escolha o produto.');
     const q = lerQuantidade(d.quantidade, { comSinal: d.tipo === 'ajuste' });
     if (!q.ok) return erroNoCampo(form, 'quantidade', q.erro);
@@ -100,17 +150,15 @@ function secaoLancamento() {
       item.custo_centavos = c.centavos;
     }
     if (d.tipo !== 'entrada' && !d.motivo) return erroNoCampo(form, 'motivo', 'Informe o motivo.');
-    ocupado(botao, () => comFioDourado(areaDosSaldos(), () => executar('movimentar', form, (k) => movimentar(direto, ctx.id, d.tipo, [item], d.motivo, k), (r) => {
+    ocupado(botao, () => executar('movimentar', form, (k) => movimentar(direto, ctx.id, d.tipo, [item], d.motivo, k), (r) => {
+      sujo = false;
+      modal.fechar();
       const s = r.saldos?.[0];
-      anunciar('sucesso', r.estado === 'pendente' ? 'Movimentação enviada para aprovação.' : 'Estoque atualizado.',
+      anunciar('sucesso', r.estado === 'pendente' ? 'Ajuste enviado para aprovação.' : 'Estoque atualizado.',
         s ? el('p', {}, `Agora: ${quantidadeLegivel(s.disponivel)} disponíveis (${quantidadeLegivel(s.fisico)} no físico).`) : null);
-    }), 'Atualizando o estoque'));
+    }));
   });
-  return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-lancar' },
-    el('h2', { id: 'titulo-lancar' }, direto ? 'Lançar movimentação' : 'Propor movimentação'),
-    el('p', {}, direto ? 'Você tem permissão de aprovar: o lançamento vale na hora e fica registrado como aprovação sua.'
-      : 'A movimentação só muda o estoque depois de aprovada por quem tem permissão.'),
-    form);
+  setTimeout(() => form.querySelector('#mov-tipo')?.focus(), 30);
 }
 
 function itemProposta(pr) {
@@ -147,14 +195,15 @@ function itemProposta(pr) {
 
 function secaoPendentes() {
   const lista = dados.pendentes;
+  if (!lista.length) return null;
   return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-pendentes' },
     el('h2', { id: 'titulo-pendentes' }, `Aguardando aprovação (${lista.length})`),
     lista.length ? el('ul', { class: 'lista-simples', id: 'lista-pendentes' }, ...lista.map(itemProposta)) : el('p', { id: 'lista-pendentes' }, 'Nada aguardando aprovação.'));
 }
 
-function secaoHistorico() {
+function tabelaHistorico(historico, comProduto = true) {
   const podeEstornar = ctx.pode('estoque.aprovar');
-  const linhas = dados.historico.map((m) => {
+  const linhas = historico.map((m) => {
     let acao = null;
     if (podeEstornar && m.origem_tipo === 'proposta' && m.tipo !== 'estorno' && !m.estornada) {
       acao = el('button', { type: 'button', class: 'botao botao--texto', 'data-estornar': m.id }, 'Estornar');
@@ -166,21 +215,25 @@ function secaoHistorico() {
     }
     return el('tr', {},
       el('td', { 'data-rotulo': 'Quando' }, formatarDataHora(m.criado_em)),
-      el('th', { scope: 'row' }, m.rotulo === 'Padrão' ? m.produto_nome : `${m.produto_nome} (${m.rotulo})`),
-      el('td', { 'data-rotulo': 'Tipo' }, TIPOS_MOVIMENTACAO[m.tipo] ?? m.tipo, m.estornada ? ' (estornada)' : ''),
+      comProduto ? el('th', { scope: 'row' }, m.rotulo === 'Padrão' ? m.produto_nome : `${m.produto_nome} (${m.rotulo})`) : null,
+      el('td', { 'data-rotulo': 'Origem' }, origemDoMovimento(m), m.estornada ? ' (estornada)' : ''),
       el('td', { class: 'numero', 'data-rotulo': 'Quantidade' }, `${m.quantidade > 0 ? '+' : '−'}${quantidadeLegivel(Math.abs(m.quantidade))}`),
       el('td', { class: 'numero', 'data-rotulo': 'Físico depois' }, quantidadeLegivel(m.fisico_apos)),
       el('td', { 'data-rotulo': 'Por' }, m.ator_nome),
       el('td', { 'data-rotulo': 'Motivo' }, m.motivo ?? '—', Number.isSafeInteger(m.custo_centavos) ? ` · custo ${formatarCentavos(m.custo_centavos)}` : ''),
       el('td', { 'data-rotulo': 'Ação' }, acao ?? ''));
   });
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-historico-estoque' },
-    el('h2', { id: 'titulo-historico-estoque' }, 'Histórico de movimentações'),
+  return el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: comProduto ? 'tabela-historico' : 'tabela-historico-item' },
+    el('caption', { class: 'visualmente-oculto' }, 'Movimentações de estoque mais recentes'),
+    el('thead', {}, el('tr', {}, ...['Quando', comProduto ? 'Produto' : null, 'Origem', 'Quantidade', 'Físico depois', 'Por', 'Motivo', 'Ação'].filter(Boolean).map((c) => el('th', { scope: 'col' }, c)))),
+    el('tbody', {}, ...linhas)));
+}
+
+function secaoHistorico() {
+  return el('details', { class: 'pilha secao-recolhida', id: 'secao-historico' },
+    el('summary', {}, el('h2', { id: 'titulo-historico-estoque' }, 'Histórico de movimentações')),
     el('p', { class: 'campo__ajuda' }, 'Registro permanente: nada é apagado. Correções viram estornos ou ajustes.'),
-    linhas.length ? el('div', { class: 'tabela-container' }, el('table', { class: 'tabela', id: 'tabela-historico' },
-      el('caption', { class: 'visualmente-oculto' }, 'Movimentações de estoque mais recentes'),
-      el('thead', {}, el('tr', {}, ...['Quando', 'Produto', 'Tipo', 'Quantidade', 'Físico depois', 'Por', 'Motivo', 'Ação'].map((c) => el('th', { scope: 'col' }, c)))),
-      el('tbody', {}, ...linhas))) : el('p', {}, 'Nenhuma movimentação ainda.'));
+    dados.historico.length ? tabelaHistorico(dados.historico) : el('p', {}, 'Nenhuma movimentação ainda.'));
 }
 
 /** Diálogo acessível com motivo obrigatório (o diálogo comum não tem campo). */
@@ -237,7 +290,8 @@ async function carregar() {
     dados = { produtos, alertas, pendentes, historico };
     document.getElementById('titulo-pagina').textContent = `Estoque de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
-    area.append(...[secaoAlertas(), secaoLancamento(), secaoPendentes(), secaoSaldos(), secaoHistorico()].filter(Boolean));
+    area.append(...[secaoSaldos(), secaoPendentes(), secaoHistorico()].filter(Boolean));
+    desenharSaldos();
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
       area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
