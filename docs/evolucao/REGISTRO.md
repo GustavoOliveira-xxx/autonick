@@ -121,3 +121,18 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   arquivos, empresas e filas); `ck_auditoria` (decisões da CK, moderação e mudanças de limites, com paginação). Só para a CK.
 - Validado no app real (conta "Administração CK"): saúde com PostgreSQL 18.6 e 32 migrations registradas, parâmetros em 2 categorias, auditoria com as decisões.
 - Não feito: feature flags (sem funcionalidade que as consuma, seriam só um cadastro sem efeito).
+
+### E12 · Regressão e entrega
+- Regressão final nesta branch (PostgreSQL 18.6 real, Chromium):
+  | Suíte | Resultado |
+  |---|---|
+  | Unitários (node) | 144/144 |
+  | Banco (node, PostgreSQL 18.6) | 274/274, 0 pulados |
+  | Java (os-api) | 137/137, 0 pulados |
+  | Playwright | 357/357 (rodada completa 356/357; o teste de limites da CK passou a abrir a aba Parâmetros e ficou verde) |
+- `AutoniCK-validar.cmd` + `scripts/validar-local.ps1`: validação só de leitura do AutoniCK local em execução. As mesmas verificações foram
+  conferidas aqui com curl (todas passaram); o PowerShell em si não pôde ser executado neste ambiente.
+- `AutoniCK-local.cmd --backup` conferido: cópia de `dados` e `arquivos` (sem `postmaster.pid`) em `backups/AAAAMMDD-HHMMSS`.
+- Instruções de Windows: `docs/evolucao/WINDOWS.md` (atualizar o git, base isolada com `AUTONICK_LOCAL_PASTA`, backup e recuperação, endereços, labs e roteiro).
+- Pendências registradas na matriz: E08 (portal do cliente renovado, notificações, onboarding), vendas "consulta primeiro", feature flags,
+  controles extras do Animation Lab, próxima ação por OS na lista e reescrita de `docs/arquitetura.md`.

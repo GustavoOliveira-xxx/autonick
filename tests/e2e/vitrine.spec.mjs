@@ -311,7 +311,8 @@ test('gestor sem vitrine.alterar não vê o botão de publicar [simulação]', a
 
 test('CK: limites com faixa, motivo obrigatório, confirmação "o que vai mudar" e histórico; quem não é CK é negado [simulação]', async ({ page, context }) => {
   const estado = await simular(context, { logado: true, tipo: 'business', ck: true });
-  await page.goto('/ck-admin/');
+  await page.goto('/ck-admin/#parametros');
+  await expect(page.getByRole('tab', { name: 'Parâmetros' })).toHaveAttribute('aria-selected', 'true');
   const item = page.locator('[data-limite-item="reagendamentos_por_os"]');
   await expect(item.locator('[data-valor]')).toHaveText('3');
   await item.locator('input[name="valor"]').fill('11');

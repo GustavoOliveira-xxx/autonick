@@ -24,7 +24,8 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E05 | Ficha do cliente | Implementado aguardando validação manual | busca-global.test (ficha), vendas e2e (2) |
 | E05 | Funil de orçamentos em colunas | Implementado aguardando validação manual | servicos e2e |
 | E05 | Central de atividades | Implementado aguardando validação manual | busca-global.test (atividades), painel-m13b e2e |
-| E05 | Vendas "consulta primeiro" e modelos reutilizáveis | Não iniciado | |
+| E05 | Vendas "consulta primeiro" | Não iniciado | |
+| E05 | Modelos reutilizáveis | Parcial | modelos de checklist de OS (E07); outros modelos não |
 | E06 | Financeiro: ações rápidas em modal a partir do painel | Implementado aguardando validação manual | financeiro e2e (21) |
 | E06 | Metas mensais com realizado dos dados reais e comemoração só ao atingir | Concluído e validado | metas.test (4), painel-m13b e2e, app real |
 | E06 | Painel orientado a ação | Parcial | já existia "Precisa da sua ação"; somadas metas e ações rápidas |
@@ -32,7 +33,8 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E07 | Checklist persistente com obrigatórios bloqueando a conclusão no banco | Concluído e validado | checklists-os.test (5), ordens e2e, app real |
 | E07 | Detalhe da OS em abas e central de documentos da OS | Implementado aguardando validação manual | ordens e2e (15) |
 | E07 | Lista de OS com próximas ações | Parcial | lista já mostra estado e responsável; "próxima ação" por OS não foi feita |
-| E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
+| E08 | Cliente vê as etapas do serviço marcadas como visíveis | Concluído e validado | checklists-os.test, app real |
+| E08 | Portal do cliente renovado, descoberta, pedido guiado, notificações internas, onboarding | Não iniciado | o portal atual (M10 a M12) continua funcionando sem mudanças |
 | E09 | Painel da CK em abas com filas | Implementado aguardando validação manual | painel-m13b e2e, app real |
 | E09 | Central de parâmetros por categoria com restaurar padrão | Concluído e validado | ck-central.test, app real |
 | E09 | Saúde da plataforma | Concluído e validado | ck-central.test, app real |
@@ -45,4 +47,6 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E11 | Uploads seguros | Concluído e validado | ConteudoArquivoTest, ArquivosApiTest |
 | E11 | IDOR (outra empresa) nas funções novas | Concluído e validado | testes de banco de cada migration (outra empresa e anônimo negados) |
 | E11 | Revisão ampla de XSS, CSRF e sessões | Parcial | sem HTML vindo de dados (el() usa textContent); revisão completa não feita |
-| E12 | Regressão completa, documentação, instruções Windows | Não iniciado | |
+| E12 | Regressão completa (unitários, banco PostgreSQL 18, Java, Playwright) | Concluído e validado | ver REGISTRO.md, seção E12 |
+| E12 | Instruções Windows, base isolada, backup e validação | Implementado aguardando validação manual | docs/evolucao/WINDOWS.md, AutoniCK-validar.cmd (conferido com curl; PowerShell não testado aqui) |
+| E12 | Documentação de arquitetura, APIs e permissões atualizada | Parcial | registro por marco em REGISTRO.md; docs/arquitetura.md não foi reescrito |
