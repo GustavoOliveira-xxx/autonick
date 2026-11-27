@@ -11,10 +11,12 @@ import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../.
 import { campoTexto, campoSelecao, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
 import { lerValorEmReais } from '../../domain/moeda.js';
 import {
-  catalogoParaVenda, clientes as lerClientes, meuLimiteDesconto, venda as lerVenda, criarVenda, alterarVenda, confirmarVenda,
-  registrarVendaDireta, previaTotal, dividirParcelas, FORMAS,
+  catalogoParaVenda, meuLimiteDesconto, venda as lerVenda, criarVenda, alterarVenda, confirmarVenda,
+  registrarVendaDireta, previaTotal, FORMAS,
 } from '../../data/vendas.js';
-import { carregarContexto, navegacaoEmpresa, criarAnunciador, novaChave, dinheiro, dataDeHoje, somarDias, nomeItem } from './comum.js';
+import { carregarContexto, navegacaoEmpresa, criarAnunciador, novaChave, dinheiro, dataDeHoje, nomeItem } from './comum.js';
+import { blocoPagamento } from './pagamento-venda.js';
+import { seletorCliente } from './cliente-venda.js';
 
 iniciarLayout();
 const area = document.getElementById('conteudo-pagina');
@@ -100,45 +102,39 @@ function secaoCarrinho() {
     const p = previaTotal(carrinho.filter((i) => Number.isInteger(i.quantidade) && i.quantidade > 0),
       geral.ok ? geral.centavos : 0);
     totalTexto.textContent = `Total previsto: ${dinheiro(p.total)}${p.descontos ? ` (desconto de ${dinheiro(p.descontos)})` : ''}`;
-    atualizarParcelas?.();
+    pagamento?.atualizar();
   };
-  let atualizarParcelas = null;
+  let pagamento = null;
 
   // Cliente, desconto geral, observação e pagamento.
-  const opcoesCliente = (ctx.clientes ?? []).filter((c) => c.ativo).map((c) => [c.id, c.nome]);
-  const blocoParcelas = el('div', { class: 'pilha', id: 'bloco-parcelas', hidden: true });
-  const qtdParcelas = campoSelecao({ nome: 'parcelas', rotulo: 'Número de parcelas', opcoes: Array.from({ length: 11 }, (_, i) => [String(i + 2), `${i + 2} parcelas`]), valor: '2', id: 'venda-parcelas', vazio: null });
-  const listaParcelas = el('div', { class: 'pilha', id: 'lista-parcelas' });
-  atualizarParcelas = () => {
-    if (blocoParcelas.hidden) return;
-    const n = Number(form.querySelector('[name="parcelas"]').value);
+  const totalAgora = () => {
     const geral = lerValorEmReais(form.querySelector('[name="desconto_geral"]')?.value || '0');
-    const total = previaTotal(carrinho, geral.ok ? geral.centavos : 0).total;
-    const valoresP = dividirParcelas(Math.max(total, 0), n);
-    listaParcelas.replaceChildren(...valoresP.map((v, idx) => el('div', { class: 'grade-filtros' },
-      campoTexto({ nome: `parcela-valor-${idx}`, rotulo: `Parcela ${idx + 1}: valor (R$)`, valor: (v / 100).toFixed(2).replace('.', ','), id: `parcela-valor-${idx}` }),
-      campoTexto({ nome: `parcela-venc-${idx}`, rotulo: `Parcela ${idx + 1}: vencimento`, tipo: 'date', valor: somarDias(dataDeHoje(), 30 * idx), id: `parcela-venc-${idx}` }))));
+    return previaTotal(carrinho.filter((i) => Number.isInteger(i.quantidade) && i.quantidade > 0), geral.ok ? geral.centavos : 0).total;
   };
-  qtdParcelas.querySelector('select').addEventListener('change', atualizarParcelas);
-  blocoParcelas.append(qtdParcelas, el('p', { class: 'campo__ajuda' }, 'Sem juros nem multa. A soma das parcelas precisa ser igual ao total.'), listaParcelas);
-  const condicao = campoSelecao({ nome: 'condicao', rotulo: 'Pagamento', opcoes: [['a_vista', 'À vista'], ['parcelado', 'Parcelado']], valor: 'a_vista', id: 'venda-condicao', vazio: null });
-  condicao.querySelector('select').addEventListener('change', (e) => { blocoParcelas.hidden = e.target.value !== 'parcelado'; atualizarParcelas(); });
+  const recebidoAgora = () => {
+    const r = lerValorEmReais(form.querySelector('[name="recebido"]')?.value || '0');
+    return r.ok ? r.centavos : 0;
+  };
+  pagamento = blocoPagamento({ total: totalAgora, recebido: recebidoAgora, formas: FORMAS, hoje: dataDeHoje() });
   const podeReceber = ctx.pode('vendas.registrar_recebimento') || ctx.pode('financeiro.aprovar');
   const recebimento = podeReceber ? el('fieldset', { class: 'campo pilha' }, el('legend', {}, 'Recebido agora (opcional)'),
-    el('p', { class: 'campo__ajuda' }, 'Registre só o que o cliente pagou de fato. O restante fica a receber.'),
+    el('p', { class: 'campo__ajuda' }, 'Registre só o que o cliente pagou de fato (entrada). No parcelado, o valor abate a 1ª parcela. O restante fica a receber, sem duplicar a conta.'),
     el('div', { class: 'grade-filtros' },
       campoTexto({ nome: 'recebido', rotulo: 'Valor recebido (R$)', id: 'venda-recebido' }),
       campoSelecao({ nome: 'forma', rotulo: 'Forma', opcoes: FORMAS, id: 'venda-forma' }))) : null;
+  recebimento?.querySelector('[name="recebido"]').addEventListener('input', () => pagamento.atualizar());
+  const cliente = ctx.pode('clientes.visualizar')
+    ? seletorCliente({ ctx, inicial: rascunho?.cliente_empresa_id ? { id: rascunho.cliente_empresa_id, nome: rascunho.cliente ?? 'Cliente' } : null }) : null;
 
   // Sem filtrar, o append do DOM escreveria "null" na tela para cada bloco que o perfil não pode ver.
   form.append(...[
-    ctx.pode('clientes.visualizar') ? campoSelecao({ nome: 'cliente_empresa_id', rotulo: 'Cliente', opcoes: opcoesCliente, valor: rascunho?.cliente_empresa_id ?? '', vazio: 'Consumidor não identificado', id: 'venda-cliente' }) : null,
+    cliente?.elemento ?? null,
     podeDesconto ? campoTexto({ nome: 'desconto_geral', rotulo: 'Desconto na venda (R$)', id: 'venda-desconto',
       valor: rascunho?.desconto_geral_centavos ? (rascunho.desconto_geral_centavos / 100).toFixed(2).replace('.', ',') : '',
       ajuda: limite?.sem_limite ? 'Você não tem limite de desconto.' : `Seu limite: ${limite?.percentual ?? 0}% do valor dos produtos.` }) : null,
-    campoTexto({ nome: 'observacao', rotulo: 'Observação', max: 500, linhas: 2, id: 'venda-observacao', valor: rascunho?.observacao }),
     el('span', { class: 'campo__erro', id: 'erro-itens', 'data-grupo': 'itens' }),
-    totalTexto, condicao, blocoParcelas, recebimento].filter(Boolean));
+    totalTexto, pagamento.elemento, recebimento,
+    campoTexto({ nome: 'observacao', rotulo: 'Observação (opcional)', max: 500, linhas: 2, id: 'venda-observacao', valor: rascunho?.observacao })].filter(Boolean));
   form.querySelector('[name="desconto_geral"]')?.addEventListener('input', atualizarTotal);
 
   const salvar = el('button', { type: 'button', class: 'botao botao--secundario', id: 'salvar-rascunho' }, rascunho ? 'Salvar rascunho' : 'Guardar como rascunho');
@@ -169,24 +165,21 @@ function secaoCarrinho() {
     return { dados, itens, d };
   };
   const pagamentoDe = (d) => {
-    const pagamento = { condicao: d.condicao || 'a_vista' };
-    if (pagamento.condicao === 'parcelado') {
-      const n = Number(d.parcelas);
-      pagamento.parcelas = [];
-      for (let idx = 0; idx < n; idx += 1) {
-        const v = lerValorEmReais(d[`parcela-valor-${idx}`] ?? '');
-        if (!v.ok) return erroNoCampo(form, `parcela-valor-${idx}`, v.erro) && null;
-        if (!d[`parcela-venc-${idx}`]) return erroNoCampo(form, `parcela-venc-${idx}`, 'Informe o vencimento.') && null;
-        pagamento.parcelas.push({ valor_centavos: v.centavos, vencimento: d[`parcela-venc-${idx}`] });
-      }
-    }
+    const pg = pagamento.ler(form);
+    if (!pg) return null;
     if (d.recebido) {
       const r = lerValorEmReais(d.recebido);
       if (!r.ok) return erroNoCampo(form, 'recebido', r.erro) && null;
       if (!d.forma) return erroNoCampo(form, 'forma', 'Escolha a forma de pagamento.') && null;
-      pagamento.recebimento_inicial = { valor_centavos: r.centavos, forma: d.forma };
+      const limiteRecebido = pg.condicao === 'parcelado' ? pg.parcelas[0].valor_centavos : totalAgora();
+      if (r.centavos > limiteRecebido) {
+        return erroNoCampo(form, 'recebido', pg.condicao === 'parcelado'
+          ? `No parcelado, o recebido agora abate a 1ª parcela (até ${dinheiro(limiteRecebido)}). Ajuste a 1ª parcela para ser a entrada.`
+          : `O recebido não pode passar do total (${dinheiro(limiteRecebido)}).`) && null;
+      }
+      pg.recebimento_inicial = { valor_centavos: r.centavos, forma: d.forma };
     }
-    return pagamento;
+    return pg;
   };
   const tratarFalha = (acao, erro) => {
     if (erro.codigo === 'NETWORK_UNKNOWN') {
@@ -250,11 +243,9 @@ async function carregar() {
       area.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Seu perfil de acesso não permite registrar vendas nesta empresa.')));
       return;
     }
-    const [cat, cli, lim, v] = await Promise.all([
-      catalogoParaVenda(ctx.id), ctx.pode('clientes.visualizar') ? lerClientes(ctx.id, null, 100, 0) : Promise.resolve([]),
-      meuLimiteDesconto(ctx.id), vendaId ? lerVenda(vendaId) : Promise.resolve(null)]);
+    const [cat, lim, v] = await Promise.all([
+      catalogoParaVenda(ctx.id), meuLimiteDesconto(ctx.id), vendaId ? lerVenda(vendaId) : Promise.resolve(null)]);
     catalogo = cat;
-    ctx.clientes = cli;
     limite = lim;
     if (v) {
       if (v.estado !== 'rascunho') { irParaVenda(v.id); return; }

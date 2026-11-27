@@ -6,6 +6,7 @@
  * versão e chave de operação. Dinheiro sai e volta em CENTAVOS inteiros; a tela só formata.
  * O navegador nunca envia preço nem total: só variação, quantidade e o desconto pedido.
  */
+import { dividirCentavos } from '../domain/parcelas.js';
 import { neon } from './sessao.js';
 
 // --- Clientes da empresa --------------------------------------------------------
@@ -103,9 +104,6 @@ export function previaTotal(itens, descontoGeral = 0) {
   return { subtotal, descontos: descontos + descontoGeral, total: subtotal - descontos - descontoGeral };
 }
 
-/** Divide um total em parcelas iguais em centavos; a diferença de arredondamento vai para a primeira. */
-export function dividirParcelas(totalCentavos, n) {
-  const base = Math.floor(totalCentavos / n);
-  return Array.from({ length: n }, (_, i) => base + (i === 0 ? totalCentavos - base * n : 0));
-}
+/** Divide um total em parcelas em centavos; a sobra de centavos vai para a última (R$ 100 em 3 = 33,33 + 33,33 + 33,34). */
+export const dividirParcelas = (totalCentavos, n) => dividirCentavos(totalCentavos, n);
 export const fichaCliente = (clienteId) => neon.rpc('ficha_cliente', { p_cliente_id: clienteId });

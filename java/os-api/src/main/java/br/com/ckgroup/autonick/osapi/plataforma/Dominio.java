@@ -24,7 +24,9 @@ public enum Dominio {
             "cancelar_convite", "desligar_membro", "alterar_perfil_do_membro", "criar_perfil_permissao",
             "alterar_perfil_permissao", "desativar_perfil_permissao", "definir_desconto_maximo", "meu_limite_desconto",
             "enviar_vitrine_para_analise", "contestar_moderacao", "abrir_contestacao", "operacoes_da_empresa",
-            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro", "busca_global", "atividades_da_empresa", "metas_da_empresa", "definir_meta"),
+            "definir_logo_empresa", "logos_das_minhas_empresas", "arquivo_remover", "arquivos_do_registro", "busca_global", "atividades_da_empresa", "metas_da_empresa", "definir_meta",
+            "definir_flag_empresa", "minhas_notificacoes", "marcar_notificacoes_lidas", "preferencias_notificacao",
+            "definir_preferencia_notificacao", "meu_onboarding", "dispensar_onboarding", "reiniciar_onboarding"),
 
     PRODUTOS_ESTOQUE(false, "produtos_da_empresa", "criar_produto", "alterar_produto", "definir_produto_ativo",
             "adicionar_variacao", "alterar_variacao", "definir_variacao_ativa", "alterar_preco", "alterar_custo",
@@ -56,7 +58,7 @@ public enum Dominio {
             "solicitacoes_da_empresa", "solicitacao_detalhe", "assumir_solicitacao", "criar_solicitacao",
             "criar_solicitacao_interna", "cancelar_solicitacao", "minhas_solicitacoes", "minha_solicitacao",
             "salvar_rascunho_orcamento", "enviar_orcamento", "aprovar_orcamento", "aceitar_orcamento",
-            "recusar_orcamento", "pedir_revisao", "agenda_basica", "agenda_operacional"),
+            "recusar_orcamento", "pedir_revisao", "agenda_basica", "agenda_operacional", "modelos_orcamento", "salvar_modelo_orcamento"),
 
     ORDENS_SERVICO(false, "ordens_da_empresa", "os_detalhe", "minhas_os", "minha_os", "mudar_estado_os", "checklist_os", "checklist_os_cliente", "adicionar_itens_checklist", "alterar_item_checklist", "remover_item_checklist", "modelos_checklist", "salvar_modelo_checklist",
             "publicar_atualizacao_os", "atualizar_dados_os", "registrar_garantia_os", "adicionar_material_os",
@@ -72,7 +74,7 @@ public enum Dominio {
             "avaliacoes_da_empresa", "denunciar", "minhas_denuncias", "registrar_exportacao_pdf"),
 
     /** Únicas funções do visitante sem login (papel anonymous). */
-    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica", "logos_publicos", "imagens_publicas_de_produtos"),
+    VITRINE_PUBLICA(true, "filtros_vitrine", "buscar_vitrine", "vitrine_publica", "logos_publicos", "imagens_publicas_de_produtos", "flags_ativas"),
 
     VITRINE_DEMONSTRACAO(false, "filtros_demonstracao", "buscar_demonstracao", "vitrine_demonstracao"),
 
@@ -81,7 +83,7 @@ public enum Dominio {
             "ck_decidir_solicitacao", "ck_moderar_publicacao", "ck_moderar_alteracao_direta", "ck_suspender_vitrine",
             "ck_reativar_vitrine", "ck_assumir_contestacao", "ck_decidir_contestacao", "ck_assumir_contestacao_moderacao",
             "ck_decidir_contestacao_moderacao", "ck_assumir_denuncia", "ck_decidir_denuncia", "ck_limites", "ck_saude", "ck_auditoria",
-            "ck_definir_limite", "ck_historico_limites");
+            "ck_definir_limite", "ck_historico_limites", "ck_flags", "ck_definir_flag");
 
     private static final Map<String, Dominio> POR_FUNCAO = Arrays.stream(values())
             .flatMap(d -> d.funcoes.stream().map(f -> Map.entry(f, d)))

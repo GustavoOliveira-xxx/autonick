@@ -121,6 +121,7 @@ function secaoFinanceiro() {
   const p = v.pagamento;
   const parcelas = v.parcelas.map((pa) => el('li', { class: 'cartao linha-item', 'data-parcela': pa.sequencia },
     el('span', {}, el('strong', {}, `Parcela ${pa.sequencia}`), ` · ${dinheiro(pa.valor_centavos)} · vence ${formatarData(pa.vencimento)}`,
+      Number.isInteger(pa.prazo_dias) ? ` (${pa.prazo_dias} DDL)` : '', pa.forma_prevista ? ` · ${FORMA[pa.forma_prevista] ?? pa.forma_prevista}` : '',
       pa.saldo_centavos && pa.estado !== 'cancelada' ? ` · falta ${dinheiro(pa.saldo_centavos)}` : '',
       ` · ${({ aberta: 'em aberto', parcial: 'recebida em parte', liquidada: 'recebida', cancelada: 'cancelada' })[pa.estado]}`),
     v.estado === 'confirmada' && pa.saldo_centavos > 0 && pa.estado !== 'cancelada' && podeReceber() ? botaoReceber(pa) : null));

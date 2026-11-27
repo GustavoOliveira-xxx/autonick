@@ -727,3 +727,13 @@ html[data-tema="claro"] body .botao--texto:not([aria-pressed]):hover { border-co
 .secao-recolhida > summary h2 { margin: 0; }
 .tabela a.link-tabela { color: var(--texto); font-weight: 700; text-decoration: none; border-bottom: 1px dashed rgb(245 183 10 / 0.6); }
 .tabela a.link-tabela:hover { color: var(--link); border-bottom-style: solid; }
+/* Venda: pagamento e cliente (pacote 27/11, item 1) */
+.resumo-pagamento .resumo-ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 8px; margin: 0; }
+.resumo-pagamento .resumo-ficha > div { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--borda-suave); background: var(--superficie-2); }
+.resumo-pagamento dd { margin: 0; font-variant-numeric: tabular-nums; }
+.resumo-pagamento .resumo--alerta { border-color: var(--alerta); background: var(--alerta-fundo); }
+.resumo-pagamento .resumo--ok { border-color: var(--sucesso); }
+.tabela-parcelas input, .tabela-parcelas select { min-height: 40px; width: 100%; min-width: 7.5rem; }
+.tabela-parcelas td, .tabela-parcelas th { vertical-align: middle; }
+.ddl-ajuda { padding: 10px 12px; border-left: 3px solid #f5b70a; background: rgb(245 183 10 / 0.07); border-radius: 0 10px 10px 0; }
+.resumo-ficha dt, .resumo-ficha dd { margin: 0; }
