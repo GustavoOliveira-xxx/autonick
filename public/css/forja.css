@@ -650,3 +650,4 @@ html[data-tema="claro"] .paleta kbd { border-color: #d8c9a8; background: #fff; }
 .checklist__item .opcao input[type="checkbox"] { inline-size: 24px; block-size: 24px; }
 .checklist__item p { margin: 0; }
 .checklist__mais > summary { cursor: pointer; color: var(--texto-suave); font-weight: 600; min-height: 28px; }
+.grade-parametros { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }

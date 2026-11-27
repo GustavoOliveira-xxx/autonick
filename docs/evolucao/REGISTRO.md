@@ -113,3 +113,11 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
   Cada cena conta como um ciclo. Movimento reduzido continua estático e, ao tocar, mostra só o Chamado. Se a luva não carregar, o laço segue só com o Chamado.
 - Testes: `tests/unit/bong-luva.test.mjs` (alternância, BONG!, luva só na cena dela, emendas sem salto de pose e câmera) e apresentação e2e 12/12.
 - Não feito nesta etapa: controles extras do Animation Lab (intervalo, intensidade, exportação) e outras cenas com o Bong em telas internas.
+
+### E09 · Central da CK
+- Painel da CK em abas: Filas (análise, moderação, contestações, avaliações e denúncias), Empresas, Parâmetros, Saúde e Auditoria.
+- `202611300001_ck_central`: `ck_limites` com categoria, nome, unidade e padrão (parâmetros agrupados e "Restaurar o padrão", que só preenche
+  o formulário: a mudança continua com motivo, confirmação e histórico); `ck_saude` (versão e tamanho do banco, migrations registradas,
+  arquivos, empresas e filas); `ck_auditoria` (decisões da CK, moderação e mudanças de limites, com paginação). Só para a CK.
+- Validado no app real (conta "Administração CK"): saúde com PostgreSQL 18.6 e 32 migrations registradas, parâmetros em 2 categorias, auditoria com as decisões.
+- Não feito: feature flags (sem funcionalidade que as consuma, seriam só um cadastro sem efeito).

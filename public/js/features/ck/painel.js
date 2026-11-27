@@ -20,6 +20,7 @@ import { ckFilaModeracao } from '../../data/comunicacao.js';
 import { secoesModeracao } from './moderacao.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { urlDeImagem } from '../../data/arquivos.js';
+import { abas } from '../../ui/abas.js';
 
 
 iniciarLayout();
@@ -278,13 +279,65 @@ function itemEmpresa(e) {
 }
 
 // Limites da plataforma (P-M08-02; D10-23 = A): só administrador CK; motivo obrigatório; histórico; nenhum dado de cliente.
+let abaCk = ['filas', 'empresas', 'parametros', 'saude', 'auditoria'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'filas';
+
+function agruparPorCategoria(limites, itens) {
+  const grupos = new Map();
+  limites.forEach((l, i) => { const c = l.categoria ?? 'Geral'; if (!grupos.has(c)) grupos.set(c, []); grupos.get(c).push(itens[i]); });
+  return [...grupos].map(([c, lis]) => el('section', { class: 'pilha', 'aria-label': c, 'data-grupo-limites': c }, el('h3', {}, c), el('ul', { class: 'lista-simples grade-parametros' }, ...lis)));
+}
+
+// --- E09: saúde da plataforma e auditoria administrativa -------------------------------------------
+const bytes = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.ceil(n / 1024)} KB`);
+function secaoSaude(s) {
+  if (!s?.banco || !s.filas) return el('section', { class: 'pilha', id: 'saude' }, el('h2', {}, 'Saúde da plataforma'), aviso('erro', 'Não foi possível consultar a saúde agora.'));
+  const ficha = (rotulo, valor, extra) => el('div', { class: 'cartao pilha' }, el('small', { class: 'campo__ajuda' }, rotulo), el('strong', {}, valor), extra ? el('span', { class: 'campo__ajuda' }, extra) : null);
+  const filas = s.filas.publicacao + s.filas.contestacoes + s.filas.moderacoes;
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-saude', id: 'saude' },
+    el('h2', { id: 'titulo-saude' }, 'Saúde da plataforma'),
+    el('p', { class: 'campo__ajuda' }, `Verificado em ${formatarDataHora(s.verificado_em)}. Leitura direta do banco, sem dados de clientes.`),
+    el('div', { class: 'resumo-ficha' },
+      ficha('Banco de dados', `PostgreSQL ${s.banco.versao}`, `${bytes(s.banco.tamanho_bytes)} · fuso ${s.banco.fuso}`),
+      ficha('Migrations registradas', String(s.migracoes.total), `última: ${s.migracoes.ultimas[0]?.id ?? '—'}`),
+      ficha('Arquivos ativos', String(s.arquivos.ativos), `${bytes(s.arquivos.bytes_ativos)} · ${s.arquivos.removidos_em_retencao} removidos em retenção`),
+      ficha('Empresas', String(s.contagens.empresas), `${s.contagens.vitrines_publicadas} vitrines publicadas · ${s.contagens.empresas_de_teste} de teste`),
+      ficha('Filas pendentes', String(filas), `${s.filas.publicacao} publicação · ${s.filas.contestacoes} contestação · ${s.filas.moderacoes} moderação`)),
+    el('details', {}, el('summary', {}, 'Últimas migrations'), el('ul', { class: 'lista-simples' }, ...s.migracoes.ultimas.map((m) => el('li', {}, el('strong', {}, m.id), ` · ${m.descricao}`)))));
+}
+const TEXTO_AUDITORIA = { 'ck.limite_alterado': 'alterou um limite da plataforma', 'ck_admin.concedido': 'recebeu acesso de administração CK', 'ck_admin.revogado': 'perdeu o acesso de administração CK',
+  'moderacao.publicacao_decidida': 'decidiu a moderação de uma avaliação ou resposta', 'moderacao.denuncia_aberta': 'abriu uma denúncia', 'moderacao.denuncia_assumida': 'assumiu uma denúncia',
+  'moderacao.denuncia_decidida': 'decidiu uma denúncia', 'moderacao.contestacao_aberta': 'abriu uma contestação de moderação', 'moderacao.contestacao_decidida': 'decidiu uma contestação de moderação',
+  'ck.solicitacao.aprovar': 'aprovou uma vitrine para publicação', 'ck.solicitacao.pedir_correcao': 'pediu correção de uma vitrine', 'ck.solicitacao.rejeitar': 'rejeitou uma vitrine' };
+function textoAuditoria(a) {
+  if (TEXTO_AUDITORIA[a.tipo]) return TEXTO_AUDITORIA[a.tipo];
+  return a.tipo.replace(/^ck(_admin)?\./, '').replaceAll('.', ' · ').replaceAll('_', ' ');
+}
+function secaoAuditoria(r) {
+  if (!Array.isArray(r?.itens)) return el('section', { class: 'pilha', id: 'auditoria' }, el('h2', {}, 'Auditoria administrativa'), aviso('erro', 'Não foi possível consultar a auditoria agora.'));
+  const lista = el('ul', { class: 'lista-simples', id: 'lista-auditoria' });
+  const linha = (a) => el('li', { class: 'atividade' }, el('span', { class: 'atividade__hora' }, formatarDataHora(a.criado_em).split(' ').pop()),
+    el('span', {}, el('strong', {}, a.ator), ` ${textoAuditoria(a)}`, a.empresa ? ` · ${a.empresa}` : '', a.dados?.motivo ? ` · motivo: ${a.dados.motivo}` : '',
+      el('span', { class: 'campo__ajuda' }, ` · ${formatarDataHora(a.criado_em)}`)));
+  lista.append(...r.itens.map(linha));
+  let ultima = r.itens.at(-1)?.criado_em;
+  const mais = el('button', { type: 'button', class: 'botao botao--secundario', hidden: !r.mais }, 'Ver registros mais antigos');
+  mais.addEventListener('click', () => ocupado(mais, async () => {
+    const prox = await neon.rpc('ck_auditoria', { p_antes: ultima, p_limite: 40 });
+    lista.append(...prox.itens.map(linha)); ultima = prox.itens.at(-1)?.criado_em ?? ultima; mais.hidden = !prox.mais;
+  }));
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-auditoria', id: 'auditoria' },
+    el('h2', { id: 'titulo-auditoria' }, 'Auditoria administrativa'),
+    el('p', { class: 'campo__ajuda' }, 'Decisões da CK, moderação e mudanças de limites. Registro permanente.'),
+    r.itens.length ? lista : el('p', { id: 'lista-auditoria' }, 'Nenhum registro ainda.'), mais);
+}
+
 function secaoLimites(limites, historico) {
   if (!limites) {
     return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-limites', id: 'limites' }, el('h2', { id: 'titulo-limites' }, 'Limites da plataforma'),
       aviso('erro', 'Não conseguimos carregar os limites agora.', el('p', {}, 'O restante do painel continua disponível. Recarregue a página para tentar de novo.')));
   }
   const itens = limites.map((l) => {
-    const nome = NOME_LIMITE[l.chave] ?? l.descricao;
+    const nome = l.nome && l.nome !== l.chave ? l.nome : NOME_LIMITE[l.chave] ?? l.descricao;
     const id = `limite-${l.chave}`;
     const salvar = el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Alterar limite');
     const form = el('form', { class: 'pilha', novalidate: true, 'data-limite': l.chave },
@@ -324,10 +377,19 @@ function secaoLimites(limites, historico) {
         }
       });
     });
-    return el('li', { class: 'cartao pilha', 'data-limite-item': l.chave },
-      el('h3', { class: 'cartao__titulo' }, nome),
+    // E09: restaurar o padrão preenche o formulário; a mudança continua exigindo motivo e confirmação.
+    const padrao = Number.isInteger(l.valor_padrao) && l.valor_padrao !== l.valor ? el('button', { type: 'button', class: 'botao botao--texto' }, `Restaurar o padrão (${l.valor_padrao})`) : null;
+    padrao?.addEventListener('click', () => {
+      form.querySelector(`#${id}-valor`).value = String(l.valor_padrao);
+      const m = form.querySelector(`#${id}-motivo`); if (!m.value.trim()) m.value = 'Restaurado ao valor padrão da plataforma.';
+      form.querySelector('button[type="submit"]').focus();
+    });
+    if (padrao) form.querySelector('.grupo-botoes').append(padrao);
+    return el('li', { class: 'cartao pilha', 'data-limite-item': l.chave, 'data-categoria': l.categoria ?? 'Geral' },
+      el('h3', { class: 'cartao__titulo' }, nome, l.unidade ? el('span', { class: 'campo__ajuda' }, ` (${l.unidade})`) : null),
       el('dl', { class: 'dados' }, el('dt', {}, 'Valor atual'), el('dd', { 'data-valor': '' }, String(l.valor)),
         el('dt', {}, 'Faixa permitida'), el('dd', {}, `${l.minimo} a ${l.maximo}`),
+        Number.isInteger(l.valor_padrao) ? el('dt', {}, 'Padrão') : null, Number.isInteger(l.valor_padrao) ? el('dd', {}, String(l.valor_padrao)) : null,
         el('dt', {}, 'Descrição'), el('dd', {}, l.descricao),
         el('dt', {}, 'Última alteração'), el('dd', {}, formatarDataHora(l.atualizado_em))),
       form);
@@ -339,7 +401,7 @@ function secaoLimites(limites, historico) {
   return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-limites', id: 'limites' },
     el('h2', { id: 'titulo-limites' }, 'Limites da plataforma'),
     el('p', { class: 'campo__ajuda' }, 'Os limites valem para todas as empresas. Mudar um limite não dá acesso a dados de clientes, solicitações ou pedidos.'),
-    el('ul', { class: 'lista-simples' }, ...itens),
+    ...agruparPorCategoria(limites, itens),
     el('h3', {}, 'Histórico das alterações'),
     linhas.length ? el('ul', { class: 'lista-simples', id: 'historico-limites' }, ...linhas) : el('p', { id: 'historico-limites' }, 'Nenhuma alteração registrada.'));
 }
@@ -360,8 +422,9 @@ async function carregar() {
         el('p', {}, el('a', { href: '/' }, 'Voltar para o início')))));
       return;
     }
-    const [empresas, fila, moderacoes, conts, cats, limites, historicoLimites, filaM12] = await Promise.all([ckEmpresas(), ckFila(), ckModeracoes(),
-      ckContestacoes(), categorias(), ckLimites().catch(() => null), ckHistoricoLimites().catch(() => []), ckFilaModeracao().catch(() => null)]);
+    const [empresas, fila, moderacoes, conts, cats, limites, historicoLimites, filaM12, saude, auditoria] = await Promise.all([ckEmpresas(), ckFila(), ckModeracoes(),
+      ckContestacoes(), categorias(), ckLimites().catch(() => null), ckHistoricoLimites().catch(() => []), ckFilaModeracao().catch(() => null),
+      neon.rpc('ck_saude', {}).catch(() => null), neon.rpc('ck_auditoria', { p_antes: null, p_limite: 40 }).catch(() => null)]);
     mapaCategorias = new Map(cats.map((c) => [c.id, c.nome]));
     const nomes = new Map(empresas.map((e) => [e.id, e.nome_publico]));
     const idsAlteracao = fila.filter((s) => s.tipo === 'alteracao').map((s) => s.empresa_id);
@@ -369,15 +432,22 @@ async function carregar() {
       ? await neon.consultar(`/public_empresa_cards?empresa_id=in.(${idsAlteracao.join(',')})&select=*`)
       : []).map((c) => [c.empresa_id, c]));
     concluirCarregamento(painel);
-    painel.append(
-      secao('titulo-fila', 'Fila de análise', fila.map((s) => itemFila(s, publicados)), 'Nenhum envio aguardando análise.'),
-      secao('titulo-moderacao', 'Alterações publicadas direto para moderar', moderacoes.map((m) => itemModeracao(m, nomes)), 'Nenhuma alteração aguardando moderação.'),
-      secao('titulo-contestacoes', 'Contestações', conts.map((c) => itemContestacao(c, nomes)), 'Nenhuma contestação em andamento.'),
-      // M12: pré-moderação de avaliações e respostas, denúncias e contestações de moderação.
-      ...secoesModeracao(filaM12, { formDecisao, anunciar, carregar, chave, secao }),
-      secao('titulo-empresas', 'Empresas', empresas.map(itemEmpresa), 'Nenhuma empresa cadastrada.'),
-      secaoLimites(limites, historicoLimites),
-    );
+    // E09: o painel em abas; as filas (o trabalho do dia) vêm primeiro.
+    const pendentes = fila.length + moderacoes.length + conts.filter((c) => ['aberta', 'em_revisao'].includes(c.estado)).length;
+    const grupo = abas({ rotulo: 'Partes do painel CK', ativa: abaCk, aoTrocar: (k) => { abaCk = k; },
+      itens: [
+        { chave: 'filas', titulo: 'Filas', contador: pendentes, painel: el('div', { class: 'pilha-grande' },
+          secao('titulo-fila', 'Fila de análise', fila.map((s) => itemFila(s, publicados)), 'Nenhum envio aguardando análise.'),
+          secao('titulo-moderacao', 'Alterações publicadas direto para moderar', moderacoes.map((m) => itemModeracao(m, nomes)), 'Nenhuma alteração aguardando moderação.'),
+          secao('titulo-contestacoes', 'Contestações', conts.map((c) => itemContestacao(c, nomes)), 'Nenhuma contestação em andamento.'),
+          // M12: pré-moderação de avaliações e respostas, denúncias e contestações de moderação.
+          ...secoesModeracao(filaM12, { formDecisao, anunciar, carregar, chave, secao })) },
+        { chave: 'empresas', titulo: 'Empresas', contador: empresas.length, painel: secao('titulo-empresas', 'Empresas', empresas.map(itemEmpresa), 'Nenhuma empresa cadastrada.') },
+        { chave: 'parametros', titulo: 'Parâmetros', painel: secaoLimites(limites, historicoLimites) },
+        { chave: 'saude', titulo: 'Saúde', painel: secaoSaude(saude) },
+        { chave: 'auditoria', titulo: 'Auditoria', painel: secaoAuditoria(auditoria) },
+      ] });
+    painel.append(grupo.elemento);
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
       painel.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));

@@ -33,7 +33,11 @@ Situações: **Concluído e validado** · **Implementado aguardando validação 
 | E07 | Detalhe da OS em abas e central de documentos da OS | Implementado aguardando validação manual | ordens e2e (15) |
 | E07 | Lista de OS com próximas ações | Parcial | lista já mostra estado e responsável; "próxima ação" por OS não foi feita |
 | E08 | Portal do cliente, notificações, onboarding | Não iniciado | |
-| E09 | Fila CK Admin, parâmetros, feature flags, saúde, auditoria | Não iniciado | |
+| E09 | Painel da CK em abas com filas | Implementado aguardando validação manual | painel-m13b e2e, app real |
+| E09 | Central de parâmetros por categoria com restaurar padrão | Concluído e validado | ck-central.test, app real |
+| E09 | Saúde da plataforma | Concluído e validado | ck-central.test, app real |
+| E09 | Auditoria administrativa | Concluído e validado | ck-central.test, app real |
+| E09 | Feature flags | Não iniciado | nenhuma funcionalidade as consumiria ainda |
 | E10 | Bong e a luva na página inicial, complementando o Chamado da Forja | Implementado aguardando validação manual | bong-luva.test, apresentacao e2e, capturas |
 | E10 | Nome oficial Bong na interface | Concluído e validado | index.html, heroi-sino.js |
 | E10 | Animation Lab evoluído (intervalo, intensidade, exportação, estúdio) | Não iniciado | |

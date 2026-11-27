@@ -80,7 +80,7 @@ public enum Dominio {
     ADMIN_CK(false, "sou_ck_admin", "ck_listar_empresas", "ck_historico_empresa", "ck_fila_moderacao",
             "ck_decidir_solicitacao", "ck_moderar_publicacao", "ck_moderar_alteracao_direta", "ck_suspender_vitrine",
             "ck_reativar_vitrine", "ck_assumir_contestacao", "ck_decidir_contestacao", "ck_assumir_contestacao_moderacao",
-            "ck_decidir_contestacao_moderacao", "ck_assumir_denuncia", "ck_decidir_denuncia", "ck_limites",
+            "ck_decidir_contestacao_moderacao", "ck_assumir_denuncia", "ck_decidir_denuncia", "ck_limites", "ck_saude", "ck_auditoria",
             "ck_definir_limite", "ck_historico_limites");
 
     private static final Map<String, Dominio> POR_FUNCAO = Arrays.stream(values())

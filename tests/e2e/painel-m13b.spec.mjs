@@ -56,6 +56,10 @@ async function simular(context, { permissoes = TODAS, painel = painelCheio, loga
       case '/api/rpc/painel_empresa': return json(painel());
       case '/api/rpc/busca_global': return json({ texto: corpo.p_texto, grupos: { clientes: [{ id: 'c1', titulo: 'Cida Ramos', detalhe: '19999990000' }], ordens: [] } });
       case '/api/rpc/meus_favoritos': return json(estado.favoritos ?? []);
+      case '/api/rpc/ck_saude': return json({ verificado_em: agora.toISOString(), banco: { versao: '18.6', tamanho_bytes: 52428800, fuso: 'UTC' },
+        migracoes: { total: 32, ultimas: [{ id: '202611300001', descricao: 'Central da CK' }] }, arquivos: { ativos: 3, bytes_ativos: 2097152, removidos_em_retencao: 1 },
+        contagens: { empresas: 4, empresas_de_teste: 2, vitrines_publicadas: 1 }, filas: { publicacao: 1, contestacoes: 0, moderacoes: 2 } });
+      case '/api/rpc/ck_auditoria': return json({ mais: false, itens: [{ id: 'x1', tipo: 'ck.limite_alterado', ator: 'Admin CK', empresa: null, dados: { motivo: 'Teste de aumento temporário' }, criado_em: agora.toISOString() }] });
       case '/api/rpc/metas_da_empresa': return json({ mes: '2026-11-01', pode_definir: true, tipos_visiveis: ['receita_vendas', 'vendas_qtd', 'os_concluidas'],
         metas: estado.metas ?? [] });
       case '/api/rpc/definir_meta': {
@@ -290,6 +294,21 @@ test('introdução do Cliente: aparece na primeira visita, fecha e continua disp
   await page.locator('#abrir-introducao').click();
   await expect(page.getByRole('heading', { name: 'Como funciona' })).toBeVisible();
   expect(await page.evaluate(() => Object.keys(localStorage))).toEqual(['autonick.cliente.introducaoVista']);
+});
+
+test('CK E09: abas do painel com saúde da plataforma e auditoria administrativa [simulação]', async ({ page, context }) => {
+  await simular(context);
+  await page.goto('/ck-admin/');
+  await expect(page.getByRole('tab', { name: /Filas/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Saúde' }).click();
+  await expect(page.locator('#saude')).toContainText('PostgreSQL 18.6');
+  await expect(page.locator('#saude')).toContainText('50,0 MB');
+  await expect(page.locator('#saude')).toContainText('1 publicação · 0 contestação · 2 moderação');
+  await page.getByRole('tab', { name: 'Auditoria' }).click();
+  await expect(page.locator('#lista-auditoria')).toContainText('Admin CK alterou um limite da plataforma');
+  await expect(page.locator('#lista-auditoria')).toContainText('motivo: Teste de aumento temporário');
+  await expect(page).toHaveURL(/#auditoria$/);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
 });
 
 test('CK (Noite Elétrica): selos legíveis e sem rolagem lateral em 360 px com fila de moderação e vitrine em rascunho [simulação]', async ({ page, context }) => {
