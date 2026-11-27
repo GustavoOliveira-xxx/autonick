@@ -31,10 +31,10 @@ public enum Dominio {
             "custos_da_variacao", "pausar_venda_produto", "definir_vitrine_produto", "alertas_estoque",
             "historico_movimentacoes", "registrar_movimentacao", "propor_movimentacao", "aprovar_proposta",
             "decidir_proposta_sem_aplicar", "propostas_da_empresa", "estornar_movimentacao", "criar_fornecedor",
-            "alterar_fornecedor", "compras_da_empresa", "criar_compra", "registrar_compra", "cancelar_compra",
+            "alterar_fornecedor", "fornecedores_da_empresa", "compras_da_empresa", "criar_compra", "registrar_compra", "cancelar_compra",
             "compras_para_conta_pagar", "gerar_titulo_compra", "definir_imagem_produto", "imagens_de_produtos"),
 
-    VENDAS_PEDIDOS(false, "clientes_da_empresa", "criar_cliente", "alterar_cliente", "definir_cliente_ativo",
+    VENDAS_PEDIDOS(false, "clientes_da_empresa", "buscar_clientes", "documento_em_uso", "criar_cliente", "alterar_cliente", "definir_cliente_ativo",
             "historico_do_cliente", "ficha_cliente", "catalogo_para_venda", "vendas_da_empresa", "venda_detalhe", "criar_venda",
             "alterar_venda", "confirmar_venda", "cancelar_venda", "descartar_venda", "registrar_venda_direta",
             "registrar_entrega", "pedidos_da_empresa", "aceitar_pedido", "recusar_pedido", "concluir_pedido",

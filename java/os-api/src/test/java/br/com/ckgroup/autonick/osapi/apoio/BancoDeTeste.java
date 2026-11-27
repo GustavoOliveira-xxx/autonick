@@ -25,7 +25,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *  2. Testcontainers com postgres:18, se houver Docker.
  * Sem nenhum dos dois, as classes que dependem do banco são puladas (não falham).
  *
- * Cria um banco novo (autonick_j01_...), aplica db/tests/emulacao-neon.sql e as 34 migrations, cria o papel da API
+ * Cria um banco novo (autonick_j01_...), aplica db/tests/emulacao-neon.sql e as 35 migrations, cria o papel da API
  * (LOGIN, NOINHERIT, membro de authenticated, sem outra permissão) e, no fim, apaga o banco e o papel.
  */
 public final class BancoDeTeste {
@@ -138,7 +138,7 @@ public final class BancoDeTeste {
                     .filter(p -> p.getFileName().toString().matches("\\d{12}_.+\\.sql"))
                     .filter(p -> !p.getFileName().toString().endsWith(".down.sql"))
                     .sorted().toList();
-            if (lista.size() != 34) throw new IllegalStateException("Esperadas 34 migrations, encontradas " + lista.size());
+            if (lista.size() != 35) throw new IllegalStateException("Esperadas 35 migrations, encontradas " + lista.size());
             return lista;
         }
     }
