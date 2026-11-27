@@ -19,7 +19,7 @@ const area = document.getElementById('conta');
 async function carregar() {
   if (!neon.configurado) {
     area.replaceChildren(aviso('info', 'O acesso com e-mail e senha ainda não está disponível nesta versão.',
-      el('p', {}, el('a', { href: entrada }, 'Ir para a entrada'))));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: entrada }, 'Ir para a entrada'))));
     return;
   }
   mostrarCarregando(area, 'Carregando sua conta');
@@ -32,7 +32,7 @@ async function carregar() {
     const perfil = (await neon.meusPerfis()).find((p) => p.tipo_conta === tipo);
     concluirCarregamento(area);
     if (!perfil) {
-      area.append(aviso('alerta', 'Esta conta ainda não tem o perfil desta área.', el('p', {}, el('a', { href: entrada }, 'Voltar para a entrada'))));
+      area.append(aviso('alerta', 'Esta conta ainda não tem o perfil desta área.', el('p', {}, el('a', { class: 'botao botao--secundario', href: entrada }, 'Voltar para a entrada'))));
       return;
     }
     const sair = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Sair');

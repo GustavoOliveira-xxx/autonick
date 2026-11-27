@@ -17,7 +17,8 @@ const tipo = document.body.dataset.tipoConta;
 const ROTULO = { cliente: 'Cliente', business: 'Business' };
 const destinoConta = destinoSeguro(new URLSearchParams(location.search).get('volta'), tipo)
   // M11 (D11-04): o Cliente sem destino de retorno vai para a busca, com "Precisa da sua ação".
-  ?? (tipo === 'business' ? '/business/conta.html' : '/cliente/');
+  // Pacote 27/11 (item 7): Business vai direto ao trabalho; Minhas empresas abre a empresa ativa ou a única, sem escolher duas vezes.
+  ?? (tipo === 'business' ? '/business/minhas-empresas.html?entrada=1' : '/cliente/');
 const avisos = document.getElementById('avisos');
 
 // Demonstração (API Java, dados fictícios): entrada rápida como uma pessoa fictícia, acima dos formulários.
@@ -85,7 +86,7 @@ async function seguirComPerfil(nomeSugerido) {
 if (!neon.configurado) {
   mostrarAviso('info', 'O acesso não está configurado nesta cópia do app.',
     el('p', {}, 'Nada do que for digitado aqui será enviado.'),
-    el('p', {}, el('a', { href: '/' }, 'Voltar para a página inicial')));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: '/' }, 'Voltar para a página inicial')));
 }
 
 for (const campo of document.querySelectorAll('input[data-mostrar-senha]')) {

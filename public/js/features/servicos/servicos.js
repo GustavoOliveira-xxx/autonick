@@ -59,7 +59,7 @@ function formServico(s = null) {
     const botao = form.querySelector('[type="submit"]');
     return ocupado(botao, () => executar(id, form, (k) => (s ? alterarServico(s.id, dados, s.versao, k) : criarServico(ctx.id, dados, k)),
       (r) => { editando = null; anunciar('sucesso', s ? 'Serviço atualizado.' : `Serviço "${r.nome}" cadastrado.`,
-        el('p', {}, el('a', { href: `/business/servico.html?id=${encodeURIComponent(ctx.id)}&servico=${encodeURIComponent(r.id)}` }, 'Montar o formulário e as regras'))); }));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/servico.html?id=${encodeURIComponent(ctx.id)}&servico=${encodeURIComponent(r.id)}` }, 'Montar o formulário e as regras'))); }));
   });
   return form;
 }

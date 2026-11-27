@@ -110,11 +110,11 @@ function balaoOrcamento(s, versoes) {
 
 function detalhe(s) {
   const hoje = dataDeHoje();
-  const partes = [el('p', {}, el('a', { href: '/cliente/solicitacoes.html' }, 'Voltar às solicitações')),
+  const partes = [el('p', {}, el('a', { class: 'botao botao--secundario', href: '/cliente/solicitacoes.html' }, 'Voltar às solicitações')),
     el('h2', { id: 'resumo' }, `Nº ${s.numero} · ${s.servico} · ${s.empresa} `, chipSolicitacao(s.estado_exibicao, true))];
   partes.push(avisoSuspensao(s.suspensao, ['nova', 'em_analise', 'orcamento_enviado', 'revisao_pedida'].includes(s.estado) ? 'pendente' : 'aceito'));
   if (s.estado === 'aceita') partes.push(aviso('sucesso', 'Orçamento aceito.', el('p', {}, 'A empresa vai dar andamento ao serviço. Nada é cobrado por aqui.'),
-    s.os ? el('p', {}, el('a', { href: `/cliente/ordens.html?os=${encodeURIComponent(s.os.id)}`, id: 'link-os' }, `Acompanhar a ordem de serviço nº ${s.os.numero}`)) : null));
+    s.os ? el('p', {}, el('a', { class: 'botao botao--secundario', href: `/cliente/ordens.html?os=${encodeURIComponent(s.os.id)}`, id: 'link-os' }, `Acompanhar a ordem de serviço nº ${s.os.numero}`)) : null));
   if (s.politica_cancelamento) partes.push(el('p', { class: 'campo__ajuda', id: 'politica-cancelamento' }, `Política de cancelamento da empresa: ${s.politica_cancelamento.texto}`));
   if (s.motivo_encerramento) partes.push(el('p', {}, `Motivo do encerramento: ${s.motivo_encerramento}`));
   if (s.estado_exibicao === 'vencido') partes.push(aviso('alerta', 'O prazo deste orçamento terminou. Peça uma atualização à empresa.'));
@@ -158,7 +158,7 @@ async function carregar() {
     const lista = await minhasSolicitacoes();
     concluirCarregamento(area);
     // D11-03: novas solicitações começam pela vitrine.
-    area.replaceChildren(el('p', {}, el('a', { href: '/cliente/', class: 'botao' }, 'Buscar um serviço para pedir orçamento')),
+    area.replaceChildren(el('p', {}, el('a', { class: 'botao botao--secundario', href: '/cliente/', class: 'botao' }, 'Buscar um serviço para pedir orçamento')),
       lista.length ? el('ul', { class: 'pilha', id: 'minhas-solicitacoes' }, ...lista.map((s) => {
         const abrir = el('a', { href: `/cliente/solicitacoes.html?s=${encodeURIComponent(s.id)}` }, `Nº ${s.numero} · ${s.servico}`);
         abrir.addEventListener('click', (e) => { e.preventDefault(); aberta = s.id; history.pushState({}, '', abrir.href); carregar(); });

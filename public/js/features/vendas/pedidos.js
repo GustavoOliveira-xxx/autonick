@@ -76,7 +76,7 @@ function acoes(p) {
         } });
       if (!r) return;
       await executar(`concluir-${p.id}`, null, (k) => concluirPedido(p.id, r.pagamento, p.versao, k), (res) => anunciar('sucesso', `Pedido concluído: venda nº ${res.venda.numero}.`,
-        el('p', {}, el('a', { href: `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(res.venda.id)}` }, 'Ver a venda'))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(res.venda.id)}` }, 'Ver a venda'))));
     }));
     lista.push(concluir);
   }
@@ -146,7 +146,7 @@ async function carregar() {
     marcarNovas(area, ctx.id);
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

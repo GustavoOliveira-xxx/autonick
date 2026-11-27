@@ -37,21 +37,22 @@ function cartaoEmpresa(e, { logo, favorita, ativa, aoFavoritar }) {
   const nomeCategoria = listaCategorias.find((c) => c.id === e.categoria_id)?.nome;
   const estrela = el('button', { type: 'button', class: 'seletor__favorito', 'aria-pressed': String(favorita), 'aria-label': `${favorita ? 'Remover' : 'Marcar'} ${e.nome_publico} como favorita` }, '★');
   estrela.addEventListener('click', () => ocupado(estrela, () => aoFavoritar(id)));
-  const usar = ativa
-    ? el('a', { class: 'botao', href: `/business/dashboard.html?id=${encodeURIComponent(id)}` }, 'Abrir painel')
-    : el('button', { type: 'button', class: 'botao botao--secundario', 'data-usar': id }, 'Usar esta empresa');
-  if (!ativa) usar.addEventListener('click', () => ocupado(usar, async () => {
+  const acessar = el('button', { type: 'button', class: 'botao', 'data-usar': id }, ativa ? 'Continuar nesta empresa' : 'Acessar empresa',
+    el('span', { class: 'visualmente-oculto' }, ` ${e.nome_publico}`));
+  acessar.addEventListener('click', () => ocupado(acessar, async () => {
     try { await irParaEmpresa({ id, nome: e.nome_publico, dado_de_teste: e.dado_de_teste }); } catch (erro) { anunciar('erro', erro.message); }
   }));
+  // Gerenciar (dados, logo e vitrine) é da página da empresa; a regra de quem altera continua no banco.
+  const gerenciar = el('a', { class: 'botao botao--secundario', href: `/business/empresa.html?id=${encodeURIComponent(id)}` },
+    e.papel === 'proprietario' ? 'Gerenciar' : 'Ver detalhes', el('span', { class: 'visualmente-oculto' }, ` ${e.nome_publico}`));
   return el('li', { class: `cartao cartao-empresa${ativa ? ' cartao-empresa--ativa' : ''}`, 'data-empresa': id },
     el('div', { class: 'cartao-empresa__topo' }, logoDaEmpresa(e.nome_publico, logo?.logo_url, 'logo-empresa logo-empresa--g'),
       el('div', { class: 'cartao-empresa__nome' },
-        el('h3', { class: 'cartao__titulo' }, el('a', { href: `/business/empresa.html?id=${encodeURIComponent(id)}` }, e.nome_publico)),
+        el('h3', { class: 'cartao__titulo', title: e.nome_publico }, e.nome_publico),
         el('p', { class: 'cartao__meta' }, [nomeCategoria, `${e.cidade} (${e.uf})`].filter(Boolean).join(' · '))), estrela),
     el('p', { class: 'opcoes' }, chipPapel(e.papel, e.perfil_nome), chipErp(), chipSituacao(e.situacao_vitrine), e.dado_de_teste ? chipTeste() : null,
       logo?.pendente && logo?.logo_id ? el('span', { class: 'chip' }, logo.em_analise ? 'Logo em análise da CK' : 'Logo nova fora da vitrine') : null),
-    el('div', { class: 'cartao-empresa__acoes' }, ativa ? el('span', { class: 'cartao-empresa__ativa' }, '✓ Em uso agora') : null, usar,
-      el('a', { class: 'botao botao--texto', href: `/business/empresa.html?id=${encodeURIComponent(id)}` }, 'Empresa e vitrine')));
+    el('div', { class: 'cartao-empresa__acoes' }, ativa ? el('span', { class: 'cartao-empresa__ativa' }, '✓ Em uso agora') : null, acessar, gerenciar));
 }
 
 /** Convites para o e-mail confirmado desta conta (D4-1). Aceitar ou recusar decide só no banco. */
@@ -294,9 +295,18 @@ async function carregar() {
       anunciar('sucesso', 'Você saiu da empresa. Seu acesso a ela foi encerrado.');
     }
     if (new URLSearchParams(location.search).get('cadastrar') === '1') abrirCadastro();
+    // Logo depois de entrar: empresa ativa válida (vínculo conferido de novo) ou única empresa abre direto.
+    if (new URLSearchParams(location.search).get('entrada') === '1') {
+      history.replaceState(null, '', location.pathname);
+      const alvo = lista.find((e) => e.empresa_id === ativa) ?? (lista.length === 1 ? lista[0] : null);
+      if (alvo && !convites?.length) {
+        area.prepend(el('p', { class: 'campo__ajuda', role: 'status', id: 'abrindo-empresa' }, `Abrindo ${alvo.nome_publico}…`));
+        await irParaEmpresa({ id: alvo.empresa_id, nome: alvo.nome_publico, dado_de_teste: alvo.dado_de_teste }).catch((erro) => anunciar('erro', erro.message));
+      }
+    }
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

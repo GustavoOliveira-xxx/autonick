@@ -25,7 +25,7 @@ export function linkVitrine(empresaId) {
 /** Sem sessão ao abrir a tela: entrar e voltar para o mesmo lugar (mesma empresa e mesmo item). */
 export function pedirEntrada(area) {
   area.replaceChildren(aviso('info', 'Entre na sua conta de Cliente para continuar.',
-    el('p', {}, el('a', { href: entrarEVoltar(location.pathname + location.search), id: 'entrar-e-voltar' }, 'Entrar e voltar para esta tela'))));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: entrarEVoltar(location.pathname + location.search), id: 'entrar-e-voltar' }, 'Entrar e voltar para esta tela'))));
 }
 
 /**

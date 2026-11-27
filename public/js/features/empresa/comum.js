@@ -34,7 +34,7 @@ export const chipTeste = () => el('span', { class: 'chip chip--alerta' }, el('sp
 export function semAcesso(container) {
   container.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Você não tem mais acesso a esta empresa.',
     el('p', {}, 'Se isso for um engano, fale com quem administra a empresa.'),
-    el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas')))));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas')))));
 }
 
 /**
@@ -54,7 +54,7 @@ export async function exigirSessao(container, { perfil = 'business', entrada = '
   const sessao = await neon.sessao();
   if (!sessao) {
     container.replaceChildren(aviso('info', 'Entre na sua conta para continuar.',
-      el('p', {}, el('a', { href: comVolta(entrada) }, 'Ir para a entrada'))));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: comVolta(entrada) }, 'Ir para a entrada'))));
     return null;
   }
   if (perfil) {
@@ -62,7 +62,7 @@ export async function exigirSessao(container, { perfil = 'business', entrada = '
     if (!perfis.some((p) => p.tipo_conta === perfil)) {
       const nome = perfil === 'cliente' ? 'Cliente' : 'Business';
       container.replaceChildren(aviso('alerta', `Esta conta ainda não tem perfil ${nome}.`,
-        el('p', {}, el('a', { href: comVolta(entrada) }, `Criar o perfil ${nome} na entrada`))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: comVolta(entrada) }, `Criar o perfil ${nome} na entrada`))));
       return null;
     }
   }

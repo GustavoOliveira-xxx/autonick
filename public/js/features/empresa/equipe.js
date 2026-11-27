@@ -351,63 +351,129 @@ function matrizPermissoes(form, marcadas) {
     contador, el('div', { class: 'grade-permissoes' }, ...grupos));
 }
 
-function formularioPerfil(perfil = null) {
+/** Modelo equivalente (mesmo conjunto) ou null = "Personalizado". */
+function modeloDoPerfil(codigos) {
+  const todas = estado.catalogo.map((p) => p.codigo);
+  return MODELOS.find((m) => mesmoConjunto([...new Set(m.permissoes(todas))].filter((c) => todas.includes(c)), codigos)) ?? null;
+}
+
+/**
+ * Novo perfil / editar perfil em modal com etapas (pacote 27/11, item 8): 1) nome e descrição, 2) modelo, 3) ajuste por área
+ * (Sem acesso, Consultar, Operar, Personalizar; detalhes só ao expandir), 4) revisão: contagem real, o que muda, ações
+ * sensíveis e quantas pessoas são afetadas. O banco confere de novo (sem escalada: ninguém concede o que não tem).
+ */
+function abrirFormularioPerfil(perfil = null, origem = null) {
   const editando = Boolean(perfil);
-  const botao = el('button', { type: 'submit', class: 'botao' }, editando ? 'Salvar perfil' : 'Criar perfil');
+  const originais = codigosDoPerfil(perfil);
+  const afetados = editando ? estado.membros.filter((m) => m.estado === 'ativo' && m.perfil_id === perfil.id) : [];
   const form = el('form', { id: 'form-perfil', class: 'pilha', novalidate: true });
-  const modelos = editando ? null : el('div', { class: 'pilha' },
-    el('p', {}, 'Comece de um modelo e ajuste o que precisar, ou marque as permissões uma a uma.'),
-    el('div', { class: 'grupo-botoes' }, ...MODELOS.map((m) => {
-      const b = el('button', { type: 'button', class: 'botao botao--secundario', title: m.descricao }, m.nome);
-      b.addEventListener('click', () => {
-        const codigos = m.permissoes(estado.catalogo.map((p) => p.codigo));
-        let fora = 0;
-        for (const c of form.querySelectorAll('input[name="permissoes"]')) {
-          const quer = codigos.includes(c.value);
-          if (quer && c.disabled) fora += 1;
-          c.checked = quer && !c.disabled;
-        }
-        const nome = form.querySelector('[name="nome"]');
-        if (!nome.value.trim()) nome.value = m.nome;
-        const descricao = form.querySelector('[name="descricao"]');
-        if (!descricao.value.trim()) descricao.value = m.descricao;
-        form.dispatchEvent(new Event('change'));
-        anunciar('info', `Modelo "${m.nome}" aplicado. Revise as permissões antes de salvar.`,
-          fora ? el('p', {}, `${fora} permissões do modelo ficaram de fora porque você não as tem.`) : null);
-      });
-      return b;
-    })));
-  form.append(
+  const ETAPAS = ['Nome', 'Modelo', 'Áreas', 'Revisão'];
+  let etapa = 0;
+  const trilha = el('ol', { class: 'trilha-etapas', 'aria-label': 'Etapas do perfil' }, ...ETAPAS.map((n, i) => el('li', { 'data-etapa': i }, `${i + 1}. ${n}`)));
+  const painelNome = el('div', { class: 'pilha', 'data-painel': 0 },
     campoTexto({ nome: 'nome', rotulo: 'Nome do perfil', obrigatorio: true, max: 60, valor: perfil?.nome ?? '', id: 'perfil-nome',
       ajuda: 'Use um nome do seu negócio, por exemplo "Caixa" ou "Atendimento".' }),
-    campoTexto({ nome: 'descricao', rotulo: 'Descrição', max: 300, linhas: 2, valor: perfil?.descricao ?? '', id: 'perfil-descricao' }),
-    ...(modelos ? [modelos] : []),
-    matrizPermissoes(form, codigosDoPerfil(perfil)),
-    el('div', { class: 'grupo-botoes' }, botao,
-      editando ? el('a', { class: 'botao botao--texto', href: `/business/equipe.html?id=${encodeURIComponent(id)}#perfis` }, 'Cancelar edição') : null));
+    campoTexto({ nome: 'descricao', rotulo: 'Descrição curta (opcional)', max: 300, linhas: 2, valor: perfil?.descricao ?? '', id: 'perfil-descricao' }));
+  const aplicarModelo = (m) => {
+    const codigos = m ? m.permissoes(estado.catalogo.map((p) => p.codigo)) : [];
+    let fora = 0;
+    for (const c of form.querySelectorAll('input[name="permissoes"]')) {
+      const quer = codigos.includes(c.value);
+      if (quer && c.disabled) fora += 1;
+      c.checked = quer && !c.disabled;
+    }
+    const nome = form.querySelector('[name="nome"]');
+    if (m && !nome.value.trim()) nome.value = m.nome;
+    const descricao = form.querySelector('[name="descricao"]');
+    if (m && !descricao.value.trim()) descricao.value = m.descricao;
+    form.dispatchEvent(new Event('change'));
+    avisoModelo.textContent = m ? `Modelo "${m.nome}" aplicado.${fora ? ` ${fora} permissões ficaram de fora porque você não as tem.` : ''} Ajuste na próxima etapa.` : 'Começando do zero.';
+  };
+  const avisoModelo = el('p', { class: 'campo__ajuda', 'aria-live': 'polite' });
+  const painelModelo = el('div', { class: 'pilha', 'data-painel': 1, hidden: true },
+    el('p', {}, editando ? 'Quer recomeçar a partir de um modelo? Se não, só continue: as permissões atuais ficam como estão.' : 'Escolha um ponto de partida. Você ajusta tudo na próxima etapa.'),
+    el('ul', { class: 'grade-acoes lista-sem-marcador' }, ...[...MODELOS, null].map((m) => {
+      const b = el('button', { type: 'button', class: 'cartao-acao', 'data-modelo': m?.id ?? 'vazio' }, el('strong', {}, m?.nome ?? 'Em branco'),
+        el('span', {}, m?.descricao ?? 'Sem permissões; você marca área por área.'));
+      b.addEventListener('click', () => { for (const x of painelModelo.querySelectorAll('[data-modelo]')) x.setAttribute('aria-pressed', String(x === b)); aplicarModelo(m); });
+      b.setAttribute('aria-pressed', 'false');
+      return el('li', {}, b);
+    })), avisoModelo);
+  const painelAreas = el('div', { class: 'pilha', 'data-painel': 2, hidden: true }, matrizPermissoes(form, originais));
+  const revisao = el('div', { class: 'pilha', 'aria-live': 'polite' });
+  const painelRevisao = el('div', { class: 'pilha', 'data-painel': 3, hidden: true }, revisao);
+  form.append(painelNome, painelModelo, painelAreas, painelRevisao);
+  const marcadas = () => [...form.querySelectorAll('input[name="permissoes"]:checked')].map((c) => c.value);
+  const desenharRevisao = () => {
+    const atuais = marcadas();
+    const sensiveis = estado.catalogo.filter((c) => c.sensivel && atuais.includes(c.codigo));
+    const ganhou = atuais.filter((c) => !originais.includes(c));
+    const perdeu = originais.filter((c) => !atuais.includes(c));
+    const modelo = modeloDoPerfil(atuais);
+    revisao.replaceChildren(...[
+      el('dl', { class: 'resumo-ficha' },
+        el('div', {}, el('dt', {}, el('small', {}, 'Perfil')), el('dd', {}, el('strong', {}, form.querySelector('[name="nome"]').value.trim() || '(sem nome)'))),
+        el('div', {}, el('dt', {}, el('small', {}, 'Permissões')), el('dd', {}, el('strong', { id: 'perfil-total' }, `${atuais.length} de ${estado.catalogo.length}`))),
+        el('div', {}, el('dt', {}, el('small', {}, 'Equivale a')), el('dd', {}, el('strong', {}, modelo ? `Modelo ${modelo.nome}` : 'Personalizado'))),
+        editando ? el('div', {}, el('dt', {}, el('small', {}, 'Pessoas afetadas')), el('dd', {}, el('strong', { id: 'perfil-afetados' }, String(afetados.length)))) : null),
+      el('p', {}, el('strong', {}, 'Acesso por área: '), resumoModulos(atuais) || 'nenhuma área.'),
+      sensiveis.length ? el('div', { class: 'aviso aviso--alerta aviso--compacto' }, el('strong', {}, 'Ações sensíveis incluídas: '), sensiveis.map((c) => `${c.modulo_nome}: ${c.acao_nome}`).join('; '), '.') : null,
+      editando && (ganhou.length || perdeu.length) ? el('div', { class: 'pilha', id: 'perfil-mudancas' }, el('h4', {}, 'O que muda'),
+        ganhou.length ? el('p', {}, el('strong', {}, `Passa a poder (${ganhou.length}): `), ganhou.map(nomeDaPermissao).join('; ')) : null,
+        perdeu.length ? el('p', {}, el('strong', {}, `Deixa de poder (${perdeu.length}): `), perdeu.map(nomeDaPermissao).join('; ')) : null,
+        afetados.length ? el('p', { class: 'aviso aviso--alerta aviso--compacto' }, `${afetados.length} ${afetados.length === 1 ? 'pessoa usa' : 'pessoas usam'} este perfil (${afetados.map((m) => m.nome).join(', ')}). A mudança vale para todas na próxima ação.`) : null)
+        : editando ? el('p', { class: 'campo__ajuda' }, 'As permissões não mudaram.') : null].filter(Boolean));
+  };
+  const voltar = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Voltar');
+  const continuar = el('button', { type: 'button', class: 'botao', id: 'perfil-continuar' }, 'Continuar');
+  const salvar = el('button', { type: 'submit', class: 'botao', form: 'form-perfil', id: 'perfil-salvar' }, editando ? 'Salvar perfil' : 'Criar perfil');
+  const mostrar = (n) => {
+    etapa = n;
+    for (const pn of form.querySelectorAll('[data-painel]')) pn.hidden = Number(pn.dataset.painel) !== n;
+    for (const li of trilha.children) { if (Number(li.dataset.etapa) === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); }
+    voltar.hidden = n === 0;
+    continuar.hidden = n === ETAPAS.length - 1;
+    salvar.hidden = n !== ETAPAS.length - 1;
+    if (n === 3) desenharRevisao();
+    form.querySelector(`[data-painel="${n}"]`)?.querySelector('input:not([type="hidden"]):not(:disabled), button, textarea')?.focus();
+  };
+  const validarEtapa = () => {
+    limparErros(form);
+    if (etapa === 0) {
+      const nome = form.querySelector('[name="nome"]').value.trim();
+      if (nome.length < 2) { erroNoCampo(form, 'nome', 'Dê um nome ao perfil (2 a 60 caracteres).'); return false; }
+    }
+    if (etapa === 2 && !marcadas().length) {
+      document.getElementById('perfil-permissoes-erro').textContent = 'Escolha pelo menos uma área ou permissão.';
+      form.querySelector('input[name="permissoes"]:not(:disabled)')?.focus();
+      return false;
+    }
+    return true;
+  };
+  continuar.addEventListener('click', () => { if (validarEtapa()) mostrar(etapa + 1); });
+  voltar.addEventListener('click', () => mostrar(etapa - 1));
+  let sujo = false;
+  form.addEventListener('input', () => { sujo = true; });
+  form.addEventListener('change', () => { sujo = true; });
+  const modal = abrirModal({ titulo: editando ? `Editar perfil "${perfil.nome}"` : 'Novo perfil de acesso', tamanho: 'grande',
+    corpo: el('div', { class: 'pilha' }, trilha, form), rodape: [voltar, continuar, salvar], protegerAlteracoes: () => sujo, aoFechar: () => origem?.focus() });
+  form.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && etapa < 3) { e.preventDefault(); continuar.click(); } });
   form.addEventListener('submit', (evento) => {
     evento.preventDefault();
-    limparErros(form);
     const dados = valores(form);
-    const permissoes = [...form.querySelectorAll('input[name="permissoes"]:checked')].map((c) => c.value);
-    if (!dados.nome || dados.nome.length < 2) {
-      erroNoCampo(form, 'nome', 'Dê um nome ao perfil (2 a 60 caracteres).');
-      return;
-    }
-    if (!permissoes.length) {
-      document.getElementById('perfil-permissoes-erro').textContent = 'Escolha pelo menos uma permissão.';
-      form.querySelector('input[name="permissoes"]:not(:disabled)')?.focus();
-      return;
-    }
-    ocupado(botao, () => (editando
+    const permissoes = marcadas();
+    if (!dados.nome || dados.nome.length < 2) { mostrar(0); erroNoCampo(form, 'nome', 'Dê um nome ao perfil (2 a 60 caracteres).'); return; }
+    if (!permissoes.length) { mostrar(2); return; }
+    ocupado(salvar, () => (editando
       ? executar(`perfil-${perfil.id}`, form, (k) => alterarPerfil(perfil.id, dados.nome, dados.descricao, permissoes, perfil.versao, k), () => {
-        history.replaceState(null, '', `${location.pathname}?id=${encodeURIComponent(id)}`);
-        anunciar('sucesso', `Perfil "${dados.nome}" salvo.`, el('p', {}, 'Quem usa este perfil passa a ter as novas permissões na próxima ação.'));
+        sujo = false; modal.fechar();
+        anunciar('sucesso', `Perfil "${dados.nome}" salvo.`, el('p', {}, afetados.length ? `Vale para ${afetados.length} ${afetados.length === 1 ? 'pessoa' : 'pessoas'} na próxima ação.` : 'Ninguém usa este perfil ainda.'));
       })
       : executar('perfil-novo', form, (k) => criarPerfil(id, dados.nome, dados.descricao, permissoes, k),
-        () => anunciar('sucesso', `Perfil "${dados.nome}" criado.`, el('p', {}, 'Agora você pode usá-lo nos convites.')))));
+        () => { sujo = false; modal.fechar(); anunciar('sucesso', `Perfil "${dados.nome}" criado.`, el('p', {}, 'Agora você pode usá-lo ao adicionar colaboradores.')); })));
   });
-  return el('div', { class: 'cartao pilha' }, el('h3', { id: 'titulo-form-perfil' }, editando ? `Editar perfil "${perfil.nome}"` : 'Novo perfil de acesso'), form);
+  mostrar(0);
+  return modal;
 }
 
 /** Limite de desconto do perfil (D6-04): visível a quem vê a equipe; só o proprietário altera. */
@@ -447,7 +513,9 @@ function cartaoPerfil(p) {
     } else if (!contidoNasMinhas(codigos)) {
       acoes.push(el('p', { class: 'campo__ajuda' }, 'Este perfil tem permissões que você não tem; você não pode alterá-lo.'));
     } else {
-      acoes.push(el('a', { class: 'botao botao--secundario', href: `/business/equipe.html?id=${encodeURIComponent(id)}&perfil=${encodeURIComponent(p.id)}#titulo-form-perfil` }, 'Editar'));
+      const editar = el('button', { type: 'button', class: 'botao botao--secundario', 'data-editar-perfil': p.id }, 'Editar', el('span', { class: 'visualmente-oculto' }, ` o perfil ${p.nome}`));
+      editar.addEventListener('click', () => abrirFormularioPerfil(p, editar));
+      acoes.push(editar);
       const desativar = el('button', { type: 'button', class: 'botao botao--texto' }, 'Desativar');
       desativar.addEventListener('click', () => ocupado(desativar, async () => {
         const ok = await abrirDialogo({ titulo: `Desativar o perfil "${p.nome}"?`,
@@ -460,7 +528,7 @@ function cartaoPerfil(p) {
     }
   }
   return el('li', { class: 'cartao pilha', 'data-perfil': p.id },
-    el('h3', { class: 'cartao__titulo' }, p.nome),
+    el('h3', { class: 'cartao__titulo' }, p.nome, ' ', el('span', { class: 'chip chip--pequeno' }, modeloDoPerfil(codigos) ? `Modelo ${modeloDoPerfil(codigos).nome}` : 'Personalizado')),
     p.descricao ? el('p', {}, p.descricao) : null,
     codigos.includes('vendas.aplicar_desconto') ? blocoDesconto(p) : null,
     el('p', { class: 'cartao__meta' }, `${codigos.length} permissões · usado por ${usam.length} ${usam.length === 1 ? 'pessoa' : 'pessoas'}`),
@@ -473,14 +541,22 @@ function cartaoPerfil(p) {
 }
 
 function secaoPerfis() {
-  const editarId = parametro('perfil');
-  const emEdicao = editarId ? estado.perfis.find((p) => p.id === editarId) : null;
   const podeEditar = estado.pode('equipe.alterar');
+  const novo = podeEditar ? el('button', { type: 'button', class: 'botao', id: 'novo-perfil' }, 'Novo perfil') : null;
+  novo?.addEventListener('click', () => abrirFormularioPerfil(null, novo));
   return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-perfis' },
-    el('h2', { id: 'titulo-perfis' }, 'Perfis de acesso'),
+    el('div', { class: 'barra-consulta' }, el('h2', { id: 'titulo-perfis', class: 'barra-consulta__titulo' }, 'Perfis de acesso'), novo),
     el('p', {}, 'Um perfil é um conjunto de permissões com um nome do seu negócio. Mudar um perfil muda o acesso de todos que o usam.'),
-    estado.perfis.length ? el('ul', { class: 'lista-simples' }, ...estado.perfis.map(cartaoPerfil)) : el('p', {}, 'Nenhum perfil criado ainda.'),
-    podeEditar ? formularioPerfil(emEdicao && emEdicao.id !== meuPerfilId() && contidoNasMinhas(codigosDoPerfil(emEdicao)) ? emEdicao : null) : null);
+    estado.perfis.length ? el('ul', { class: 'lista-simples grade-perfis', id: 'lista-perfis' }, ...estado.perfis.map(cartaoPerfil)) : el('p', { id: 'lista-perfis' }, 'Nenhum perfil criado ainda.'));
+}
+
+/** Endereço antigo "?perfil=ID#titulo-form-perfil" abre a edição em modal. */
+function abrirEdicaoPedida() {
+  const editarId = parametro('perfil');
+  if (!editarId || !estado.pode('equipe.alterar')) return;
+  const p = estado.perfis.find((x) => x.id === editarId);
+  history.replaceState(null, '', `${location.pathname}?id=${encodeURIComponent(id)}#perfis`);
+  if (p && p.id !== meuPerfilId() && contidoNasMinhas(codigosDoPerfil(p))) abrirFormularioPerfil(p);
 }
 
 // --- Histórico ----------------------------------------------------------------
@@ -522,7 +598,7 @@ function secaoHistorico() {
 
 async function carregar() {
   if (!id) {
-    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
+    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
     return;
   }
   voltar.href = `/business/empresa.html?id=${encodeURIComponent(id)}`;
@@ -545,7 +621,7 @@ async function carregar() {
     if (!pode('equipe.visualizar')) {
       modalConvite?.fechar();
       area.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Seu perfil de acesso não inclui a equipe desta empresa.',
-        el('p', {}, el('a', { href: `/business/empresa.html?id=${encodeURIComponent(id)}` }, 'Voltar para a empresa')))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/empresa.html?id=${encodeURIComponent(id)}` }, 'Voltar para a empresa')))));
       return;
     }
     const [empresa, cat, perfis, membros, convites, historico] = await Promise.all([
@@ -568,11 +644,12 @@ async function carregar() {
       empresa?.dado_de_teste ? el('p', { class: 'opcoes' }, chipTeste()) : null,
       grupoAbas.elemento,
     ].filter(Boolean));
+    if (parametro('perfil')) { trocarAba('perfis'); abrirEdicaoPedida(); }
     const alvo = location.hash.slice(1);
-    if (alvo && !['pessoas', 'perfis', 'historico'].includes(alvo)) document.getElementById(alvo)?.scrollIntoView({ block: 'start' });
+    if (alvo && !['pessoas', 'perfis', 'historico', 'titulo-form-perfil'].includes(alvo)) document.getElementById(alvo)?.scrollIntoView({ block: 'start' });
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

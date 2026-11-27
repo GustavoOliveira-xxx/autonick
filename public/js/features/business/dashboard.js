@@ -85,7 +85,7 @@ function blocoNumeros(p, id) {
       el('p', { class: 'valor-grande num', 'data-centavos': String(p.vendas.total_centavos) }, dinheiro(p.vendas.total_centavos)),
       el('p', { class: 'legenda-dado' }, p.vendas.quantidade ? plural(p.vendas.quantidade, 'venda confirmada', 'vendas confirmadas') : 'Nenhuma venda confirmada neste mês',
         variacao !== null ? el('span', { class: `variacao${variacao < 0 ? ' variacao--queda' : ''}` }, ` ${variacao < 0 ? '▼' : '▲'} ${Math.abs(variacao)}% sobre o mês anterior`) : null),
-      p.vendas.quantidade ? barrasSemanas(p.vendas.semanas) : el('p', {}, el('a', { href: L('venda-nova', id) }, 'Registrar a primeira venda')))));
+      p.vendas.quantidade ? barrasSemanas(p.vendas.semanas) : el('p', {}, el('a', { class: 'botao botao--secundario', href: L('venda-nova', id) }, 'Registrar a primeira venda')))));
   }
   if (p.financeiro) {
     const r = p.financeiro.receber_7_dias;
@@ -105,7 +105,7 @@ function blocoNumeros(p, id) {
         el('span', { class: 'linha' }, el('span', {}, x.produto), el('span', { class: 'num' }, `${x.disponivel} de ${x.minimo}`)),
         el('span', { class: 'nivel', 'aria-hidden': 'true' }, el('i', { 'data-nivel': String(Math.min(100, Math.round((x.disponivel / Math.max(x.minimo, 1)) * 100))) })))))
       : el('p', { class: 'legenda-dado' }, 'Nenhum produto abaixo do mínimo.'),
-    p.estoque.abaixo_do_minimo > p.estoque.itens.length ? el('p', {}, el('a', { href: L('estoque-empresa', id) }, `Ver os ${p.estoque.abaixo_do_minimo}`)) : null));
+    p.estoque.abaixo_do_minimo > p.estoque.itens.length ? el('p', {}, el('a', { class: 'botao botao--secundario', href: L('estoque-empresa', id) }, `Ver os ${p.estoque.abaixo_do_minimo}`)) : null));
   }
   if (!itens.length) return null;
   return el('section', { class: 'bloco', 'aria-labelledby': 'titulo-numeros' },
@@ -249,7 +249,7 @@ async function carregar() {
     const ativa = obterEmpresaAtiva();
     if (ativa?.id) { location.replace(`/business/dashboard.html?id=${encodeURIComponent(ativa.id)}`); return; }
     area.replaceChildren(aviso('info', 'Escolha uma empresa para ver o painel.',
-      el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'), ' · ', el('a', { href: '/business/minhas-empresas.html?cadastrar=1' }, 'Cadastrar uma empresa'))));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas'), ' ', el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html?cadastrar=1' }, 'Cadastrar uma empresa'))));
     return;
   }
   mostrarCarregando(area, 'Carregando o painel');
@@ -272,7 +272,7 @@ async function carregar() {
     const metas = await blocoMetas(ctx).catch(() => null);
     const partes = [blocoAcao(p, ctx.id), semMovimento(p) ? primeirosPassos(ctx) : null, metas, blocoNumeros(p, ctx.id), blocoMensagens(p), blocoAgenda(p, ctx.id)].filter(Boolean);
     area.append(...(partes.length ? partes : [aviso('info', 'Seu perfil de acesso não inclui nenhum indicador do painel.',
-      el('p', {}, el('a', { href: L('empresa', ctx.id) }, 'Ir para a página da empresa')))]));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: L('empresa', ctx.id) }, 'Ir para a página da empresa')))]));
     // Alturas das barras e níveis: aplicadas pelo CSSOM (a política de segurança bloqueia o atributo style).
     for (const m of area.querySelectorAll('[data-altura]')) m.style.height = `${m.dataset.altura}%`;
     for (const m of area.querySelectorAll('[data-nivel]')) m.style.width = `${m.dataset.nivel}%`;

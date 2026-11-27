@@ -110,7 +110,7 @@ const tituloCompromisso = (x) => (x.os_id ? `OS nº ${x.os_numero} · ${x.servic
 function cartaoCompromisso(x) {
   return el('li', { class: 'cartao pilha', 'data-compromisso': x.os_id ? 'os' : 'solicitacao' },
     el('p', {}, el('strong', {}, textoHorario(x.inicio, x.fim)), x.menos_de_24h ? ' · menos de 24 horas' : ''),
-    el('p', {}, el('a', { href: linkCompromisso(x) }, tituloCompromisso(x)),
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: linkCompromisso(x) }, tituloCompromisso(x)),
       x.os_estado ? ` · ${ESTADO_OS[x.os_estado] ?? x.os_estado}` : '', x.responsavel ? ` · ${x.responsavel}` : ''),
     x.reagendamento_pendente ? el('p', { class: 'campo__ajuda' }, 'Há outro horário proposto aguardando resposta; este continua valendo até lá.') : null,
     x.avisos?.length ? el('p', { class: 'campo__ajuda' }, `Confirmado com aviso: ${x.avisos.map((v) => v.mensagem).join(' ')}`) : null);

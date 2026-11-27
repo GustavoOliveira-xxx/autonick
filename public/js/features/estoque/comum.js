@@ -15,7 +15,7 @@ export { novaChave };
 export async function carregarContexto(area) {
   const id = parametro('id');
   if (!id) {
-    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
+    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
     return null;
   }
   if (!(await exigirSessao(area))) return null;

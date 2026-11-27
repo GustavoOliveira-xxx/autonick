@@ -66,7 +66,7 @@ function secaoAbertos(p) {
           ['Vence nos próximos 7 dias', dinheiro(g.vence_em_7_dias_centavos)], ['Previsto (recorrências dos próximos 3 meses)', dinheiro(p.previsto_a_pagar_centavos)]]))),
     p.devolucoes_a_fazer_centavos > 0 ? el('div', { role: 'status' }, aviso('alerta', `Valores a devolver a clientes de vendas canceladas: ${dinheiro(p.devolucoes_a_fazer_centavos)}.`)) : null,
     fonte(p.fontes.a_receber_a_pagar), fonte(p.fontes.previsto),
-    el('p', {}, el('a', { href: `/business/financeiro-contas.html?id=${encodeURIComponent(ctx.id)}` }, 'Ver contas a pagar e a receber')));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/financeiro-contas.html?id=${encodeURIComponent(ctx.id)}` }, 'Ver contas a pagar e a receber')));
 }
 
 function secaoFluxo(p) {
@@ -131,7 +131,7 @@ function secaoDivergencias(d) {
       ...d.caixas.map((c) => [c.conta, `${c.meses_com_diferenca_ultimos_6} mês(es) com diferença entre os últimos 6${c.recorrente ? ' (recorrente)' : ''}`]),
     ], { id: 'dados-divergencias' }),
     el('p', { class: 'campo__ajuda' }, 'Cada diferença vira um ajuste no livro-caixa, com valor, motivo, quem conferiu e quando. Não é receita nem despesa e nunca é apagada.'),
-    el('p', {}, el('a', { href: `/business/financeiro-relatorios.html?id=${encodeURIComponent(ctx.id)}&tipo=conferencias` }, 'Ver todas as conferências')));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/financeiro-relatorios.html?id=${encodeURIComponent(ctx.id)}&tipo=conferencias` }, 'Ver todas as conferências')));
 }
 
 // E06: o que mais se faz no dia a dia, a um clique (cada ação abre no lugar certo, já com o formulário aberto).

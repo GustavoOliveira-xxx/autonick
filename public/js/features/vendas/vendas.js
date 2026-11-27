@@ -109,7 +109,7 @@ async function carregar() {
     ].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

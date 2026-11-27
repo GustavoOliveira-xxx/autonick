@@ -52,7 +52,7 @@ function aplicarLeitura(ligada) {
   for (const b of document.querySelectorAll('button[data-leitura]')) b.setAttribute('aria-pressed', String(ligada));
 }
 function botaoLeitura() {
-  const b = el('button', { type: 'button', class: 'leitura', 'data-leitura': '', 'aria-pressed': String(lerPreferencia()) },
+  const b = el('button', { type: 'button', class: 'leitura', 'data-leitura': '', title: 'Leitura ampliada', 'aria-pressed': String(lerPreferencia()) },
     el('b', { 'aria-hidden': 'true' }, 'Aa'), el('span', { class: 'leitura__rotulo', 'aria-hidden': 'true' }, 'Leitura ampliada'),
     el('span', { class: 'visualmente-oculto' }, 'Leitura ampliada (fonte para baixa visão)'));
   b.addEventListener('click', () => {
@@ -73,7 +73,7 @@ function aplicarTema(claro) {
   for (const b of document.querySelectorAll('button[data-tema]')) b.setAttribute('aria-pressed', String(claro));
 }
 function botaoTema() {
-  const b = el('button', { type: 'button', class: 'leitura tema', 'data-tema': '', 'aria-pressed': String(lerTemaClaro()) },
+  const b = el('button', { type: 'button', class: 'leitura tema', 'data-tema': '', title: 'Tema claro', 'aria-pressed': String(lerTemaClaro()) },
     el('b', { 'aria-hidden': 'true' }, '◐'), el('span', { class: 'leitura__rotulo', 'aria-hidden': 'true' }, 'Tema claro'),
     el('span', { class: 'visualmente-oculto' }, 'Tema claro'));
   b.addEventListener('click', () => {
@@ -127,8 +127,7 @@ function menuBusiness() {
       el('div', { class: 'menu-grupo' }, el('h2', { class: 'menu-grupo__titulo' }, titulo),
         el('ul', { role: 'list' }, ...itens.map((i) => item(i.href, i.rotulo, i.icone, i.chave === chave, i.chave === 'painel' ? el('span', { class: 'contador', id: 'contador-mensagens', hidden: true }) : null)))))
     : [el('div', { class: 'menu-grupo' }, el('ul', { role: 'list' },
-      item('/business/minhas-empresas.html', 'Minhas empresas', 'i-vitrine', atual === '/business/minhas-empresas.html'),
-      item('/business/minhas-empresas.html?cadastrar=1', 'Cadastrar empresa', 'i-escudo', false)))];
+      item('/business/minhas-empresas.html', 'Minhas empresas', 'i-vitrine', atual === '/business/minhas-empresas.html')))];
   const botaoSair = el('button', { type: 'button', class: 'menu-sair' }, icone('i-sair'), el('span', {}, 'Sair'));
   botaoSair.addEventListener('click', () => sair(botaoSair));
   const fixados = ativa ? el('div', { class: 'menu-grupo', id: 'menu-fixados', hidden: true }) : null;
@@ -140,7 +139,8 @@ function menuBusiness() {
       item('/business/conta.html', 'Minha conta', 'i-pessoa', atual === '/business/conta.html'),
       sessaoConfirmada ? null : item('/business/entrar.html', 'Entrar', 'i-seta', atual === '/business/entrar.html'),
       item('/ajuda.html', 'Ajuda', 'i-balao', false),
-      el('li', {}, botaoSair))));
+      // Estados de autenticação coerentes (pacote 27/11, item 7): "Sair" só com sessão confirmada; "Entrar" só sem ela.
+      sessaoConfirmada ? el('li', {}, botaoSair) : null)));
 }
 
 /** Grupo "Fixados" no topo do menu: áreas e ações marcadas com a estrela na paleta (favoritos no servidor). */
@@ -173,7 +173,7 @@ function blocoEmpresaAtiva() {
   el('span', { class: 'empresa-ativa__logo', 'aria-hidden': 'true' }, iniciaisDe(ativa?.nome)),
   el('span', { class: 'empresa-ativa__texto' },
     el('span', { class: 'empresa-ativa__rotulo' }, 'Empresa ativa'),
-    el('strong', {}, ativa?.nome ?? 'Nenhuma selecionada'),
+    el('strong', { title: ativa?.nome ?? null }, ativa?.nome ?? 'Nenhuma selecionada'),
     el('span', { class: 'empresa-ativa__acao' }, ativa ? 'Trocar de empresa' : 'Escolher empresa')),
   icone('i-seta', 'icone empresa-ativa__icone'));
   if (ativa) {

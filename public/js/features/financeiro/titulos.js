@@ -154,7 +154,7 @@ function secaoDetalhe(t) {
     dados([['De ou para', t.contraparte ?? '—'], ['Categoria', t.categoria ?? '—'], ['Mês de referência', formatarData(t.competencia)],
       ['Total', dinheiro(t.total_centavos)], [t.tipo === 'pagar' ? 'Pago' : 'Recebido', dinheiro(t.baixado_centavos)], ['Falta', dinheiro(t.saldo_centavos)],
       t.motivo_cancelamento ? ['Motivo do cancelamento', t.motivo_cancelamento] : null]),
-    t.origem_tipo === 'venda' ? el('p', {}, el('a', { href: `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(t.origem_id)}` }, 'Abrir a venda')) : null,
+    t.origem_tipo === 'venda' ? el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/venda.html?id=${encodeURIComponent(ctx.id)}&venda=${encodeURIComponent(t.origem_id)}` }, 'Abrir a venda')) : null,
     el('h3', {}, 'Parcelas'), el('ul', { class: 'lista-simples', id: 'lista-parcelas' }, ...parcelas),
     el('h3', {}, 'Registros'), baixas.length ? el('ul', { class: 'lista-simples', id: 'lista-baixas' }, ...baixas) : el('p', { id: 'lista-baixas' }, 'Nenhum valor registrado ainda.'),
     el('div', { class: 'grupo-botoes' }, cancelamento, fechar));

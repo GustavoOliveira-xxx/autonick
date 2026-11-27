@@ -262,10 +262,10 @@ async function carregar() {
       montar: async () => comprovanteVenda(v, { empresa: ctx.empresa?.nome_publico ?? 'Empresa', usuario: await nomeDeQuemGera(), agora: new Date() }),
       registrar: (chave) => registrarExportacaoPdf(ctx.id, 'venda', v.id, null, null, chave) })) : null;
     area.append(...[confirmacaoRecente(), secaoResumo(), pdf, secaoAcoes(), secaoItens(), secaoFinanceiro(), secaoEventos(),
-      el('p', {}, el('a', { href: `/business/vendas.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para as vendas'))].filter(Boolean));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/vendas.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para as vendas'))].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

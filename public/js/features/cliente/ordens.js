@@ -135,9 +135,9 @@ function acoesCustos(p) {
 }
 
 function detalhe(o) {
-  const partes = [el('p', {}, el('a', { href: '/cliente/ordens.html' }, 'Voltar aos meus serviços')),
+  const partes = [el('p', {}, el('a', { class: 'botao botao--secundario', href: '/cliente/ordens.html' }, 'Voltar aos meus serviços')),
     el('h2', { id: 'resumo-os' }, `OS nº ${o.numero} · ${o.servico} · ${o.empresa} `, chipOs(o.estado)),
-    el('p', {}, el('a', { href: `/cliente/solicitacoes.html?s=${encodeURIComponent(o.solicitacao_id)}` }, `Ver a solicitação nº ${o.solicitacao_numero} e o orçamento aceito`)),
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: `/cliente/solicitacoes.html?s=${encodeURIComponent(o.solicitacao_id)}` }, `Ver a solicitação nº ${o.solicitacao_numero} e o orçamento aceito`)),
     o.previsao_conclusao ? el('p', {}, `Previsão de conclusão informada pela empresa: ${o.previsao_conclusao.split('-').reverse().join('/')}`) : null,
     // D11-06 e D11-07: a OS já aceita continua; o aviso não traz a justificativa interna da CK.
     avisoSuspensao(o.suspensao, 'aceito')];

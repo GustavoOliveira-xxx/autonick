@@ -419,7 +419,7 @@ async function carregar() {
     if (!(await souCkAdmin())) {
       concluirCarregamento(painel);
       painel.append(el('div', { role: 'alert' }, aviso('alerta', 'Esta área é exclusiva da equipe da CK. Sua conta não tem esse papel.',
-        el('p', {}, el('a', { href: '/' }, 'Voltar para o início')))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: '/' }, 'Voltar para o início')))));
       return;
     }
     const [empresas, fila, moderacoes, conts, cats, limites, historicoLimites, filaM12, saude, auditoria] = await Promise.all([ckEmpresas(), ckFila(), ckModeracoes(),
@@ -450,7 +450,7 @@ async function carregar() {
     painel.append(grupo.elemento);
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      painel.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      painel.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(painel, erro, carregar);

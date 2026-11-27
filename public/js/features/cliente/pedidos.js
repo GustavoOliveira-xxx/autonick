@@ -45,7 +45,7 @@ function secaoNovo() {
   if (indisponivel) {
     return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-pedido', id: 'novo-pedido' },
       el('h2', { id: 'titulo-novo-pedido' }, 'Fazer um pedido'),
-      aviso('alerta', indisponivel, el('p', {}, 'Nada foi enviado.'), el('p', {}, el('a', { href: linkVitrine(empresaId) }, 'Voltar para a vitrine da empresa'))));
+      aviso('alerta', indisponivel, el('p', {}, 'Nada foi enviado.'), el('p', {}, el('a', { class: 'botao botao--secundario', href: linkVitrine(empresaId) }, 'Voltar para a vitrine da empresa'))));
   }
   if (!empresaId) {
     return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-pedido', id: 'novo-pedido' },
@@ -108,7 +108,7 @@ function secaoNovo() {
   });
   const topo = el('div', { class: 'com-momento' }, el('div', { class: 'pilha' },
     el('h2', { id: 'titulo-novo-pedido' }, 'Fazer um pedido'),
-    el('p', {}, el('a', { href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa'))));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa'))));
   if (ordenados.length) acompanharCesta(topo, lista);
   return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-pedido', id: 'novo-pedido' }, topo, form);
 }

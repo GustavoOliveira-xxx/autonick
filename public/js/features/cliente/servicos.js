@@ -82,7 +82,7 @@ function formSolicitacao() {
         chaves.delete(`enviar-${servico.id}`);
         area.replaceChildren(aviso('sucesso', s.estado === 'orcamento_enviado' ? `Solicitação nº ${s.numero} enviada e orçamento já disponível.` : `Solicitação nº ${s.numero} enviada.`,
           el('p', {}, s.estado === 'orcamento_enviado' ? 'O orçamento foi gerado pelas regras da empresa. Confira antes de aceitar.' : 'A empresa vai analisar e responder. Nenhum horário foi reservado.'),
-          el('p', {}, el('a', { href: `/cliente/solicitacoes.html?s=${encodeURIComponent(s.id)}` }, 'Acompanhar a solicitação'))));
+          el('p', {}, el('a', { class: 'botao botao--secundario', href: `/cliente/solicitacoes.html?s=${encodeURIComponent(s.id)}` }, 'Acompanhar a solicitação'))));
       } catch (erro) {
         if (erro.codigo === 'NETWORK_UNKNOWN') return anunciar('erro', erro.message, el('p', {}, 'Tente de novo: a solicitação não será duplicada.'));
         // Sessão encerrada: nada foi gravado; a mesma chave serve para o envio depois de entrar de novo.
@@ -111,12 +111,11 @@ function itemIndisponivel(mensagem) {
   servico = null;
   area.replaceChildren(aviso('alerta', mensagem || 'Este serviço não está disponível para novas solicitações.',
     el('p', {}, 'Nada foi enviado. Suas solicitações anteriores continuam em Minhas solicitações.'),
-    el('p', {}, el('a', { href: linkVitrine(empresaId) }, 'Voltar para a vitrine da empresa'), ' · ',
-      el('a', { href: '/cliente/solicitacoes.html' }, 'Minhas solicitações'))));
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: linkVitrine(empresaId) }, 'Voltar para a vitrine da empresa'), ' ', el('a', { class: 'botao botao--secundario', href: '/cliente/solicitacoes.html' }, 'Minhas solicitações'))));
 }
 
 function desenhar() {
-  const partes = [el('p', {}, el('a', { href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa'))];
+  const partes = [el('p', {}, el('a', { class: 'botao botao--secundario', href: linkVitrine(empresaId), id: 'voltar-vitrine' }, 'Voltar para a vitrine da empresa'))];
   partes.push(el('h2', {}, `Serviços de ${catalogo.empresa.nome}`), el('p', { class: 'campo__ajuda' }, catalogo.aviso));
   partes.push(catalogo.servicos.length ? el('ul', { class: 'pilha', id: 'servicos-cliente' }, ...catalogo.servicos.map((s) => {
     const b = el('button', { type: 'button', class: 'botao botao--secundario', 'data-escolher': s.id }, 'Pedir orçamento');
@@ -136,8 +135,8 @@ async function carregar() {
     if (!empresaId) {
       concluirCarregamento(area);
       area.replaceChildren(aviso('info', 'Para pedir um orçamento, escolha a empresa e o serviço na busca.',
-        el('p', {}, el('a', { href: linkVitrine(null), class: 'botao' }, 'Ir para a busca')),
-        el('p', {}, el('a', { href: '/cliente/solicitacoes.html' }, 'Ver minhas solicitações'))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: linkVitrine(null), class: 'botao' }, 'Ir para a busca')),
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: '/cliente/solicitacoes.html' }, 'Ver minhas solicitações'))));
       return;
     }
     if (neon.configurado && !(await neon.temSessao())) { concluirCarregamento(area); pedirEntrada(area); return; }

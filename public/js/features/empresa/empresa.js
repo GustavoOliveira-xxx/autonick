@@ -4,6 +4,7 @@
  * M04: cada parte aparece conforme as permissões atuais da pessoa nesta empresa;
  * o banco confere de novo a cada ação (a tela só orienta).
  */
+import { normalizarDocumento, tipoDocumento } from '../../domain/documentos.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { definirEmpresaAtiva } from '../../core/contexto-empresa.js';
 import { el, parametro } from '../../ui/dom.js';
@@ -117,7 +118,7 @@ function formularioEdicao(e, cats, pode) {
     !editaPrivados ? null : el('fieldset', { class: 'pilha' },
       el('legend', {}, el('h3', {}, 'Dados privados (nunca aparecem ao público)')),
       t('email_contato', { tipo: 'email', obrigatorio: true, max: 254 }),
-      t('documento', { max: 18, ajuda: 'Opcional. CPF (11 dígitos) ou CNPJ (14 dígitos). Não é verificado pela CK.' }),
+      t('documento', { max: 18, ajuda: 'Opcional. CPF ou CNPJ, inclusive o novo CNPJ alfanumérico (letras e números). Pontos, barra e hífen são opcionais. Não é verificado pela CK.' }),
       t('endereco_privado', { max: 300 }),
       t('observacoes_internas', { linhas: 3, max: 1000 })),
     vePrivados && !editaPrivados ? el('div', { class: 'pilha' },
@@ -131,8 +132,13 @@ function formularioEdicao(e, cats, pode) {
     limparErros(form);
     const dados = valores(form);
     const alterados = {};
+    if ('documento' in dados) dados.documento = normalizarDocumento(dados.documento) ?? '';
     for (const campo of [...CAMPOS_RELEVANTES, ...CAMPOS_MENOR_RISCO, ...CAMPOS_PRIVADOS]) {
       if (campo in dados && (dados[campo] ?? '') !== (e[campo] ?? '')) alterados[campo] = dados[campo];
+    }
+    if (alterados.documento && !tipoDocumento(alterados.documento)) {
+      erroNoCampo(form, 'documento', 'Documento inválido: confira o CPF (11 dígitos) ou o CNPJ (14 caracteres, com os 2 dígitos verificadores).');
+      return;
     }
     if (!Object.keys(alterados).length) {
       anunciar('info', 'Nenhuma alteração para salvar.');
@@ -256,30 +262,25 @@ function blocoVitrine(card, cats) {
     el('p', { class: 'campo__ajuda' }, 'Esta é a versão aprovada pela CK. Ela aparece na busca pública enquanto a vitrine estiver publicada e a empresa ativa; empresas de teste aparecem só na área de demonstração.'));
 }
 
-/** Papel, perfil, atalho para a equipe e saída voluntária (D4-4). */
+/** Papel, perfil, atalhos úteis em cartões (não repetem o menu inteiro) e saída voluntária separada (D4-4; pacote 27/11, item 6). */
 function blocoAcesso(acesso, e, pode) {
   const partes = [el('p', { class: 'opcoes' }, chipPapel(acesso.papel, acesso.perfil_nome), e.dado_de_teste ? chipTeste() : null)];
-  if (pode('equipe.visualizar')) {
-    partes.push(el('p', {}, el('a', { href: `/business/equipe.html?id=${encodeURIComponent(id)}` }, 'Equipe, convites e perfis de acesso')));
-  }
-  const links = [
-    [pode('produtos.visualizar') || pode('estoque.visualizar'), 'produtos-empresa', 'Produtos'],
-    [pode('estoque.visualizar'), 'estoque-empresa', 'Estoque'],
-    [pode('fornecedores.visualizar') || pode('estoque.visualizar'), 'fornecedores', 'Fornecedores e compras'],
-    [pode('clientes.visualizar'), 'clientes', 'Clientes'],
-    [pode('vendas.visualizar') || pode('vendas.criar'), 'vendas', 'Vendas'],
-    [pode('pedidos.visualizar'), 'pedidos-empresa', 'Pedidos'],
-    [pode('catalogo_servicos.visualizar'), 'servicos', 'Serviços'],
-    [pode('orcamentos.visualizar'), 'solicitacoes', 'Orçamentos'],
-    [pode('agenda.visualizar'), 'agenda', 'Agenda'],
-    [pode('financeiro.visualizar'), 'financeiro', 'Financeiro'],
-  ].filter(([ok]) => ok);
-  if (links.length) {
-    partes.push(el('ul', { class: 'opcoes', 'aria-label': 'Áreas do ERP' }, ...links.map(([, pagina, rotulo]) =>
-      el('li', {}, el('a', { href: `/business/${pagina}.html?id=${encodeURIComponent(id)}` }, rotulo)))));
-  }
+  const href = (pagina, extra = '') => `/business/${pagina}.html?id=${encodeURIComponent(id)}${extra}`;
+  const icone = (nome) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'icone'); s.setAttribute('aria-hidden', 'true');
+    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', `/assets/icons/icones.svg#${nome}`); s.append(u); return s; };
+  const atalhos = [
+    [true, 'dashboard', 'Abrir o painel', 'O que precisa da sua atenção hoje', 'i-painel'],
+    [pode('vendas.criar'), 'venda-nova', 'Nova venda', 'Registrar uma venda de balcão', 'i-sacola'],
+    [pode('equipe.visualizar'), 'equipe', 'Equipe e perfis', 'Pessoas, convites e acessos', 'i-equipe'],
+    [pode('clientes.visualizar'), 'clientes', 'Clientes', 'Buscar e cadastrar clientes', 'i-pessoa'],
+    [pode('produtos.visualizar') || pode('estoque.visualizar'), 'produtos-empresa', 'Produtos', 'Catálogo, preços e imagens', 'i-caixa'],
+    [pode('financeiro.visualizar'), 'financeiro', 'Financeiro', 'Contas, recebimentos e saldo', 'i-moeda'],
+  ].filter(([ok]) => ok).slice(0, 6);
+  partes.push(el('nav', { 'aria-label': 'Atalhos da empresa' }, el('ul', { class: 'grade-acoes lista-sem-marcador' }, ...atalhos.map(([, pagina, rotulo, ajuda, ic]) =>
+    el('li', {}, el('a', { class: 'cartao-acao cartao-acao--icone', href: href(pagina) }, icone(ic), el('strong', {}, rotulo), el('span', {}, ajuda)))))),
+  el('p', { class: 'campo__ajuda' }, 'Os demais módulos ficam no menu lateral.'));
   if (acesso.papel === 'funcionario') {
-    const sair = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Sair da empresa');
+    const sair = el('button', { type: 'button', class: 'botao botao--perigo', id: 'sair-da-empresa' }, 'Sair da empresa');
     sair.addEventListener('click', () => ocupado(sair, async () => {
       const ok = await abrirDialogo({ titulo: `Sair de ${e.nome_publico}?`,
         mensagens: ['Seu acesso a esta empresa acaba na hora. O que você fez continua registrado no histórico.', 'Para voltar, será preciso um novo convite.'],
@@ -292,7 +293,8 @@ function blocoAcesso(acesso, e, pode) {
         await tratarFalha(erro, null, 'sair');
       }
     }));
-    partes.push(el('div', { class: 'grupo-botoes' }, sair));
+    partes.push(el('div', { class: 'zona-saida', id: 'zona-saida' }, el('div', {}, el('strong', {}, 'Deixar esta empresa'),
+      el('p', { class: 'campo__ajuda' }, 'Encerra o seu acesso. Pede confirmação antes.')), sair));
   }
   return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-acesso' },
     el('h2', { id: 'titulo-acesso' }, 'Seu acesso'), ...partes);
@@ -345,7 +347,7 @@ function blocoLogo(e, logo, podeAlterar) {
 
 async function carregar() {
   if (!id) {
-    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
+    area.replaceChildren(aviso('info', 'Empresa não informada.', el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas'))));
     return;
   }
   mostrarCarregando(area, 'Carregando a empresa');
@@ -367,7 +369,7 @@ async function carregar() {
     if (!e) {
       concluirCarregamento(area);
       area.append(el('div', { role: 'alert' }, aviso('alerta', 'Empresa não encontrada ou sem acesso para esta conta.',
-        el('p', {}, el('a', { href: '/business/minhas-empresas.html' }, 'Ver suas empresas')))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/minhas-empresas.html' }, 'Ver suas empresas')))));
       return;
     }
     definirEmpresaAtiva({ id, nome: e.nome_publico, papel: acesso.papel, permissoes: acesso.permissoes, dado_de_teste: e.dado_de_teste });
@@ -413,7 +415,7 @@ async function carregar() {
     }
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

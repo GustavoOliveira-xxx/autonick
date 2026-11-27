@@ -114,7 +114,7 @@ export function criarExecutorFinanceiro({ area, anunciar, recarregar, erroNoCamp
 /** Tratamento do erro de carregamento comum às telas do financeiro. */
 export function erroDeCarga(area, erro, tratarErro, tentarDeNovo) {
   if (erro.codigo === 'AUTH_REQUIRED') {
-    area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+    area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
     return;
   }
   tratarErro(area, erro, tentarDeNovo);

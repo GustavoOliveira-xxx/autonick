@@ -232,11 +232,11 @@ function botaoComprovanteOrcamento() {
 
 function desenhar() {
   const hoje = dataDeHoje();
-  const topo = el('div', { class: 'pilha' }, el('p', {}, el('a', { href: `/business/solicitacoes.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar às solicitações')),
+  const topo = el('div', { class: 'pilha' }, el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/solicitacoes.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar às solicitações')),
     el('h2', { id: 'resumo-solicitacao' }, `Nº ${s.numero} · ${s.servico} `, chipSolicitacao(s.estado_exibicao)),
     el('p', {}, `Cliente: ${s.cliente_nome}${s.origem === 'interna' ? ' (balcão ou telefone)' : ''}`),
     s.estado === 'aceita' && s.os ? aviso('sucesso', 'Orçamento aceito: a ordem de serviço foi criada. Nenhuma cobrança automática.',
-      el('p', {}, el('a', { href: `/business/ordem.html?id=${encodeURIComponent(ctx.id)}&os=${encodeURIComponent(s.os.id)}`, id: 'link-os' }, `Abrir a OS nº ${s.os.numero}`))) : null,
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/ordem.html?id=${encodeURIComponent(ctx.id)}&os=${encodeURIComponent(s.os.id)}`, id: 'link-os' }, `Abrir a OS nº ${s.os.numero}`))) : null,
     botaoComprovanteOrcamento(),
     s.politica_cancelamento ? el('p', { class: 'campo__ajuda' }, `Política de cancelamento mostrada ao cliente (versão ${s.politica_cancelamento.versao}): ${s.politica_cancelamento.texto}`) : null,
     s.motivo_encerramento ? el('p', {}, `Motivo do encerramento: ${s.motivo_encerramento}`) : null);

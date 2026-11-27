@@ -217,7 +217,7 @@ function secaoPacote() {
 }
 
 function desenhar() {
-  area.replaceChildren(el('p', {}, el('a', { href: `/business/servicos.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar aos serviços')),
+  area.replaceChildren(el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/servicos.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar aos serviços')),
     el('h2', { id: 'nome-servico' }, s.nome), secaoPacote() ?? el('span'), secaoPerguntas(), secaoRegras(), secaoSimulacao());
 }
 

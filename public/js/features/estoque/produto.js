@@ -336,14 +336,14 @@ async function carregar() {
     produto = (await produtosDaEmpresa(ctx.id)).find((p) => p.id === produtoId) ?? null;
     if (!produto) {
       area.replaceChildren(el('div', { role: 'alert' }, aviso('alerta', 'Produto não encontrado nesta empresa.',
-        el('p', {}, el('a', { href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Ver os produtos')))));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Ver os produtos')))));
       return;
     }
     document.getElementById('titulo-pagina').textContent = produto.nome;
     document.title = `${produto.nome} | AutoniCK Business`;
     concluirCarregamento(area);
     // IB05: sem foto, o produto mostra a etiqueta 3D com o menor preço real das variações ativas
-    const destaque = el('div', { class: 'com-momento' }, el('p', {}, el('a', { href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para os produtos')));
+    const destaque = el('div', { class: 'com-momento' }, el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/produtos-empresa.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar para os produtos')));
     const preco = menorPreco(produto.variacoes);
     if (preco !== null) montarMomento(destaque, 'IB05', { tamanho: 'g', continua: true, inicial: { preco: formatarCentavos(preco) } }).disparar();
     area.append(...[
@@ -353,7 +353,7 @@ async function carregar() {
     ].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

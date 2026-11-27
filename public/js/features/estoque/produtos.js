@@ -220,7 +220,7 @@ function formularioNovo() {
       const pendente = r.estoque_inicial?.estado === 'pendente';
       anunciar('sucesso', `Produto "${r.nome}" cadastrado.`,
         r.estoque_inicial ? el('p', {}, pendente ? 'O estoque inicial foi enviado para aprovação.' : 'O estoque inicial já está lançado.') : null,
-        el('p', {}, el('a', { href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(r.id)}` }, 'Abrir o produto')));
+        el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/produto.html?id=${encodeURIComponent(ctx.id)}&produto=${encodeURIComponent(r.id)}` }, 'Abrir o produto')));
     }));
   });
   return el('section', { class: 'cartao pilha', 'aria-labelledby': 'titulo-novo-produto' },
@@ -248,7 +248,7 @@ async function carregar() {
     ].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {
-      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { href: '/business/entrar.html' }, 'Entrar novamente'))));
+      area.replaceChildren(aviso('info', erro.message, el('p', {}, el('a', { class: 'botao botao--secundario', href: '/business/entrar.html' }, 'Entrar novamente'))));
       return;
     }
     tratarErro(area, erro, carregar);

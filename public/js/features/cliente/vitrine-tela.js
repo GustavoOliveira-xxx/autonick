@@ -73,7 +73,7 @@ export function precoServico(s) {
 async function exigirDemonstracao(area) {
   if (!(await neon.temSessao())) {
     area.replaceChildren(aviso('info', 'A área de demonstração é só para contas de demonstração autorizadas.',
-      el('p', {}, el('a', { href: entrarEVoltar(location.pathname + location.search) }, 'Entrar com a conta de demonstração'))));
+      el('p', {}, el('a', { class: 'botao botao--secundario', href: entrarEVoltar(location.pathname + location.search) }, 'Entrar com a conta de demonstração'))));
     return false;
   }
   const a = await minhaAutorizacaoDemonstracao();
@@ -240,7 +240,7 @@ export async function iniciarPerfil(modo) {
   const id = parametro('e');
   const naoDisponivel = () => {
     titulo.textContent = 'Vitrine indisponível';
-    area.replaceChildren(aviso('info', 'Esta vitrine não está disponível.', el('p', {}, el('a', { href: M.busca }, 'Voltar para a busca'))));
+    area.replaceChildren(aviso('info', 'Esta vitrine não está disponível.', el('p', {}, el('a', { class: 'botao botao--secundario', href: M.busca }, 'Voltar para a busca'))));
   };
   if (!id || !UUID.test(id)) { naoDisponivel(); return; }
   mostrarCarregando(area, 'Carregando a vitrine');

@@ -296,7 +296,7 @@ function secaoValores() {
       `${t.parte === 'antecipacao' ? 'Sinal' : 'Saldo'}: ${dinheiro(t.total_centavos)} · recebido ${dinheiro(t.recebido_centavos)} · ${t.estado}`,
       t.a_devolver_centavos ? ` · a devolver ${dinheiro(t.a_devolver_centavos)}` : '',
       t.parcelas?.length ? el('span', { class: 'campo__ajuda' }, ` · ${t.parcelas.length} parcela(s)`) : null))));
-    partes.push(el('p', {}, el('a', { href: `/business/financeiro.html?id=${encodeURIComponent(ctx.id)}` }, 'Registrar recebimentos e devoluções no financeiro'),
+    partes.push(el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/financeiro.html?id=${encodeURIComponent(ctx.id)}` }, 'Registrar recebimentos e devoluções no financeiro'),
       el('span', { class: 'campo__ajuda' }, ' (exige a permissão de aprovar no financeiro).')));
   }
   if (o.pode.financeiro_criar && ativa() && !v.titulos.some((t) => t.estado !== 'cancelado')) {
@@ -654,7 +654,7 @@ function secaoLinhaDoTempo() {
 
 function desenhar() {
   const topo = el('div', { class: 'pilha' },
-    el('p', {}, el('a', { href: `/business/ordens.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar às ordens de serviço')),
+    el('p', {}, el('a', { class: 'botao botao--secundario', href: `/business/ordens.html?id=${encodeURIComponent(ctx.id)}` }, 'Voltar às ordens de serviço')),
     el('h2', { id: 'resumo-os' }, `OS nº ${o.numero} · ${o.servico} `, chipOs(o.estado)),
     el('p', {}, `Cliente: ${o.cliente_nome}${o.origem === 'interna' ? ' (balcão ou telefone)' : ''} · `,
       el('a', { href: `/business/solicitacao.html?id=${encodeURIComponent(ctx.id)}&solicitacao=${encodeURIComponent(o.solicitacao_id)}` }, `solicitação nº ${o.solicitacao_numero}`)),
