@@ -790,3 +790,4 @@ html[data-animacoes="desligadas"] .botao::after { display: none !important; }
 .barra-modelos { padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--borda); }
 .barra-modelos select { min-height: 40px; flex: 1 1 14rem; }
 .barra-modelos__rotulo { font-weight: 700; }
+.lista-anexos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

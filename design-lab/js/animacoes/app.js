@@ -22,10 +22,21 @@ const raiz = document.documentElement; const conteudo = document.getElementById(
 const vistas = new Set();
 
 async function enquadrar(anim) { return anim.enquadramento; }
-const fonteDe = (anim, { laco = true, pausa = 0.9 } = {}) => (t, ctx) => {
-  if (AMBIENTE.reduzido) return { pose: anim.quadro(anim.fimMovimento ?? anim.dur, ctx), info: { u: anim.fimMovimento ?? anim.dur } };
+/* Intensidade: interpola cada número da pose entre o repouso (quadro 0) e o quadro atual (1 = como aprovado). */
+function misturar(base, alvo, k) {
+  if (typeof alvo === 'number' && typeof base === 'number') return base + (alvo - base) * k;
+  if (Array.isArray(alvo) && Array.isArray(base)) return alvo.map((v, i) => (i < base.length ? misturar(base[i], v, k) : v));
+  if (alvo && typeof alvo === 'object' && base && typeof base === 'object') {
+    const r = {}; for (const c of Object.keys(alvo)) r[c] = c in base ? misturar(base[c], alvo[c], k) : alvo[c];
+    return r;
+  }
+  return alvo;
+}
+const fonteDe = (anim, { laco = true, pausa = 0.9, intensidade = 1 } = {}) => (t, ctx) => {
+  const quadro = (u) => (intensidade === 1 ? anim.quadro(u, ctx) : misturar(anim.quadro(0, ctx), anim.quadro(u, ctx), intensidade));
+  if (AMBIENTE.reduzido) return { pose: quadro(anim.fimMovimento ?? anim.dur), info: { u: anim.fimMovimento ?? anim.dur } };
   const ciclo = anim.dur + pausa; const u = laco ? t % ciclo : Math.min(t, anim.dur);
-  return { pose: anim.quadro(Math.min(u, anim.dur), ctx), info: { u: Math.min(u, anim.dur) } };
+  return { pose: quadro(Math.min(u, anim.dur)), info: { u: Math.min(u, anim.dur) } };
 };
 function aplicarEstilo() { for (const v of vistas) v.vista?.atualizar({ estilo: { ...est.estilo }, hq: est.hq, velocidade: est.velocidade }); }
 
@@ -37,17 +48,38 @@ function palco(lado, idInicial) {
     <div class="an-controles"><button type="button" class="rf-bt rf-bt--s rf-bt--icone" data-play aria-label="Pausar">❚❚</button><button type="button" class="rf-bt rf-bt--f rf-bt--icone" data-reiniciar aria-label="Do começo">↺</button>
       <input type="range" min="0" max="1000" value="0" aria-label="Linha do tempo" data-tempo><output data-t>0,0 s</output>
       <label class="rf-chave"><input type="checkbox" checked data-laco><i></i>Laço</label></div>
+    <div class="an-controles an-controles--extra">
+      <label>Intervalo <input type="range" min="0" max="3" step="0.1" value="0.9" data-pausa aria-label="Pausa entre repetições"><output data-pausa-v>0,9 s</output></label>
+      <label>Intensidade <input type="range" min="0.5" max="1.5" step="0.05" value="1" data-intensidade aria-label="Intensidade do movimento"><output data-intensidade-v>100%</output></label>
+      <label>Enquadramento <input type="range" min="0.7" max="1.5" step="0.05" value="1" data-zoom aria-label="Aproximação da câmera"><output data-zoom-v>100%</output></label>
+      <button type="button" class="rf-bt rf-bt--f" data-png>Baixar quadro (PNG)</button>
+      <button type="button" class="rf-bt rf-bt--f" data-json>Exportar ajustes</button></div>
     <div class="an-fases" data-fases></div><p class="rf-fraco" data-desc></p>`;
-  let atual = null, vis = null, arrastando = false;
+  let atual = null, vis = null, arrastando = false, pedirPng = false, idAtual = idInicial;
+  const ajustes = () => ({ pausa: Number(el.querySelector('[data-pausa]').value), intensidade: Number(el.querySelector('[data-intensidade]').value),
+    zoom: Number(el.querySelector('[data-zoom]').value), laco: el.querySelector('[data-laco]').checked });
+  const baixar = (blob, nome) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
   const montar = async (id) => {
     vis?.destruir(); vistas.delete(vis);
     const [, nome, origem, anim] = porId(id); atual = anim;
     const [ro, co] = ORIGEM[origem]; el.querySelector('[data-origem]').innerHTML = `<span class="rf-chip rf-chip--${co}">${ro}</span>`;
     el.querySelector('[data-fases]').innerHTML = (anim.fases ?? []).map(([n, a, b]) => `<span data-a="${a}" data-b="${b}">${n}</span>`).join('');
     el.querySelector('[data-desc]').textContent = `${nome} · ${anim.dur.toFixed(1).replace('.', ',')} s de cena${B.find((p) => p.id === id)?.descricao ? ` · ${B.find((p) => p.id === id).descricao}` : ''}`;
-    const enq = await enquadrar(anim);
-    vis = vitrine3D(el.querySelector('[data-vista]'), { fonte: fonteDe(anim, { laco: el.querySelector('[data-laco]').checked }), enquadramento: enq, tocando: true, miniatura: false, estilo: { ...est.estilo }, hq: est.hq,
+    idAtual = id;
+    const a = ajustes();
+    const base = await enquadrar(anim);
+    const enq = { ...base, meiaAltura: base.meiaAltura / a.zoom, meiaLargura: base.meiaLargura / a.zoom };
+    vis = vitrine3D(el.querySelector('[data-vista]'), { fonte: fonteDe(anim, { laco: a.laco, pausa: a.pausa, intensidade: a.intensidade }), enquadramento: enq, tocando: true, miniatura: false, estilo: { ...est.estilo }, hq: est.hq,
       aoQuadro: ({ info }) => {
+        if (pedirPng) {
+          // Exportação: compõe as camadas (cena 3D e HQ) no mesmo quadro em que foram desenhadas.
+          pedirPng = false;
+          const camadas = [...el.querySelectorAll('[data-vista] canvas')];
+          const w = Math.max(...camadas.map((c) => c.width)); const h = Math.max(...camadas.map((c) => c.height));
+          const tela = document.createElement('canvas'); tela.width = w; tela.height = h;
+          const g = tela.getContext('2d'); for (const c of camadas) g.drawImage(c, 0, 0, w, h);
+          tela.toBlob((b) => b && baixar(b, `autonick-${idAtual}-${(info?.u ?? 0).toFixed(2)}s.png`), 'image/png');
+        }
         const u = info?.u ?? 0; if (!arrastando) el.querySelector('[data-tempo]').value = String(Math.round((u / anim.dur) * 1000));
         el.querySelector('[data-t]').textContent = `${u.toFixed(1).replace('.', ',')} s`;
         for (const f of el.querySelectorAll('[data-fases] span')) f.classList.toggle('ativa', u >= Number(f.dataset.a) && u < Number(f.dataset.b));
@@ -61,6 +93,13 @@ function palco(lado, idInicial) {
   tempo.addEventListener('input', () => { arrastando = true; vis?.pausar(); vis?.irPara((Number(tempo.value) / 1000) * atual.dur); el.querySelector('[data-play]').textContent = '▶'; });
   tempo.addEventListener('change', () => { arrastando = false; });
   el.querySelector('[data-laco]').addEventListener('change', () => montar(el.querySelector('[data-sel]').value));
+  for (const [sel, saida, fmt] of [['[data-pausa]', '[data-pausa-v]', (v) => `${v.toFixed(1).replace('.', ',')} s`], ['[data-intensidade]', '[data-intensidade-v]', (v) => `${Math.round(v * 100)}%`], ['[data-zoom]', '[data-zoom-v]', (v) => `${Math.round(v * 100)}%`]]) {
+    const r = el.querySelector(sel);
+    r.addEventListener('input', () => { el.querySelector(saida).textContent = fmt(Number(r.value)); });
+    r.addEventListener('change', () => montar(el.querySelector('[data-sel]').value));
+  }
+  el.querySelector('[data-png]').addEventListener('click', () => { pedirPng = true; vis?.vista?.atualizar({}); });
+  el.querySelector('[data-json]').addEventListener('click', () => baixar(new Blob([JSON.stringify({ animacao: idAtual, ...ajustes(), velocidade: est.velocidade, estilo: est.estilo, efeitosHq: est.hq, exportado_em: new Date().toISOString() }, null, 2)], { type: 'application/json' }), `autonick-${idAtual}-ajustes.json`));
   montar(idInicial);
   return el;
 }

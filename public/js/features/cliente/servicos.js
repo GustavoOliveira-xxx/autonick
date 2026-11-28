@@ -82,7 +82,7 @@ function formSolicitacao() {
         chaves.delete(`enviar-${servico.id}`);
         area.replaceChildren(aviso('sucesso', s.estado === 'orcamento_enviado' ? `Solicitação nº ${s.numero} enviada e orçamento já disponível.` : `Solicitação nº ${s.numero} enviada.`,
           el('p', {}, s.estado === 'orcamento_enviado' ? 'O orçamento foi gerado pelas regras da empresa. Confira antes de aceitar.' : 'A empresa vai analisar e responder. Nenhum horário foi reservado.'),
-          el('p', {}, el('a', { class: 'botao botao--secundario', href: `/cliente/solicitacoes.html?s=${encodeURIComponent(s.id)}` }, 'Acompanhar a solicitação'))));
+          el('p', {}, 'Se quiser, anexe fotos ou documentos na página da solicitação.'), el('p', {}, el('a', { class: 'botao', href: `/cliente/solicitacoes.html?s=${encodeURIComponent(s.id)}#anexos` }, 'Acompanhar e anexar fotos'))));
       } catch (erro) {
         if (erro.codigo === 'NETWORK_UNKNOWN') return anunciar('erro', erro.message, el('p', {}, 'Tente de novo: a solicitação não será duplicada.'));
         // Sessão encerrada: nada foi gravado; a mesma chave serve para o envio depois de entrar de novo.

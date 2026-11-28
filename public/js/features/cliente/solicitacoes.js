@@ -3,6 +3,7 @@
  * internas nem dados do catálogo da empresa. Aceita só a versão atual e dentro da validade, confirmando as condições;
  * pode pedir revisão, recusar ou cancelar antes do aceite. Nada é cobrado por aqui.
  */
+import { secaoAnexos } from '../../ui/anexos.js';
 import { marcarNovas } from '../comunicacao/marcador.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
@@ -128,6 +129,8 @@ function detalhe(s) {
     blocoEstimativa(s.estimativa, 'estimativa', { cliente: true, orcamentoDisponivel: versoes.length > 0 })));
   // M12 (D12-01, D12-02): a conversa do atendimento (a mesma da OS) junta as mensagens do M08 e as novas; a linha do
   // tempo mostra só os demais eventos, para não repetir as mensagens.
+  partes.push(secaoAnexos({ solicitacaoId: s.id, podeEnviar: ['nova', 'em_analise', 'orcamento_enviado', 'revisao_pedida', 'aceita'].includes(s.estado),
+    ajuda: 'Opcional: fotos do que precisa de conserto ou documentos que ajudem no orçamento. Só você e a empresa veem.' }));
   partes.push(secaoConversa({ tipo: 'solicitacao', id: s.id, titulo: 'Conversa com a empresa', anunciar }).secao);
   partes.push(el('section', { class: 'pilha', 'aria-labelledby': 'titulo-andamento' }, el('h2', { id: 'titulo-andamento' }, 'Andamento'),
     linhaDoTempo(s.eventos.filter((e) => e.tipo !== 'mensagem'))));

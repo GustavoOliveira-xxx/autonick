@@ -3,6 +3,7 @@
  * respostas e estimativa, editor do orçamento (o total vem do banco), envio ou aprovação interna, versões imutáveis,
  * negociação com notas internas, horário definido pela empresa com avisos, aceite informado (balcão) e cancelamento.
  */
+import { secaoAnexos } from '../../ui/anexos.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -306,6 +307,7 @@ function desenhar() {
     secaoHorario(), editor() ?? el('span'),
     el('section', { class: 'pilha', 'aria-labelledby': 'titulo-versoes' }, el('h2', { id: 'titulo-versoes' }, 'Versões do orçamento'),
       s.versoes.length ? el('div', { class: 'pilha', id: 'versoes' }, ...s.versoes.map((v) => cartaoVersao(v, hoje, acoesVersao(v)))) : el('p', { id: 'versoes' }, 'Nenhuma versão ainda.')),
+    secaoAnexos({ solicitacaoId: s.id, podeEnviar: ctx.pode('orcamentos.criar') && aberta(), titulo: 'Fotos e documentos da solicitação' }),
     ...(s.origem === 'plataforma' ? [secaoConversa({ tipo: 'solicitacao', id: s.id, titulo: 'Conversa com o cliente', anunciar }).secao] : []),
     secaoMensagens());
 }

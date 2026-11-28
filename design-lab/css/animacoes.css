@@ -31,3 +31,8 @@ html[data-tema="claro"] .an-vista { background: radial-gradient(circle at 50% 45
 .an-card:hover, .an-card:focus-within { border-color: var(--rf-ouro-borda); transform: translateY(-2px); }
 .an-card__txt { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.86rem; }
 @media (max-width: 900px) { .an-estudio { grid-template-columns: 1fr; } .an-ab { grid-template-columns: 1fr; } }
+/* Controles extras (E10): intervalo, intensidade, enquadramento e exportação */
+.an-controles--extra { flex-wrap: wrap; gap: 10px 16px; }
+.an-controles--extra label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+.an-controles--extra input[type="range"] { width: 110px; accent-color: var(--rf-ouro, #f5b70a); }
+.an-controles--extra output { min-width: 3.2em; font-variant-numeric: tabular-nums; }
