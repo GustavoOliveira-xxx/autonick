@@ -5,16 +5,7 @@ O guia geral do AutoniCK local continua em `docs/testar-no-windows.md` (JDK 21, 
 
 ## 1. Pegar a versão nova
 
-Se você ainda não tem o repositório:
-
-```bat
-cd C:\Projetos
-git clone https://github.com/GustavoOliveira-xxx/autonick.git
-cd autonick
-git switch feature/evolucao-integrada-autonick
-```
-
-Se já tem o repositório:
+Você já tem o repositório em `C:\Projetos\autonick`; não precisa clonar de novo. No Prompt de Comando:
 
 ```bat
 cd C:\Projetos\autonick
@@ -29,9 +20,21 @@ Confira o commit (o mesmo informado no relatório final):
 git log -1 --oneline
 ```
 
+### Java (JAVA_HOME)
+
+O projeto é compilado para Java 21 (`release 21`) e roda com qualquer JDK 21 ou mais novo. O JDK que você já tem serve:
+
+```bat
+set "JAVA_HOME=C:\Program Files\Java\jdk-27.0.1.0.3"
+"%JAVA_HOME%\bin\java" -version
+```
+
+Para deixar fixo (abre num Prompt novo): `setx JAVA_HOME "C:\Program Files\Java\jdk-27.0.1.0.3"`. Se preferir o Temurin 21 (gratuito), aponte `JAVA_HOME` para a pasta dele.
+
 ## 2. Testar numa base separada (recomendado)
 
-Esta versão traz 12 migrations novas (de `202611250001` a `202611300001`). Elas só acrescentam tabelas e funções, mas o jeito seguro de
+Esta versão traz 14 migrations novas em relação à `main` (de `202611250001` a `202612010002`; as duas últimas são do pacote de 27/11:
+documentos e CEP, parcelas, flags, notificações, onboarding e modelos de orçamento). Elas só acrescentam tabelas e funções, mas o jeito seguro de
 testar é numa pasta separada, sem tocar nos dados que você já tem. Na mesma janela do Prompt de Comando:
 
 ```bat
@@ -57,6 +60,18 @@ A cópia (banco e arquivos enviados) fica em `%LOCALAPPDATA%\AutoniCK\demonstrac
 **Recuperar o backup:** feche o AutoniCK, apague as pastas `dados` e `arquivos` de `%LOCALAPPDATA%\AutoniCK\demonstracao-local` e copie para lá as
 pastas `dados` e `arquivos` do backup escolhido. Atenção: o backup volta ao estado anterior às migrations; ao abrir com esta versão, elas
 serão aplicadas de novo.
+
+### Busca de CEP (BrasilAPI)
+
+Não precisa de conta, chave nem cartão. O computador precisa de internet. Teste rápido (opcional):
+
+```bat
+curl.exe --max-time 10 "https://brasilapi.com.br/api/cep/v2/01001000"
+```
+
+No app, a busca passa pela API Java local (`/api/enderecos/cep/...`); só o CEP sai do computador. Sem internet ou com o serviço fora do ar,
+aparece "Não foi possível buscar o CEP. Preencha o endereço manualmente." e o cadastro continua. Para desligar a busca:
+`set AUTONICK_CEP_ATIVA=false` antes de abrir o AutoniCK.
 
 ## 4. Endereços
 
@@ -87,6 +102,24 @@ Entre como **Rafael Souza** (gestor, senha `demo1234`):
     Entre como **Cida Ramos** (cliente) e veja as "Etapas do serviço" visíveis.
 11. **Administração CK**: abas Filas, Empresas, Parâmetros (restaurar o padrão), Saúde e Auditoria.
 12. **Página inicial**: o Bong alterna o "Chamado da Forja" com a cena da luva ("BONG!").
+
+### Pacote de 27/11 (roteiro extra)
+
+Com **Rafael Souza**:
+
+1. **Entrar**: com uma empresa ativa (ou uma só), o painel abre direto. Menu sem "Cadastrar empresa"; cadastro só em Minhas empresas.
+2. **Orçamentos**: a aba "Abertas" fica legível (texto escuro no dourado) nos dois temas.
+3. **Vendas**: busque pelo cliente ou número; "Nova venda": escolha o cliente pela busca (ou "+ Novo cliente"), Parcelado, 2 parcelas,
+   "A cada tantos dias (DDL)", primeira em 30 dias, intervalo 30, "Gerar parcelas": R$ 120 vira 27/12 e 26/01 (com data-base 27/11/2026);
+   troque para "Todo mês no mesmo dia": 27/12 e 27/01. Edite um valor e veja a diferença; confirme e abra a venda (DDL e forma por parcela).
+4. **Clientes**: "Adicionar cliente", Pessoa jurídica, CNPJ `12.ABC.345/01DE-35`, CEP `01001-000` (preenche rua, bairro, cidade e UF).
+5. **Estoque**: tabela simples; "Ajustar estoque" só para exceções; "Histórico" mostra a origem (venda, compra, ajuste).
+6. **Fornecedores** e **Compras** separados no menu; "Nova compra" com "+ Novo fornecedor" sem perder o rascunho.
+7. **Empresa e vitrine**: atalhos em cartões; "Sair da empresa" separado (só para colaborador).
+8. **Equipe > Perfis**: "Novo perfil" em 4 etapas (nome, modelo, áreas, revisão com contagem e pessoas afetadas).
+9. **Notificações** no menu; **Ordens de serviço** com "Próxima ação"; **Orçamento**: "Usar modelo" e "Salvar como modelo".
+10. **Administração CK > Recursos opcionais**: desligue "Animações decorativas" (com motivo) e veja o Bong ficar estático.
+11. **Lab** (`design-lab\Abrir-Design-Lab.cmd`, http://127.0.0.1:8091/animacoes.html): intervalo, intensidade, enquadramento e exportação.
 
 ## 7. Encerrar
 

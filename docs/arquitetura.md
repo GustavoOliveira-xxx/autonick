@@ -40,7 +40,9 @@ As ordens de serviço têm, além disso, rotas REST próprias (`/api/business/or
 
 | Pacote | Conteúdo |
 | --- | --- |
-| `plataforma` | `Dominio` (catálogo por domínio), `CatalogoFuncoes`, `ExecutorDados`, `ConsultaTabelas`, `DadosController`, `LimiteUso`, `PoliticaDados`, `IsolamentoVisitante`, `Identidade`, `ErroDados` |
+| `plataforma` | `Dominio` (catálogo por domínio), `CatalogoFuncoes`, `ExecutorDados`, `ConsultaTabelas`, `DadosController`, `LimiteUso`, `PoliticaDados`, `IsolamentoVisitante`, `Identidade`, `ErroDados`, `EnderecoCliente` (X-Forwarded-For só de proxy confiável) |
+| `arquivos` | `ArquivosController` (`POST /api/arquivos`, `GET /api/arquivos/{id}`), `ArmazenamentoArquivos` (pasta local fora do Git), `ConteudoArquivo` (confere o conteúdo real e regrava imagens) |
+| `enderecos` | `ConsultaCep` e `EnderecosController` (`GET /api/enderecos/cep/{cep}`, BrasilAPI com host fixo, cache e limites) |
 | `dados` | Consultas e escritas das ordens de serviço, com as checagens feitas na mesma transação |
 | `web` | Controllers REST das ordens de serviço, configuração pública da PWA, entrega dos arquivos estáticos, verificação de saúde e tratamento de erros |
 | `seguranca` | `SegurancaConfig` (regras de acesso por rota e cabeçalhos de segurança), validação de tokens do provedor real e leitura das chaves públicas (JWKS) |
@@ -59,7 +61,7 @@ As ordens de serviço têm, além disso, rotas REST próprias (`/api/business/or
 
 ## Banco de dados
 
-O schema é criado pelas 22 migrations de `db/migrations_propostas`, em ordem, cada uma com o arquivo `.down.sql` correspondente.
+O schema é criado pelas 36 migrations de `db/migrations_propostas`, em ordem, cada uma com o arquivo `.down.sql` correspondente (as 12 de `202611250001` a `202611300001` são da evolução integrada; `202612010001` e `202612010002` são do pacote de 27/11). Migrations já aplicadas nunca são reescritas: correções entram numa migration nova.
 
 | Schema | Conteúdo |
 | --- | --- |
@@ -73,7 +75,9 @@ Grupos de tabelas em `public`:
 
 - **Identidade e empresas:** perfis, empresas, membros, convites, perfis de permissão, catálogo de permissões, horários.
 - **Produtos e estoque:** produtos, variações, saldos, movimentações, reservas, propostas de movimentação, histórico de preços e custos, fornecedores e compras.
-- **Vendas e pedidos:** clientes da empresa, vendas, pedidos e seus itens, eventos comerciais.
+- **Vendas e pedidos:** clientes da empresa (pessoa física ou jurídica, CPF/CNPJ e endereço opcionais), vendas, pedidos e seus itens, eventos comerciais.
+- **Arquivos:** metadados de logos, imagens de produto, anexos de solicitação, evidências de OS e documentos (o conteúdo fica na pasta da API).
+- **Produtividade:** favoritos, metas, compromissos e exceções da agenda, checklists de OS, notificações, preferências, onboarding dispensado, flags por empresa e modelos de orçamento.
 - **Financeiro:** contas, categorias, títulos e parcelas, pagamentos, recebimentos, lançamentos, transferências, recorrências e fechamentos.
 - **Serviços:** serviços, perguntas e regras de preço, pacotes, solicitações, versões e componentes de orçamento, agendamentos.
 - **Ordens de serviço:** ordens, eventos, materiais e usos, cancelamentos, reagendamentos e propostas de custo.
@@ -100,13 +104,29 @@ Padrões aplicados nas funções que gravam:
 - O painel CK é conferido na API e de novo na função SQL.
 - Na demonstração pública, `IsolamentoVisitante` restringe cada visitante às empresas do próprio cenário e recusa contas sem cenário.
 
+## Documentos, endereço e CEP (pacote 27/11)
+
+- **CPF e CNPJ** são guardados como texto canônico: sem máscara, em maiúsculas, com zeros à esquerda. O CNPJ aceita o formato numérico e o alfanumérico (12 caracteres A-Z/0-9 + 2 dígitos verificadores; cada caractere vale código ASCII - 48, pesos e módulo 11 oficiais). As mesmas regras existem em SQL (`app_private.normalizar_documento`, `cpf_valido`, `cnpj_valido`) e em JS (`public/js/domain/documentos.js`); o banco decide. Documentos antigos sem DV válido continuam aceitos até serem alterados.
+- **Duplicidade** gera aviso (`documento_em_uso`), nunca bloqueio, e só dentro da mesma empresa.
+- **CEP:** a tela chama `GET /api/enderecos/cep/{cep}` na API Java, que consulta `https://brasilapi.com.br/api/cep/v2/{cep}` (host fixo, só HTTPS, sem redirecionamento, 3 s de conexão e 7 s no total, resposta até 32 KB, cache de 24 h, coalescência de consultas iguais, 20 consultas por pessoa por minuto). Só o CEP sai do computador. Falhas viram códigos distintos (`CEP_INVALIDO`, `CEP_NAO_ENCONTRADO`, `CEP_LIMITE`, `CEP_INDISPONIVEL`, `CEP_TEMPO_ESGOTADO`) e a tela mantém tudo editável; resposta antiga é descartada. A CSP continua só `'self'`. `AUTONICK_CEP_ATIVA=false` ou a flag `busca_cep` desligam a busca.
+
+## Vendas: parcelas por DDL
+
+`public/js/domain/parcelas.js` gera as parcelas com datas civis (equivalente a `LocalDate`, sem fuso) e centavos inteiros: DDL (dias corridos a partir da data-base), intervalo fixo, mensal no mesmo dia (último dia válido no mês curto, sem deriva) e prazos individuais. A sobra de centavos vai para a última parcela. A prévia é editável; o banco (`app_private.criar_titulo_venda`) confere de novo soma, ordem, datas de hoje em diante e 2 a 24 parcelas, e grava forma prevista e prazo de cada parcela. O recebido agora abate a 1ª parcela, sem duplicar a conta a receber.
+
+## Flags, notificações e onboarding
+
+- **Feature flags** (`app_private.feature_flags`, `public.flags_empresa`): só ligam ou desligam recursos opcionais (`animacoes_decorativas`, `busca_cep`, `onboarding_contextual`). Padrão ligado, mudança da CK exige motivo e entra na auditoria; nenhuma flag decide permissão.
+- **Notificações** (`public.notificacoes`): nascem por gatilhos dos fluxos reais (pedido, solicitação, orçamento, OS, proposta de estoque), para o cliente dono do registro ou para quem tem a permissão da área. Deduplicação por chave única por pessoa, leitura, preferências por tipo. Só texto curto e link interno; sem e-mail, SMS ou push. Vínculo encerrado esconde os avisos da equipe daquela empresa.
+- **Onboarding**: dicas curtas nas telas principais, dispensáveis e salvas por pessoa.
+
 ## Estratégia de testes
 
 | Suíte | Onde | O que garante |
 | --- | --- | --- |
 | API Java (JUnit 5, Spring Boot Test) | `java/os-api/src/test` | A API de verdade, em porta aleatória, contra um PostgreSQL descartável: tokens, rotas de OS, rollback e atomicidade, conexões devolvidas limpas ao pool, camada de dados (estoque, idempotência, permissões, isolamento entre empresas, painel CK) e isolamento entre visitantes |
-| Banco (`node:test`) | `tests/db` | Cada migration e as funções SQL num cluster PostgreSQL temporário por arquivo, inclusive rollback das migrations |
-| Unitários (`node:test`) | `tests/unit` | Regras puras do frontend (moeda, tempo, estoque), cliente HTTP, seleção do backend, política de segurança estática e integridade da marca |
+| Banco (`node:test`) | `tests/db` | Cada migration e as funções SQL num cluster PostgreSQL 18 temporário por arquivo, inclusive rollback sem resíduo e reaplicação das migrations |
+| Unitários (`node:test`) | `tests/unit` | Regras puras do frontend (moeda, tempo, estoque, parcelas, documentos, próxima ação da OS), cliente HTTP, seleção do backend, política de segurança estática e integridade da marca |
 | Interface (Playwright e axe-core) | `tests/e2e` | Telas das três áreas com respostas simuladas, acessibilidade WCAG, responsividade, PWA (instalação, offline, atualização) e PDFs |
 
 A integração contínua (`.github/workflows/ci.yml`) tem dois jobs: um para a API Java e outro para unitários, banco e interface.
