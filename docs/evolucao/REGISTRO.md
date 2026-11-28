@@ -159,3 +159,18 @@ Base: `9d16626` (último SHA da entrega anterior). Mesma branch. Sem deploy, sem
 - Agenda individual com bloqueio automático: mantido o aviso com confirmação (bloquear exigiria definir exceções de negócio).
 - Busca de CEP ao vivo não pôde ser testada aqui (o ambiente bloqueia a BrasilAPI); os testes usam servidor simulado e o caminho de falha
   foi conferido no app real ("Não foi possível buscar o CEP. Preencha o endereço manualmente.").
+
+### Regressão final do pacote (SHA `6be151d`, PostgreSQL 18, Chromium)
+| Suíte | Resultado |
+|---|---|
+| Unitários (node) | 159/159, 0 pulados |
+| Banco (node, PostgreSQL 18) | 290/290, 0 pulados (inclui instalação limpa, reversão sem resíduo e reaplicação das migrations novas) |
+| Java (os-api) | 147/147, 0 pulados (inclui ConsultaCepTest 10/10) |
+| Playwright (interface, axe, PWA, PDFs) | 362/362 |
+
+- Atualização de base existente: o backup da base local feito antes do SHA `9d16626` (entrega anterior, 34 migrations, com dados) foi
+  restaurado numa pasta de rascunho e aberto com esta versão: as migrations `202612010001` e `202612010002` foram aplicadas e venda
+  parcelada e compra com novo fornecedor funcionaram. (Ao restaurar uma cópia no Linux, a pasta `dados` precisa da permissão 700.)
+- Mudanças de superfície pública intencionais: `flags_ativas` é a única função nova liberada ao visitante (só liga/desliga de recursos
+  da plataforma); os testes de privilégio foram atualizados para incluí-la.
+- Capturas depois (escuro, claro e celular) das 8 áreas: pasta de rascunho da sessão (dados fictícios); não versionadas.
