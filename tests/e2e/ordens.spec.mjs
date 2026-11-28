@@ -124,9 +124,12 @@ test('lista de OS: filtros pela situação e responsável, pendências visíveis
   await expect(page.locator('[data-pendencias]')).toContainText('1 uso(s) de material a confirmar');
   await expect(page.locator('#contagem')).toContainText('Concluída: 2');
   await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Ordens de serviço', exact: true })).toHaveAttribute('aria-current', 'page');
+  // Pacote 27/11: filtros compactos (abrem sob demanda) e aplicados ao escolher; a próxima ação aparece por OS.
+  await expect(page.locator('[data-proxima-acao]').first()).toBeVisible();
+  await page.getByText('Filtros', { exact: true }).click();
   await page.locator('#filtro-estado').selectOption('concluida');
-  await page.locator('#filtro-responsavel').selectOption('u-tec');
-  await page.locator('#form-filtros [type="submit"]').click();
+  await pronto(page);
+  await page.locator('#filtro-responsavel').selectOption('u-tec');   // com filtro ativo, a caixa de filtros já vem aberta
   await pronto(page);
   expect(estado.corpos['/api/rpc/ordens_da_empresa'].p_filtros).toEqual({ estado: 'concluida', responsavel: 'u-tec' });
   await axe(page);

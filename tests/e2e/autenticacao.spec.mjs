@@ -59,8 +59,9 @@ test('mesma identidade na entrada Business: perfil só é criado por escolha exp
   await expect(page.locator('#avisos')).toContainText('Esta conta ainda não tem perfil Business');
   expect(estado.perfis).toHaveLength(1);
   await page.getByRole('button', { name: 'Criar perfil Business' }).click();
-  await expect(page).toHaveURL(/\/business\/conta\.html$/);
-  await expect(page.locator('#conta')).toContainText('Business');
+  // Pacote 27/11 (item 7): o Business entra direto no trabalho (Minhas empresas abre a empresa ativa ou única).
+  await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Minhas empresas' })).toBeVisible();
   expect(estado.perfis.map((p) => p.tipo_conta).sort()).toEqual(['business', 'cliente']);
 });
 
@@ -158,7 +159,7 @@ test('verificação de e-mail exigida: cadastro pede código, erro é explicado 
   await expect(page.locator('#form-codigo [role="status"]')).toContainText('um novo código foi enviado');
   await page.locator('#codigo-verificacao').fill('246810');
   await page.getByRole('button', { name: 'Confirmar e-mail' }).click();
-  await expect(page).toHaveURL(/\/business\/conta\.html$/);
+  await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
   expect(estado.perfis.map((p) => p.tipo_conta)).toEqual(['business']);
 });
 
@@ -259,6 +260,7 @@ test('apresentação → "Entrar no Business": o Gestor entra e chega à área B
   await page.locator('#entrar-email').fill('gestor.demo@autonick-teste.example');
   await page.locator('#entrar-senha').fill('senha-forte-1');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page).toHaveURL(/\/business\/conta\.html$/);
-  await expect(page.locator('#conta')).toContainText('Business');
+  // Pacote 27/11 (item 7): o Business entra direto no trabalho (Minhas empresas abre a empresa ativa ou única).
+  await expect(page).toHaveURL(/\/business\/minhas-empresas\.html/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Minhas empresas' })).toBeVisible();
 });

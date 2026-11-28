@@ -11,7 +11,7 @@ import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
 import { campoTexto, campoSelecao, limparErros, erroNoCampo, ocupado, valores } from '../../ui/formulario.js';
 import { abrirModal } from '../../ui/modal.js';
-import { barraConsulta, vazio } from '../../ui/consulta.js';
+import { barraConsulta, vazio, espelharAvisos } from '../../ui/consulta.js';
 import { lerValorEmReais, formatarCentavos } from '../../domain/moeda.js';
 import { lerQuantidade } from '../../domain/variacoes.js';
 import { origemDoMovimento } from '../../domain/estoque.js';
@@ -118,7 +118,8 @@ function abrirAjuste(origem) {
     for (const v of p.variacoes.filter((x) => x.ativo)) opcoes.push([v.id, `${nomeVariacao(p, v)}: ${quantidadeLegivel(v.disponivel)} disponíveis`]);
   }
   const comCusto = ctx.pode('produtos.ver_custo');
-  const form = el('form', { id: 'form-movimentacao', class: 'pilha', novalidate: true },
+  const avisosModal = el('div', { class: 'avisos-modal', 'aria-live': 'polite' });
+  const form = el('form', { id: 'form-movimentacao', class: 'pilha', novalidate: true }, avisosModal,
     el('p', { class: 'aviso aviso--alerta aviso--compacto' }, el('strong', {}, 'Não use para vendas nem compras: '),
       'a venda confirmada já baixa o estoque e a compra recebida já dá entrada. Aqui ficam só as exceções, como inventário inicial, contagem, perda, avaria ou consumo interno.'),
     el('div', { class: 'grade-filtros' },
@@ -133,7 +134,9 @@ function abrirAjuste(origem) {
   form.addEventListener('input', () => { sujo = true; });
   const modal = abrirModal({ titulo: 'Ajustar estoque', descricao: direto ? 'Você tem permissão de aprovar: o lançamento vale na hora e fica registrado como aprovação sua.'
     : 'O ajuste só muda o estoque depois de aprovado por quem tem permissão.', corpo: form, rodape: [cancelar, botao], tamanho: 'grande',
-  protegerAlteracoes: () => sujo, aoFechar: () => origem?.focus() });
+  protegerAlteracoes: () => sujo, aoFechar: () => { desligar(); origem?.focus(); } });
+  document.getElementById('avisos')?.replaceChildren();
+  const desligar = espelharAvisos(avisosModal);
   cancelar.addEventListener('click', () => modal.dialogo.querySelector('.modal__fechar').click());
   form.addEventListener('submit', (e) => {
     e.preventDefault();

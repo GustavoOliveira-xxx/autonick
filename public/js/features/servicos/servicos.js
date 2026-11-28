@@ -124,7 +124,7 @@ let lista = [];
 function desenhar() {
   area.replaceChildren(...[
     el('section', { class: 'pilha', 'aria-labelledby': 'titulo-lista' }, el('div', { class: 'barra-consulta' }, el('h2', { id: 'titulo-lista', class: 'barra-consulta__titulo' }, 'Serviços cadastrados'),
-      ctx.pode('catalogo_servicos.alterar') && !editando ? botaoCadastro({ id: 'novo-servico', rotulo: 'Novo serviço', titulo: 'Novo serviço', construir: formServico }) : null),
+      ctx.pode('catalogo_servicos.alterar') && !editando ? botaoCadastro({ id: 'abrir-novo-servico', rotulo: 'Novo serviço', titulo: 'Novo serviço', construir: formServico }) : null),
       lista.length ? el('ul', { class: 'pilha', id: 'lista-servicos' }, ...lista.map(cartao)) : el('p', { id: 'lista-servicos' }, 'Nenhum serviço cadastrado ainda.')),
     ctx.pode('catalogo_servicos.alterar') && editando ? formServico() : null,
     secaoPolitica()].filter(Boolean));

@@ -37,6 +37,18 @@ export function vazio(texto, acao = null, id = null) {
  * Cadastro sob demanda: um botão abre o formulário existente da tela num modal. O formulário continua com as mesmas
  * regras e chamadas; o modal fecha quando a tela anuncia sucesso, e avisos de erro aparecem também dentro dele.
  */
+/** Mostra dentro de um modal os avisos de erro e alerta que a tela escreve em #avisos (atrás do modal). Devolve o desligamento. */
+export function espelharAvisos(destino) {
+  const avisos = document.getElementById('avisos');
+  if (!avisos) return () => {};
+  const obs = new MutationObserver(() => {
+    const problema = avisos.querySelector('.aviso--erro, .aviso--alerta');
+    destino.replaceChildren(...(problema ? [problema.cloneNode(true)] : []));
+  });
+  obs.observe(avisos, { childList: true, subtree: true });
+  return () => obs.disconnect();
+}
+
 export async function abrirEmModal({ titulo, construir, origem = null, descricao = null }) {
   const { abrirModal } = await import('./modal.js');
   const avisosModal = el('div', { class: 'avisos-modal', 'aria-live': 'polite' });

@@ -196,6 +196,7 @@ test('conta a pagar parcelada: parcelas em centavos, pagamento parcial com saldo
     { hint: 'INSUFFICIENT_FUNDS', message: 'Saldo insuficiente em "Caixa da empresa" (R$ 75,00 disponível agora). O caixa físico nunca fica negativo.', details: 'valor_centavos' }] } });
   await page.goto(`/business/financeiro-contas.html?id=${EMP}`);
   await expect(page.locator('#tabela-titulos')).toContainText('Forno novo');
+  await page.locator('#nova-conta').click();   // pacote 27/11: consulta primeiro, nova conta sob demanda (modal)
   await page.locator('#nova-descricao').fill('Forno novo');
   await page.locator('#nova-categoria').selectOption('k4');
   await page.locator('#nova-total').fill('900,00');

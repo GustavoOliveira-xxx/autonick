@@ -60,6 +60,7 @@ async function simular(context, { permissoes = TODAS, papel = 'proprietario', pr
       case '/api/rpc/historico_movimentacoes': return json(200, estado.historico);
       case '/api/rpc/compras_da_empresa': return json(200, estado.compras);
       case '/api/fornecedores': return json(200, estado.fornecedores);
+      case '/api/rpc/fornecedores_da_empresa': return json(200, estado.fornecedores);
       case '/api/rpc/criar_produto': {
         const novo = { ...produtoBase(), id: 'p2', nome: corpo.p_dados.nome, finalidade: corpo.p_dados.finalidade, variacoes: [variacao('v9', { padrao: !corpo.p_variacoes, rotulo: 'Padrão', atributos: {} })] };
         estado.produtos.push(novo);
@@ -97,6 +98,7 @@ test('proprietária cadastra produto: finalidade obrigatória e preço validado 
   await expect(page.locator('#lista-produtos')).toContainText('R$ 49,90');
   await expect(page.locator('#lista-produtos')).toContainText('Estoque baixo em 1 variação');
   await expect(page.locator('#conteudo')).toContainText('Dado de teste');
+  await page.locator('#novo-produto').click();   // pacote 27/11: lista primeiro, cadastro sob demanda
   await page.locator('#novo-nome').fill('Caneca');
   await page.getByRole('button', { name: 'Cadastrar produto' }).click();
   await expect(page.locator('[data-grupo="finalidade"]')).toHaveText('Escolha se o produto é comercializável ou de uso interno.');
@@ -117,6 +119,7 @@ test('proprietária cadastra produto: finalidade obrigatória e preço validado 
 test('produto com variações: grade com atributos e repetição apontada (D5-12) [simulação]', async ({ page, context }) => {
   const estado = await simular(context);
   await page.goto(`/business/produtos-empresa.html?id=${EMP}`);
+  await page.locator('#novo-produto').click();
   await page.locator('#novo-nome').fill('Vestido');
   await page.getByLabel('Comercializável', { exact: true }).check();
   await page.getByLabel('Sim, tem variações').check();
@@ -144,13 +147,15 @@ test('estoquista: custo escondido, movimentação vira proposta e não há estor
   await expect(page.locator('#conteudo-pagina')).not.toContainText('R$ 21,00');
   await page.goto(`/business/estoque-empresa.html?id=${EMP}`);
   await expect(page.locator('#lista-alertas')).toContainText('Camiseta (Preta)');
-  await expect(page.locator('#mov-custo')).toHaveCount(0);
+  await expect(page.locator('#form-movimentacao')).toHaveCount(0);   // pacote 27/11: sem formulário de movimentação na abertura
   await expect(page.locator('[data-estornar]')).toHaveCount(0);
+  await page.locator('#ajustar-estoque').click();
+  await expect(page.locator('#mov-custo')).toHaveCount(0);
   await page.locator('#mov-tipo').selectOption('entrada');
   await page.locator('#mov-variacao').selectOption('v1');
   await page.locator('#mov-quantidade').fill('3');
   await page.getByRole('button', { name: 'Enviar para aprovação' }).click();
-  await expect(page.locator('#avisos')).toContainText('Movimentação enviada para aprovação.');
+  await expect(page.locator('#avisos')).toContainText('Ajuste enviado para aprovação.');
   expect(estado.chamadas).toContain('/api/rpc/propor_movimentacao');
   expect(estado.chamadas).not.toContain('/api/rpc/registrar_movimentacao');
   await expect(page.locator('#lista-pendentes')).toContainText('Cancelar minha proposta');
@@ -165,6 +170,7 @@ test('quem aprova: aprova pendência e estorna com motivo obrigatório no diálo
   await expect(page.locator('#lista-pendentes')).toContainText('Saída por Eva');
   await page.getByRole('button', { name: 'Aprovar e aplicar' }).click();
   await expect(page.locator('#avisos')).toContainText('Movimentação aprovada e aplicada ao estoque.');
+  await page.locator('#secao-historico summary').click();
   await page.locator('[data-estornar="m1"]').click();
   const dialogo = page.getByRole('dialog');
   await expect(dialogo).toContainText('a original continua no histórico');
@@ -180,12 +186,14 @@ test('falta de estoque explicada; perda de rede reaproveita a mesma chave (API-O
   const estado = await simular(context, { erros: { '/api/rpc/registrar_movimentacao': [
     { hint: 'INSUFFICIENT_STOCK', message: 'Estoque insuficiente: há 6 disponíveis de Camiseta (Azul).', details: 'v1' }, 'rede'] } });
   await page.goto(`/business/estoque-empresa.html?id=${EMP}`);
+  await page.locator('#ajustar-estoque').click();
   await page.locator('#mov-tipo').selectOption('saida');
   await page.locator('#mov-variacao').selectOption('v1');
   await page.locator('#mov-quantidade').fill('9');
-  await page.locator('#mov-motivo').fill('Venda de balcão');
+  await page.locator('#mov-motivo').fill('Avaria no transporte');
   await page.getByRole('button', { name: 'Lançar no estoque' }).click();
   await expect(page.locator('#avisos')).toContainText('há 6 disponíveis');
+  await expect(page.getByRole('dialog')).toContainText('há 6 disponíveis');   // o erro aparece também dentro do modal
   await page.locator('#mov-quantidade').fill('2');
   await page.getByRole('button', { name: 'Lançar no estoque' }).click();
   await expect(page.locator('#avisos')).toContainText('não será duplicada');
@@ -214,13 +222,22 @@ test('pausa comercial com motivo e preço com histórico (D5-08, RF-045) [simula
 test('compras: quem não vê custo não informa custo; registro vira proposta (D5-04, D5-06) [simulação]', async ({ page, context }) => {
   const estado = await simular(context, { permissoes: ESTOQUISTA, papel: 'funcionario' });
   await page.goto(`/business/fornecedores.html?id=${EMP}`);
-  await expect(page.locator('#titulo-fornecedores')).toHaveCount(0);
-  await expect(page.locator('#compra-item-0-custo')).toHaveCount(0);
-  expect(estado.chamadas).not.toContain('/api/fornecedores');
-  await page.locator('#compra-item-0-variacao').selectOption('v1');
-  await page.locator('#compra-item-0-quantidade').fill('10');
-  await page.getByRole('button', { name: 'Salvar compra' }).click();
+  await expect(page.getByRole('alert')).toContainText('não inclui os fornecedores');
+  expect(estado.chamadas).not.toContain('/api/rpc/fornecedores_da_empresa');
+  // Pacote 27/11 (item 4): Compras é um destino próprio, com lista e "Nova compra" em modal.
+  await page.goto(`/business/compras.html?id=${EMP}`);
+  await page.locator('#nova-compra').click();
+  await expect(page.locator('#compra-fornecedor')).toHaveCount(0);
+  await page.locator('#compra-produto').fill('Cami');
+  await page.locator('#compra-produto').press('ArrowDown');
+  await page.locator('#compra-produto').press('Enter');
+  await expect(page.locator('[data-item-compra="v1"], [data-item-compra="v2"]').first()).toBeVisible();
+  await expect(page.locator('[id^="compra-custo-"]')).toHaveCount(0);
+  const item = await page.locator('[data-item-compra]').first().getAttribute('data-item-compra');
+  await page.locator(`#compra-qtd-${item}`).fill('10');
+  await page.getByRole('button', { name: 'Salvar rascunho' }).click();
   await expect(page.locator('#avisos')).toContainText('Compra salva como rascunho.');
+  expect(estado.corpos['/api/rpc/criar_compra'].p_itens).toEqual([{ variacao_id: item, quantidade: 10 }]);
   await page.getByRole('button', { name: 'Registrar compra' }).click();
   await expect(page.locator('#avisos')).toContainText('A entrada aguarda aprovação.');
   await expect(page.locator('#lista-compras')).toContainText('Aguardando aprovação da entrada');
@@ -231,7 +248,7 @@ test('compras: quem não vê custo não informa custo; registro vira proposta (D
 test('celular (360 px): telas do M05 sem rolagem horizontal [simulação]', async ({ page, context }) => {
   await simular(context, { historico: historicoExemplo });
   await page.setViewportSize({ width: 360, height: 780 });
-  for (const caminho of [`/business/estoque-empresa.html?id=${EMP}`, `/business/produto.html?id=${EMP}&produto=p1`, `/business/produtos-empresa.html?id=${EMP}`, `/business/fornecedores.html?id=${EMP}`]) {
+  for (const caminho of [`/business/estoque-empresa.html?id=${EMP}`, `/business/produto.html?id=${EMP}&produto=p1`, `/business/produtos-empresa.html?id=${EMP}`, `/business/fornecedores.html?id=${EMP}`, `/business/compras.html?id=${EMP}`]) {
     await page.goto(caminho);
     await page.locator('#conteudo-pagina section').first().waitFor();
     const larguras = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth,

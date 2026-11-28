@@ -9,12 +9,12 @@ import { neon } from './sessao.js';
 const PADRAO = Object.freeze({ animacoes_decorativas: true, busca_cep: true, onboarding_contextual: true });
 const cache = new Map();
 
-export function flags(empresaId = null) {
+export function flags(empresaId = null, { comSessao = null } = {}) {
   const k = empresaId ?? '';
   if (!cache.has(k)) {
     cache.set(k, (async () => {
       try {
-        const r = (await neon.temSessao()) ? await neon.rpc('flags_ativas', { p_empresa_id: empresaId })
+        const r = (comSessao ?? await neon.temSessao()) ? await neon.rpc('flags_ativas', { p_empresa_id: empresaId })
           : await neon.rpcPublica('flags_ativas', { p_empresa_id: null });
         return r && typeof r === 'object' && !Array.isArray(r) ? { ...PADRAO, ...r } : { ...PADRAO };
       } catch {

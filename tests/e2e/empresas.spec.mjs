@@ -255,7 +255,8 @@ test('proprietário vê dados privados pela função própria e o atalho da equi
   await expect(page.locator('#editar-documento')).toHaveValue('12345678000199');
   await expect(page.locator('#empresa')).toContainText('Você é proprietário');
   await expect(page.locator('#empresa')).toContainText('Dado de teste');
-  await expect(page.getByRole('link', { name: 'Equipe, convites e perfis de acesso' })).toHaveAttribute('href', `/business/equipe.html?id=${EMP}`);
+  // Pacote 27/11 (item 6): atalhos em cartões com link de verdade.
+  await expect(page.getByRole('link', { name: /Equipe e perfis/ })).toHaveAttribute('href', `/business/equipe.html?id=${EMP}`);
   await expect(page.getByRole('button', { name: 'Sair da empresa' })).toHaveCount(0);
   expect(estado.chamadas).toContain('/api/rpc/empresa_dados_privados');
 });

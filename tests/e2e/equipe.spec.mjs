@@ -130,11 +130,15 @@ test('proprietário cria perfil a partir do modelo e convida (D4-3, D4-1) [simul
   await expect(page.getByRole('tab', { name: /Pessoas/ })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: 'Criar um perfil de acesso' }).click();
   await expect(page.getByRole('tab', { name: /Perfis de acesso/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#perfil-contador')).toHaveText('0 de 48 permissões escolhidas.');
-  await page.getByRole('button', { name: 'Criar perfil' }).click();
+  // Pacote 27/11 (item 8): perfil em modal com etapas (nome, modelo, áreas, revisão).
+  const modal = page.getByRole('dialog', { name: 'Novo perfil de acesso' });
+  await expect(modal).toBeVisible();
+  await page.locator('#perfil-continuar').click();
   await expect(page.locator('#perfil-nome-erro')).toHaveText('Dê um nome ao perfil (2 a 60 caracteres).');
-  await page.getByRole('button', { name: 'Estoque', exact: true }).click();
-  await expect(page.locator('#perfil-nome')).toHaveValue('Estoque');
+  await page.locator('#perfil-nome').fill('Estoque');
+  await page.locator('#perfil-continuar').click();
+  await modal.locator('[data-modelo="estoque"]').click();
+  await page.locator('#perfil-continuar').click();
   await expect(page.locator('#perfil-contador')).toHaveText('7 de 48 permissões escolhidas.');
   await expect(page.locator('#perm-estoque-aprovar')).toBeChecked();
   await expect(page.locator('#perm-financeiro-fechar')).not.toBeChecked();
@@ -148,7 +152,10 @@ test('proprietário cria perfil a partir do modelo e convida (D4-3, D4-1) [simul
   await expect(page.locator('#perfil-contador')).toHaveText('7 de 48 permissões escolhidas.');
   const resultado = await new AxeBuilder({ page }).withTags(AXE).analyze();
   expect(resultado.violations).toEqual([]);
-  await page.getByRole('button', { name: 'Criar perfil' }).click();
+  await page.locator('#perfil-continuar').click();
+  await expect(page.locator('#perfil-total')).toHaveText('7 de 48');
+  await expect(modal).toContainText('Modelo Estoque');
+  await page.locator('#perfil-salvar').click();
   await expect(page.locator('#avisos')).toContainText('Perfil "Estoque" criado.');
   await expect(page.locator('#equipe')).toContainText('7 permissões · usado por 0 pessoas');
   await page.getByRole('tab', { name: /Pessoas/ }).click();
@@ -205,8 +212,6 @@ test('gestor designado: não concede o que não tem nem mexe em quem tem mais (D
     ],
   });
   await page.goto(`/business/equipe.html?id=${EMP}`);
-  await expect(page.locator('#perm-financeiro-fechar')).toBeDisabled();
-  await expect(page.locator('#perm-financeiro-fechar-desc')).toContainText('Você não tem esta permissão');
   await expect(page.locator('[data-membro="m0"]')).toContainText('O acesso do proprietário não pode ser alterado');
   await expect(page.locator('[data-membro="m3"]')).toContainText('Este é você.');
   await expect(page.locator('[data-membro="m4"]')).toContainText('Esta pessoa tem permissões que você não tem.');
@@ -220,9 +225,15 @@ test('gestor designado: não concede o que não tem nem mexe em quem tem mais (D
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('tab', { name: /Perfis de acesso/ }).click();
-  await page.getByRole('button', { name: 'Gerente', exact: true }).click();
-  await expect(page.locator('#avisos')).toContainText('Modelo "Gerente" aplicado.');
+  await page.locator('#novo-perfil').click();
+  await page.locator('#perfil-nome').fill('Gerente 2');
+  await page.locator('#perfil-continuar').click();
+  await page.locator('[data-modelo="gerente"]').click();
+  await expect(page.getByRole('dialog')).toContainText('Modelo "Gerente" aplicado.');
+  await page.locator('#perfil-continuar').click();
   await expect(page.locator('#perfil-contador')).toHaveText('47 de 48 permissões escolhidas.');
+  await expect(page.locator('#perm-financeiro-fechar')).toBeDisabled();
+  await expect(page.locator('#perm-financeiro-fechar-desc')).toContainText('Você não tem esta permissão');
   const resultado = await new AxeBuilder({ page }).withTags(AXE).analyze();
   expect(resultado.violations).toEqual([]);
 });

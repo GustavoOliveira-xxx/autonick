@@ -131,6 +131,7 @@ test('catálogo: preço exigido no fixo, nada de total enviado; modalidade autom
   await page.goto(`/business/servicos.html?id=${EMP}`);
   await expect(page.locator('#lista-servicos [data-servico]')).toHaveCount(2);
   await expect(page.locator('#lista-servicos')).toContainText('Calculado por regras');
+  await page.locator('#abrir-novo-servico').click();   // pacote 27/11: lista primeiro, cadastro sob demanda
   await page.locator('#novo-servico-nome').fill('Troca de chuveiro');
   await page.locator('#novo-servico-politica').selectOption('fixo');
   await page.locator('#novo-servico [type="submit"]').click();

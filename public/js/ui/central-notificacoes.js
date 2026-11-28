@@ -37,7 +37,7 @@ export function botaoNotificacoes() {
   };
   document.addEventListener('autonick:sessao', (e) => { if (e.detail?.autenticado) carregarContagem(); else b.hidden = true; });
   b.addEventListener('click', () => abrirCentral(b, atualizar));
-  queueMicrotask(carregarContagem);
+  carregarContagem();
   return b;
 }
 

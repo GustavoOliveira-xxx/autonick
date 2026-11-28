@@ -78,6 +78,7 @@ async function simular(context, { permissoes = TODAS, papel = 'proprietario', er
         ativo: true, conta_vinculada: false, desde: '2026-10-01T12:00:00Z', versao: 1 },
         ...(permissoes.includes('vendas.visualizar') ? { resumo: { vendas: 1, total_centavos: 7000, ultima_compra: '2026-11-10T15:00:00Z' },
           vendas: [{ id: VENDA, numero: 12, estado: 'confirmada', total_centavos: 7000, data: '2026-11-10T15:00:00Z' }] } : {}) });
+      case '/api/rpc/buscar_clientes': return json(200, { itens: [{ id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, tipo_pessoa: 'pf', documento: null }], mais: false });
       case '/api/rpc/clientes_da_empresa': return json(200, [{ id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, observacoes: null, ativo: true, versao: 1, conta_vinculada: false, vendas: 1 }]);
       case '/api/rpc/meu_limite_desconto': return json(200, limite);
       case '/api/rpc/registrar_venda_direta': return json(200, { id: VENDA, numero: 7, estado: 'confirmada', entrega: 'entregue', total_centavos: 8000, versao: 3 });
@@ -129,7 +130,12 @@ test('venda de balcão: preço nunca vai do navegador, desconto acima do limite 
   await page.locator(`[data-adicionar="${V1}"]`).click();
   await page.locator(`#qtd-${V1}`).fill('2');
   await page.locator(`#qtd-${V1}`).dispatchEvent('change');
-  await page.locator('#venda-cliente').selectOption('cl1');
+  // Pacote 27/11 (item 1.2): cliente por busca com teclado, resumo e troca.
+  await page.locator('#venda-cliente').fill('ana');
+  await expect(page.getByRole('option', { name: /Ana Souza/ })).toBeVisible();
+  await page.locator('#venda-cliente').press('ArrowDown');
+  await page.locator('#venda-cliente').press('Enter');
+  await expect(page.locator('#venda-cliente-escolhido')).toContainText('Ana Souza');
   await page.locator('#venda-desconto').fill('10,00');
   await page.locator('#venda-desconto').dispatchEvent('input');
   await expect(page.locator('#total-previa')).toHaveText('Total previsto: R$ 60,00 (desconto de R$ 10,00)');
@@ -152,15 +158,25 @@ test('venda de balcão: preço nunca vai do navegador, desconto acima do limite 
   expect(chaves[1]).toBe(chaves[2]);
 });
 
-test('parcelado: valores divididos, vencimentos e recebimento inicial enviados em centavos [simulação]', async ({ page, context }) => {
+test('parcelado: gerar por DDL, sobra de centavos na última, entrada abate a 1ª parcela, tudo em centavos [simulação]', async ({ page, context }) => {
   const estado = await simular(context);
   await page.goto(`/business/venda-nova.html?id=${EMP}`);
   await page.locator(`[data-adicionar="${V1}"]`).click();
-  await page.locator('#venda-condicao').selectOption('parcelado');
+  await page.locator('#venda-condicao-parcelado').check();
   await page.locator('#venda-parcelas').selectOption('3');
-  await expect(page.locator('#parcela-valor-0')).toHaveValue('11,68');
-  await expect(page.locator('#parcela-valor-2')).toHaveValue('11,66');
-  await page.locator('#venda-recebido').fill('11,68');
+  await page.getByRole('button', { name: 'Confirmar venda' }).click();
+  await expect(page.locator('#gerar-parcelas-erro')).toContainText('Gerar parcelas');
+  await page.locator('#gerar-parcelas').click();
+  await expect(page.locator('#parcela-valor-0')).toHaveValue('11,66');
+  await expect(page.locator('#parcela-valor-2')).toHaveValue('11,68');
+  await expect(page.locator('#parcela-ddl-0')).toHaveText('30');
+  await expect(page.locator('#parcela-ddl-2')).toHaveText('90');
+  await page.locator('#parcela-valor-0').fill('10,00');
+  await expect(page.locator('#resumo-pagamento')).toContainText('faltam R$ 1,66');
+  await page.locator('#gerar-parcelas').click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Gerar de novo' }).click();
+  await expect(page.locator('#parcela-valor-0')).toHaveValue('11,66');
+  await page.locator('#venda-recebido').fill('11,66');
   await page.getByRole('button', { name: 'Confirmar venda' }).click();
   await expect(page.locator('#venda-forma-erro')).toHaveText('Escolha a forma de pagamento.');
   await page.locator('#venda-forma').selectOption('pix');
@@ -168,8 +184,9 @@ test('parcelado: valores divididos, vencimentos e recebimento inicial enviados e
   await expect(page).toHaveURL(/venda\.html/);
   const p = estado.corpos['/api/rpc/registrar_venda_direta'].p_pagamento;
   expect(p.condicao).toBe('parcelado');
-  expect(p.parcelas.map((x) => x.valor_centavos)).toEqual([1168, 1166, 1166]);
-  expect(p.recebimento_inicial).toEqual({ valor_centavos: 1168, forma: 'pix' });
+  expect(p.parcelas.map((x) => x.valor_centavos)).toEqual([1166, 1166, 1168]);
+  expect(p.parcelas.every((x) => x.forma === 'pix')).toBe(true);
+  expect(p.recebimento_inicial).toEqual({ valor_centavos: 1166, forma: 'pix' });
 });
 
 test('vendedor: sem confirmar, sem quantidade de estoque e sem custo; guarda rascunho [simulação]', async ({ page, context }) => {

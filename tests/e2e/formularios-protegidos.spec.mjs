@@ -83,7 +83,7 @@ for (const area of ['cliente', 'business']) {
     await page.locator('#entrar-senha').fill(SENHA);
     if (area === 'cliente') await page.getByRole('button', { name: 'Entrar', exact: true }).click();
     else await page.locator('#entrar-senha').press('Enter');   // Enter também entra quando o formulário está pronto
-    await expect(page).toHaveURL(area === 'cliente' ? /\/cliente\/$/ : /\/business\/conta\.html$/);
+    await expect(page).toHaveURL(area === 'cliente' ? /\/cliente\/$/ : /\/business\/minhas-empresas\.html/);
     semVazamento(v);
   });
 }

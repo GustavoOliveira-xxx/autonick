@@ -296,17 +296,27 @@ export function iniciarLayout() {
 /** Lugar do sino de notificações: o módulo (que fala com o servidor) só carrega nas áreas com conta, sem pesar na Ajuda offline. */
 function vagaNotificacoes() {
   const vaga = el('span', { class: 'vaga-notificacoes' });
-  import('./central-notificacoes.js').then((m) => vaga.replaceWith(m.botaoNotificacoes())).catch(() => {});
+  // Só com sessão confirmada: tela de entrar e visitantes não fazem chamada nenhuma por causa do sino.
+  const aoConfirmar = (e) => {
+    if (!e.detail?.autenticado) return;
+    document.removeEventListener('autonick:sessao', aoConfirmar);
+    import('./central-notificacoes.js').then((m) => { if (vaga.isConnected) vaga.replaceWith(m.botaoNotificacoes()); }).catch(() => {});
+  };
+  document.addEventListener('autonick:sessao', aoConfirmar);
   return vaga;
 }
 
 /** Feature flags com efeito na casca: animações decorativas desligadas deixam a interface estática (E09). */
 function aplicarFlags() {
-  import('../data/flags.js').then((m) => m.flags(obterEmpresaAtiva()?.id ?? null)).then((f) => {
+  // Sem chamadas extras em telas sem conta (entrar, ajuda): com sessão confirmada nas áreas com conta; na home, só se houver o Bong.
+  const aplicar = (comSessao) => import('../data/flags.js').then((m) => m.flags(comSessao ? obterEmpresaAtiva()?.id ?? null : null, { comSessao })).then((f) => {
     if (f.animacoes_decorativas === false) document.documentElement.dataset.animacoes = 'desligadas';
     else delete document.documentElement.dataset.animacoes;
     document.dispatchEvent(new CustomEvent('autonick:flags', { detail: f }));
   }).catch(() => {});
+  let feito = false;
+  document.addEventListener('autonick:sessao', (e) => { if (e.detail?.autenticado && !feito) { feito = true; aplicar(true); } });
+  if (document.querySelector('[data-heroi-sino], .heroi-sino')) setTimeout(() => { if (!feito) { feito = true; aplicar(false); } }, 0);
 }
 
 /** Redesenha o bloco da empresa ativa e o menu (chamado quando a tela confirma a empresa no banco). */

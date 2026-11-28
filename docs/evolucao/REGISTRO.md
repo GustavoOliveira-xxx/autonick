@@ -136,3 +136,26 @@ O andamento por requisito fica em `MATRIZ.md`. Abaixo, o diário por marco.
 - Instruções de Windows: `docs/evolucao/WINDOWS.md` (atualizar o git, base isolada com `AUTONICK_LOCAL_PASTA`, backup e recuperação, endereços, labs e roteiro).
 - Pendências registradas na matriz: E08 (portal do cliente renovado, notificações, onboarding), vendas "consulta primeiro", feature flags,
   controles extras do Animation Lab, próxima ação por OS na lista e reescrita de `docs/arquitetura.md`.
+
+## Pacote de 27/11 (implementação complementar)
+
+Base: `9d16626` (último SHA da entrega anterior). Mesma branch. Sem deploy, sem Neon, sem merge.
+
+### Migrations novas
+- `202612010001_cadastros_documentos`: CPF/CNPJ (numérico e alfanumérico) em texto canônico com DV oficial em SQL; restrições de formato
+  de empresas e fornecedores aceitam o alfanumérico (documentos antigos ficam válidos até serem alterados); clientes PF/PJ com nome fantasia,
+  documento e endereço com CEP (tudo opcional); fornecedores com os mesmos campos e pessoa de contato; `buscar_clientes` (só ativos,
+  paginada, sem acento), `clientes_da_empresa` com busca por documento, telefone e e-mail; `documento_em_uso` (aviso, sem bloqueio, só na
+  empresa); `fornecedores_da_empresa`; observação de compra; forma prevista e prazo (DDL) por parcela de venda.
+- `202612010002_produtividade_portal`: busca na lista de vendas; feature flags; notificações persistentes por gatilhos dos fluxos reais;
+  preferências; onboarding dispensado; modelos de orçamento.
+- As duas foram aplicadas numa base local já existente (atualização) e em instalação limpa (testes de banco), com reversão sem resíduo.
+
+### Decisões conservadoras
+- Duplicidade de documento só avisa (há filiais e cadastros legítimos com o mesmo CNPJ); nunca há unicidade entre empresas.
+- O dígito verificador só é exigido quando o documento é informado ou alterado: bases antigas com documentos fictícios continuam abrindo.
+- O banco continua aceitando vencimentos iguais em sequência (regra anterior); a tela exige prazos crescentes no modo "prazos".
+- Recebido agora abate a 1ª parcela (como já era no banco); a tela impede valor maior que a 1ª parcela em vez de mudar a regra.
+- Agenda individual com bloqueio automático: mantido o aviso com confirmação (bloquear exigiria definir exceções de negócio).
+- Busca de CEP ao vivo não pôde ser testada aqui (o ambiente bloqueia a BrasilAPI); os testes usam servidor simulado e o caminho de falha
+  foi conferido no app real ("Não foi possível buscar o CEP. Preencha o endereço manualmente.").

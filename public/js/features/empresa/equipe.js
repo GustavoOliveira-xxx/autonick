@@ -170,7 +170,7 @@ function secaoMembros() {
       acoes.push(adicionar);
     } else {
       const irPerfis = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Criar um perfil de acesso');
-      irPerfis.addEventListener('click', () => trocarAba?.('perfis'));
+      irPerfis.addEventListener('click', () => { trocarAba?.('perfis'); abrirFormularioPerfil(null, irPerfis); });
       acoes.push(aviso('info', 'Crie um perfil de acesso antes de convidar alguém.',
         el('p', {}, 'O perfil define o que a pessoa poderá fazer. Use um dos modelos prontos em "Perfis de acesso".'), el('p', {}, irPerfis)));
     }
