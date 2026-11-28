@@ -78,6 +78,8 @@ async function simular(context, { permissoes = TODAS, papel = 'proprietario', er
         ativo: true, conta_vinculada: false, desde: '2026-10-01T12:00:00Z', versao: 1 },
         ...(permissoes.includes('vendas.visualizar') ? { resumo: { vendas: 1, total_centavos: 7000, ultima_compra: '2026-11-10T15:00:00Z' },
           vendas: [{ id: VENDA, numero: 12, estado: 'confirmada', total_centavos: 7000, data: '2026-11-10T15:00:00Z' }] } : {}) });
+      case '/api/rpc/criar_cliente': estado.clienteCriado = corpo.p_dados; return json(200, { id: 'cl9', nome: corpo.p_dados.nome, versao: 1, ...corpo.p_dados });
+      case '/api/rpc/documento_em_uso': return json(200, corpo.p_documento === '11222333000181' ? [{ id: 'cl1', nome: 'Ana Souza', ativo: true }] : []);
       case '/api/rpc/buscar_clientes': return json(200, { itens: [{ id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, tipo_pessoa: 'pf', documento: null }], mais: false });
       case '/api/rpc/clientes_da_empresa': return json(200, [{ id: 'cl1', nome: 'Ana Souza', telefone: '19999990000', email: null, observacoes: null, ativo: true, versao: 1, conta_vinculada: false, vendas: 1 }]);
       case '/api/rpc/meu_limite_desconto': return json(200, limite);
@@ -354,4 +356,29 @@ test('M13: comprovante da venda sem custo dos itens; rascunho sem botão [simula
   await page.goto(`/business/venda.html?id=${EMP}&venda=${VENDA}`);
   await expect(page.locator('#titulo-pagina')).toHaveText('Rascunho de venda');
   await expect(page.locator('[data-pdf]')).toHaveCount(0);
+});
+
+test('pacote 27/11: cliente PJ com CNPJ alfanumérico em modal; DV errado avisado ao lado; documento repetido só avisa [simulação]', async ({ page, context }) => {
+  const estado = await simular(context);
+  await page.goto(`/business/clientes.html?id=${EMP}`);
+  await expect(page.locator('#lista-clientes')).toContainText('Ana Souza');
+  await page.locator('#novo-cliente').click();
+  const modal = page.getByRole('dialog', { name: 'Novo cliente' });
+  await modal.getByLabel('Pessoa jurídica (empresa)').check();
+  await expect(page.locator('label[for="cli-novo-nome"]')).toContainText('Razão social');
+  await page.locator('#cli-novo-nome').fill('Ateliê Fictício Ltda');
+  await page.locator('#cli-novo-documento').fill('11.222.333/0001-81');
+  await page.locator('#cli-novo-documento').blur();
+  await expect(modal.locator('#cli-novo-documento-aviso')).toContainText('Já existe cadastro com este CNPJ');
+  await page.locator('#cli-novo-documento').fill('12abc34501de36');
+  await modal.getByRole('button', { name: 'Cadastrar cliente' }).click();
+  await expect(page.locator('#cli-novo-documento-erro')).toContainText('CNPJ inválido');
+  expect(estado.clienteCriado).toBeUndefined();
+  await page.locator('#cli-novo-documento').fill('12abc34501de35');
+  await expect(page.locator('#cli-novo-documento')).toHaveValue('12.ABC.345/01DE-35');
+  const r = await new AxeBuilder({ page }).withTags(AXE).analyze();
+  expect(r.violations).toEqual([]);
+  await modal.getByRole('button', { name: 'Cadastrar cliente' }).click();
+  await expect(page.locator('#avisos')).toContainText('Cliente "Ateliê Fictício Ltda" cadastrado.');
+  expect(estado.clienteCriado).toEqual({ tipo_pessoa: 'pj', nome: 'Ateliê Fictício Ltda', documento: '12ABC34501DE35' });
 });

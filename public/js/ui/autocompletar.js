@@ -92,7 +92,12 @@ export function autocompletar({ id, rotulo, dica = '', ajuda = null, buscar, rot
   entrada.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); if (lista.hidden) agendar(); else marcar(Math.min(ativo + 1, itens.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); marcar(Math.max(ativo - 1, 0)); }
-    else if (e.key === 'Enter') { if (!lista.hidden && ativo >= 0) { e.preventDefault(); escolher(ativo); } }
+    else if (e.key === 'Enter') {
+      // Enter na busca nunca envia o formulário: escolhe o item destacado (ou o primeiro); sem lista ainda, busca na hora.
+      e.preventDefault();
+      if (!lista.hidden && itens.length) escolher(ativo >= 0 ? ativo : 0);
+      else { clearTimeout(relogio); const t = entrada.value.trim(); if (t.length >= minimo) consultar(t, 0); }
+    }
     else if (e.key === 'Escape') { if (!lista.hidden) { e.preventDefault(); e.stopPropagation(); fechar(); } }
   });
   entrada.addEventListener('blur', () => setTimeout(fechar, 150));

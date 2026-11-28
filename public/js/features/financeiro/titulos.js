@@ -252,7 +252,8 @@ async function carregar() {
     categorias = cats;
     concluirCarregamento(area);
     area.append(...[avisoRegistro(), det ? secaoDetalhe(det) : null, secaoLista(lista),
-      ctx.pode('financeiro.criar') ? el('div', { class: 'grupo-botoes' }, botaoCadastro({ id: 'nova-conta', rotulo: 'Nova conta a pagar ou receber', titulo: 'Nova conta', construir: secaoNova }))
+      ctx.pode('financeiro.criar') ? el('div', { class: 'grupo-botoes' }, botaoCadastro({ id: 'nova-conta', rotulo: 'Nova conta a pagar ou receber', titulo: 'Nova conta', construir: secaoNova,
+        aoConcluir: () => document.getElementById('detalhe-titulo')?.focus() }))
         : el('p', {}, 'Seu perfil pode consultar, mas não lançar contas.'),
       ctx.pode('financeiro.criar') ? secaoCompras(compras) : null].filter(Boolean));
     if (det) document.getElementById('detalhe-titulo')?.focus();

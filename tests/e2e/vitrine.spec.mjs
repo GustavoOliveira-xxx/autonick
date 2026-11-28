@@ -271,7 +271,8 @@ test('celular 360 px na área de demonstração (logado, faixa, ampliação e pe
   try {
     await simular(context, { logado: true });
     await page.setViewportSize({ width: 360, height: 780 });
-    const largos = () => page.evaluate(() => [...document.querySelectorAll('body *')].filter((n) => n.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+    // A onda do clique fica numa camada com overflow:hidden (recortada, não causa rolagem); por isso não entra na medição.
+    const largos = () => page.evaluate(() => [...document.querySelectorAll('body *')].filter((n) => !n.closest('.camada-onda') && n.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
       .map((n) => `${n.tagName}.${n.className}#${n.id}`).slice(0, 8));
     await page.goto('/cliente/demonstracao.html');
     await expect(page.locator('#lista-resultados [data-empresa]')).toHaveCount(3);

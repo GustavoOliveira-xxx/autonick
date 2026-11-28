@@ -11,7 +11,7 @@
  *    (texto fixo, sem dado de ninguém); conversas, dados privados, relatórios
  *    e PDFs nunca entram no cache.
  */
-const VERSAO = 'autonick-estatico-v0.17.0';  // Evolução integrada: navegação viva, tema claro revisado e símbolo capacete-sino
+const VERSAO = 'autonick-estatico-v0.18.0';  // Pacote 27/11: consulta primeiro, parcelas por DDL, CNPJ alfanumérico, CEP, notificações
 
 // Páginas que abrem sem conexão (a rede tem prioridade; o cache é só reserva).
 const PAGINAS_SEM_CONEXAO = ['/ajuda.html'];

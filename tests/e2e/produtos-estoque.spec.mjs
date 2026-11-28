@@ -229,6 +229,7 @@ test('compras: quem não vê custo não informa custo; registro vira proposta (D
   await page.locator('#nova-compra').click();
   await expect(page.locator('#compra-fornecedor')).toHaveCount(0);
   await page.locator('#compra-produto').fill('Cami');
+  await expect(page.getByRole('option', { name: /Camiseta/ }).first()).toBeVisible();
   await page.locator('#compra-produto').press('ArrowDown');
   await page.locator('#compra-produto').press('Enter');
   await expect(page.locator('[data-item-compra="v1"], [data-item-compra="v2"]').first()).toBeVisible();

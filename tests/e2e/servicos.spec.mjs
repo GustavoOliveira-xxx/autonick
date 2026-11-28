@@ -365,3 +365,21 @@ test('M13: comprovante só do orçamento aceito, com itens e total; sem versão 
   await expect(page.locator('#versoes')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Baixar comprovante do orçamento aceito (PDF)' })).toHaveCount(0);
 });
+
+test('pacote 27/11 (print 02): filtro ativo com texto escuro sobre dourado nos dois temas, sem sublinhado [simulação]', async ({ page, context }) => {
+  await simular(context);
+  for (const tema of ['escuro', 'claro']) {
+    await page.addInitScript((t) => { if (t === 'claro') localStorage.setItem('autonick.preferencia.tema', 'claro'); else localStorage.removeItem('autonick.preferencia.tema'); }, tema);
+    await page.goto(`/business/solicitacoes.html?id=${EMP}`);
+    const ativo = page.locator('#filtros [aria-pressed="true"]');
+    await expect(ativo).toBeVisible();
+    for (const estadoVisual of ['normal', 'hover', 'foco']) {
+      if (estadoVisual === 'hover') await ativo.hover();
+      if (estadoVisual === 'foco') await ativo.focus();
+      const s = await ativo.evaluate((b) => { const c = getComputedStyle(b); return { cor: c.color, fundo: c.backgroundColor, sublinhado: c.textDecorationLine }; });
+      expect(s, `${tema}/${estadoVisual}`).toEqual({ cor: 'rgb(26, 18, 8)', fundo: 'rgb(245, 183, 10)', sublinhado: 'none' });
+    }
+    const inativo = page.locator('#filtros [aria-pressed="false"]').first();
+    expect(await inativo.evaluate((b) => getComputedStyle(b).textDecorationLine)).toBe('none');
+  }
+});

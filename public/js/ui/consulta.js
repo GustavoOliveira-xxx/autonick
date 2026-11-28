@@ -49,13 +49,13 @@ export function espelharAvisos(destino) {
   return () => obs.disconnect();
 }
 
-export async function abrirEmModal({ titulo, construir, origem = null, descricao = null }) {
+export async function abrirEmModal({ titulo, construir, origem = null, descricao = null, aoConcluir = null }) {
   const { abrirModal } = await import('./modal.js');
   const avisosModal = el('div', { class: 'avisos-modal', 'aria-live': 'polite' });
   const modal = abrirModal({ titulo, descricao, corpo: el('div', { class: 'pilha cadastro-em-modal' }, avisosModal, construir()), tamanho: 'grande', aoFechar: () => { observador.disconnect(); origem?.focus(); } });
   const avisos = document.getElementById('avisos');
   const observador = new MutationObserver(() => {
-    if (avisos.querySelector('.aviso--sucesso')) { observador.disconnect(); modal.fechar(); return; }
+    if (avisos.querySelector('.aviso--sucesso')) { observador.disconnect(); modal.fechar(); aoConcluir?.(); return; }
     const problema = avisos.querySelector('.aviso--erro, .aviso--alerta');
     avisosModal.replaceChildren(...(problema ? [problema.cloneNode(true)] : []));
   });
@@ -63,8 +63,8 @@ export async function abrirEmModal({ titulo, construir, origem = null, descricao
   return modal;
 }
 
-export function botaoCadastro({ id, rotulo, titulo, construir, descricao = null }) {
+export function botaoCadastro({ id, rotulo, titulo, construir, descricao = null, aoConcluir = null }) {
   const b = el('button', { type: 'button', class: 'botao', id }, rotulo);
-  b.addEventListener('click', () => abrirEmModal({ titulo, construir, origem: b, descricao }));
+  b.addEventListener('click', () => abrirEmModal({ titulo, construir, origem: b, descricao, aoConcluir }));
   return b;
 }
