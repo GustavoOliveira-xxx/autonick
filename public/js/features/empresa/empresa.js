@@ -4,6 +4,7 @@
  * M04: cada parte aparece conforme as permissões atuais da pessoa nesta empresa;
  * o banco confere de novo a cada ação (a tela só orienta).
  */
+import { flags, definirFlagEmpresa } from '../../data/flags.js';
 import { normalizarDocumento, tipoDocumento } from '../../domain/documentos.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { definirEmpresaAtiva } from '../../core/contexto-empresa.js';
@@ -279,6 +280,19 @@ function blocoAcesso(acesso, e, pode) {
   partes.push(el('nav', { 'aria-label': 'Atalhos da empresa' }, el('ul', { class: 'grade-acoes lista-sem-marcador' }, ...atalhos.map(([, pagina, rotulo, ajuda, ic]) =>
     el('li', {}, el('a', { class: 'cartao-acao cartao-acao--icone', href: href(pagina) }, icone(ic), el('strong', {}, rotulo), el('span', {}, ajuda)))))),
   el('p', { class: 'campo__ajuda' }, 'Os demais módulos ficam no menu lateral.'));
+  if (pode('empresa.alterar') || acesso.papel === 'proprietario') {
+    // Flag por empresa (E09): dicas de primeiros passos para a equipe. Não muda permissão nem apaga nada.
+    const caixa = el('input', { type: 'checkbox', id: 'flag-onboarding', disabled: true });
+    const estado = el('span', { class: 'campo__ajuda', 'aria-live': 'polite', id: 'flag-onboarding-estado' });
+    flags(id).then((f) => { caixa.checked = f.onboarding_contextual !== false; caixa.disabled = false; });
+    caixa.addEventListener('change', async () => {
+      caixa.disabled = true;
+      try { await definirFlagEmpresa(id, 'onboarding_contextual', caixa.checked, crypto.randomUUID()); estado.textContent = caixa.checked ? 'Dicas ligadas.' : 'Dicas desligadas.'; }
+      catch (erro) { caixa.checked = !caixa.checked; estado.textContent = erro.message; }
+      finally { caixa.disabled = false; }
+    });
+    partes.push(el('div', { class: 'opcao' }, caixa, el('label', { for: 'flag-onboarding' }, 'Mostrar dicas de primeiros passos para a equipe'), estado));
+  }
   if (acesso.papel === 'funcionario') {
     const sair = el('button', { type: 'button', class: 'botao botao--perigo', id: 'sair-da-empresa' }, 'Sair da empresa');
     sair.addEventListener('click', () => ocupado(sair, async () => {

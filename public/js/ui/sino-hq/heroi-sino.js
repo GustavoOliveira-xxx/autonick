@@ -17,13 +17,14 @@
 import { LACO, CHAMADO, poseDoLaco, enquadramentoDoLaco, ciclosCompletos, usarLuva } from './animacao-chamado-forja.js';
 
 const LIMITE_CARGA_MS = 20000;
+const semDecorativas = () => document.documentElement.dataset.animacoes === 'desligadas';
 
 export function montarHeroiSino(raiz, opcoes = {}) {
   const urlModelo = opcoes.modelo ?? raiz.dataset.modelo;
   const prefere = window.matchMedia('(prefers-reduced-motion: reduce)');
   const est = {
     t: 0, rodando: false, visivel: false, abaVisivel: !document.hidden,
-    reduzido: prefere.matches, umaVez: false, palco: null, carregando: null, raf: 0, ultimo: 0, encerrado: false,
+    reduzido: prefere.matches || semDecorativas(), umaVez: false, palco: null, carregando: null, raf: 0, ultimo: 0, encerrado: false,
   };
 
   const cena = criar('canvas', 'heroi-sino__cena');
@@ -164,12 +165,14 @@ export function montarHeroiSino(raiz, opcoes = {}) {
   const aoMudarAba = () => { est.abaVisivel = !document.hidden; agendar(); };
   document.addEventListener('visibilitychange', aoMudarAba);
 
-  const aoMudarPreferencia = (e) => {
-    est.reduzido = e.matches;
+  const aoMudarPreferencia = () => {
+    est.reduzido = prefere.matches || semDecorativas();
     if (est.reduzido) { est.umaVez = false; } else if (est.visivel && !est.carregando) iniciarQuandoLivre();
     agendar(); atualizarToque();
   };
   prefere.addEventListener?.('change', aoMudarPreferencia);
+  // Feature flag "animacoes_decorativas" (E09): desligada pela CK, o Bong fica estático como no movimento reduzido.
+  document.addEventListener('autonick:flags', aoMudarPreferencia);
 
   const ro = new ResizeObserver(() => { if (est.palco && est.palco.redimensionar() && !est.rodando) desenharAgora(); else if (!est.palco) posicionarFundo(null); });
   ro.observe(palcoEl);

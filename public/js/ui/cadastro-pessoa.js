@@ -13,6 +13,7 @@ import { el } from './dom.js';
 import { campoTexto, campoSelecao, erroNoCampo } from './formulario.js';
 import { conferirDocumento, mascararDocumento, mascararCep, normalizarCep, cepValido, documentoParaLista } from '../domain/documentos.js';
 import { buscarCep, cepDisponivel } from '../data/enderecos.js';
+import { flagLigada } from '../data/flags.js';
 
 export const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 const CAMPOS_CEP = ['logradouro', 'bairro', 'cidade', 'uf'];
@@ -151,9 +152,12 @@ export function blocoPessoa({ prefixo, atual = {}, tipoPadrao = 'pf', comContato
       : (mantidos.length ? 'Mantivemos o endereço que você digitou.' : 'O CEP é válido, mas não traz rua nem bairro (CEP geral da cidade). Preencha à mão.');
     if (preenchidos) entrada(numero).focus();
   };
+  // Flag "busca_cep" (E09): desligada pela CK (ex.: serviço fora do ar), o endereço é só manual.
+  let buscaLigada = cepDisponivel;
+  if (cepDisponivel) flagLigada('busca_cep').then((ok) => { buscaLigada = ok; botaoCep.hidden = !ok; }).catch(() => {});
   entradaCep.addEventListener('input', () => {
     entradaCep.value = mascararCep(entradaCep.value);
-    if (cepDisponivel && cepValido(normalizarCep(entradaCep.value))) consultar(false);
+    if (buscaLigada && cepValido(normalizarCep(entradaCep.value))) consultar(false);
   });
   botaoCep.addEventListener('click', () => consultar(true));
 

@@ -204,12 +204,12 @@ function montarCabecalho(area) {
     });
     return [el('div', { class: 'cabecalho__interno' },
       el('div', { class: 'cabecalho__topo' }, marca(area), botaoLeitura(), botaoTema(), botaoMenu),
-      blocoEmpresaAtiva(), obterEmpresaAtiva() ? botaoBuscar() : null, menuBusiness())];
+      blocoEmpresaAtiva(), obterEmpresaAtiva() ? botaoBuscar() : null, vagaNotificacoes(), menuBusiness())];
   }
   // A Ajuda precisa abrir sem conexão: a casca não importa a configuração do ambiente (ela não fica no cache).
   const ambiente = area === 'ck' ? el('span', { class: 'ambiente' }, 'versão de desenvolvimento') : null;
   const entrar = area === 'cliente' ? el('a', { class: 'botao botao--orbe botao--entrar', id: 'acesso-cabecalho', href: '/cliente/entrar.html' }, 'Entrar') : null;
-  return [el('div', { class: 'cabecalho__interno' }, marca(area), ambiente, navSimples(area), botaoLeitura(), botaoTema(), entrar)];
+  return [el('div', { class: 'cabecalho__interno' }, marca(area), ambiente, navSimples(area), area === 'cliente' ? vagaNotificacoes() : null, botaoLeitura(), botaoTema(), entrar)];
 }
 
 function barraCelular(area) {
@@ -287,9 +287,26 @@ export function iniciarLayout() {
       import('./seletor-empresa.js').then((m) => m.abrirSeletorEmpresas()).catch(() => location.assign(gatilho.href));
     });
   }
+  aplicarFlags();
   registrarServiceWorker();
   capturarInstalacao();
   iniciarConexao();
+}
+
+/** Lugar do sino de notificações: o módulo (que fala com o servidor) só carrega nas áreas com conta, sem pesar na Ajuda offline. */
+function vagaNotificacoes() {
+  const vaga = el('span', { class: 'vaga-notificacoes' });
+  import('./central-notificacoes.js').then((m) => vaga.replaceWith(m.botaoNotificacoes())).catch(() => {});
+  return vaga;
+}
+
+/** Feature flags com efeito na casca: animações decorativas desligadas deixam a interface estática (E09). */
+function aplicarFlags() {
+  import('../data/flags.js').then((m) => m.flags(obterEmpresaAtiva()?.id ?? null)).then((f) => {
+    if (f.animacoes_decorativas === false) document.documentElement.dataset.animacoes = 'desligadas';
+    else delete document.documentElement.dataset.animacoes;
+    document.dispatchEvent(new CustomEvent('autonick:flags', { detail: f }));
+  }).catch(() => {});
 }
 
 /** Redesenha o bloco da empresa ativa e o menu (chamado quando a tela confirma a empresa no banco). */

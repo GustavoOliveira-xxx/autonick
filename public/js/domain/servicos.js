@@ -113,3 +113,22 @@ export function lerOpcoes(texto) {
     return true;
   });
 }
+
+/**
+ * Próxima ação de uma OS na lista (E07; pacote 27/11): o passo seguinte permitido pelo estado REAL da OS e pelas permissões
+ * de quem vê. Não inventa etapa: sem permissão para agir, a ação vira "Acompanhar"; OS encerrada ou cancelada não tem ação.
+ * O banco continua decidindo (checklist obrigatório bloqueia a conclusão, por exemplo). Devolve { texto, aba, agir } ou null.
+ */
+export function proximaAcaoOs(o, pode = () => false) {
+  if (!o || ['encerrada', 'cancelada'].includes(o.estado)) return null;
+  const altera = pode('servicos.alterar');
+  if (o.revisao_pendente) return altera ? { texto: 'Responder à revisão pedida pelo cliente', aba: 'comunicacao', agir: true } : { texto: 'Acompanhar: revisão pedida', aba: 'comunicacao', agir: false };
+  if (o.reagendamento_pendente) return altera ? { texto: 'Responder ao pedido de horário', aba: 'geral', agir: true } : { texto: 'Acompanhar: horário em negociação', aba: 'geral', agir: false };
+  if (o.usos_pendentes) return pode('estoque.aprovar') || altera ? { texto: 'Confirmar uso de material', aba: 'materiais', agir: true } : { texto: 'Acompanhar: material a confirmar', aba: 'materiais', agir: false };
+  if (!altera) return { texto: 'Acompanhar o serviço', aba: 'geral', agir: false };
+  if (o.estado === 'aguardando_inicio') return o.horario ? { texto: 'Iniciar o serviço', aba: 'geral', agir: true } : { texto: 'Combinar o horário', aba: 'geral', agir: true };
+  if (o.estado === 'em_execucao') return { texto: 'Concluir (confira o checklist)', aba: 'checklist', agir: true };
+  if (o.estado === 'pausada') return { texto: 'Retomar o serviço', aba: 'geral', agir: true };
+  if (o.estado === 'concluida') return { texto: 'Aguardando o cliente confirmar o recebimento', aba: 'comunicacao', agir: false };
+  return null;
+}

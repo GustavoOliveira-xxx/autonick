@@ -87,3 +87,7 @@ export const salvarCompromissoAgenda = (empresaId, compromissoId, dados, aceitar
   { p_empresa_id: empresaId, p_compromisso_id: compromissoId, p_dados: dados, p_aceitar_avisos: aceitarAvisos, p_expected_version: versao, p_operation_key: chave });
 export const cancelarCompromissoAgenda = (compromissoId, versao, chave) =>
   neon.rpc('cancelar_compromisso_agenda', { p_compromisso_id: compromissoId, p_expected_version: versao, p_operation_key: chave });
+// Modelos reutilizáveis de orçamento (E05; migration 202612010002).
+export const modelosOrcamento = (empresaId) => neon.rpc('modelos_orcamento', { p_empresa_id: empresaId });
+export const salvarModeloOrcamento = (empresaId, modeloId, dados, versao, chave) =>
+  neon.rpc('salvar_modelo_orcamento', { p_empresa_id: empresaId, p_modelo_id: modeloId, p_dados: dados, p_expected_version: versao, p_operation_key: chave });

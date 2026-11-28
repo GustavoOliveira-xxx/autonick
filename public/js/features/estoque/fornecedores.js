@@ -4,6 +4,7 @@
  * endereço com Buscar CEP); detalhes com endereço e últimas compras. Desativar preserva as compras antigas.
  * As compras ficam em Compras (compras.html). Endereço antigo "fornecedores.html#compras" leva para lá.
  */
+import { dicaContextual } from '../../ui/onboarding.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -127,6 +128,7 @@ async function carregar() {
     lista = await fornecedoresDaEmpresa(ctx.id, busca, situacao);
     if (!Array.isArray(lista)) lista = [];
     concluirCarregamento(area);
+    area.append(dicaContextual({ chave: 'business.fornecedores', titulo: 'Fornecedores', texto: 'CNPJ não é obrigatório para autônomos. Desativar um fornecedor não apaga as compras antigas.', empresaId: ctx.id }));
     const filtro = campoSelecao({ nome: 'situacao', rotulo: 'Situação', opcoes: [['ativos', 'Ativos'], ['inativos', 'Desativados'], ['todos', 'Todos']], valor: situacao, vazio: null, id: 'filtro-situacao' });
     filtro.querySelector('select').addEventListener('change', (e) => { situacao = e.target.value; buscar(); });
     const barra = barraConsulta({ id: 'busca-fornecedor', rotulo: 'Buscar fornecedores', valor: busca, dica: 'Nome, fantasia, CNPJ/CPF, cidade ou contato',

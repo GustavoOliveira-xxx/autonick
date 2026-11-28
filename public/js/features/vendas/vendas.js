@@ -3,6 +3,7 @@
  * compactos; situação de entrega e de pagamento,
  * rascunhos em aberto e a visão única de operações (vendas e pedidos com a origem).
  */
+import { dicaContextual } from '../../ui/onboarding.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -101,6 +102,7 @@ async function carregar() {
       ctx.pode('vendas.visualizar') || ctx.pode('pedidos.visualizar') ? lerOperacoes(ctx.id, 50) : Promise.resolve(null)]);
     document.getElementById('titulo-pagina').textContent = `Vendas de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
+    area.append(dicaContextual({ chave: 'business.vendas', titulo: 'Vendas', texto: 'Use a busca para achar uma venda pelo número ou pelo cliente. "Nova venda" abre o caixa; parcelas são geradas por prazo (DDL) ou mensalmente.', empresaId: ctx.id }));
     area.append(...[
       ctx.pode('vendas.visualizar') ? secaoLista(lista)
         : el('div', { class: 'pilha' }, el('p', {}, 'Você pode registrar vendas, mas seu perfil não inclui ver a lista de vendas da empresa.'),

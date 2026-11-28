@@ -4,6 +4,7 @@
  * desativação e ficha do cliente (E05: resumo, vendas, pedidos, orçamentos e OS, cada parte com a permissão da área).
  * O vínculo com a conta pública só nasce do pedido aceito (D6-11).
  */
+import { dicaContextual } from '../../ui/onboarding.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -161,6 +162,7 @@ async function carregar() {
     lista = await lerClientes(ctx.id, busca, 100, 0);
     document.getElementById('titulo-pagina').textContent = `Clientes de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
+    area.append(dicaContextual({ chave: 'business.clientes', titulo: 'Clientes', texto: 'Só o nome é obrigatório. CPF/CNPJ e endereço ajudam a achar o cliente depois; o CEP preenche a rua sozinho.', empresaId: ctx.id }));
     area.append(secaoLista());
     desenharLista();
     const pedida = parametro('ficha');

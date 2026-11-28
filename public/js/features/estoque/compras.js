@@ -6,6 +6,7 @@
  * Regras preservadas: rascunho -> registrar gera a proposta de entrada (quem aprova estoque recebe na hora, D5-04);
  * a entrada no estoque acontece uma vez, na aprovação; conta a pagar é gerada no Financeiro, uma por compra.
  */
+import { dicaContextual } from '../../ui/onboarding.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -307,6 +308,7 @@ async function carregar() {
     if (!Array.isArray(todas)) todas = [];
     produtos = null;
     concluirCarregamento(area);
+    area.append(dicaContextual({ chave: 'business.compras', titulo: 'Compras', texto: 'Registre a compra e o estoque recebe a entrada uma vez, na aprovação. A conta a pagar é gerada no Financeiro.', empresaId: ctx.id }));
     const estado = campoSelecao({ nome: 'estado', rotulo: 'Situação', opcoes: Object.entries(ESTADOS_COMPRA), valor: filtros.estado, vazio: 'Todas', id: 'filtro-estado-compra' });
     estado.querySelector('select').addEventListener('change', (e) => { filtros.estado = e.target.value; desenhar(); });
     const de = campoTexto({ nome: 'de', rotulo: 'De', tipo: 'date', valor: filtros.de, id: 'filtro-de-compra' });

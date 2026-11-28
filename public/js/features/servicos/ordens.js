@@ -2,6 +2,7 @@
  * Ordens de serviço da empresa (M09, RF-102 a RF-106; D9-01 a D9-05): fila por situação, filtro informativo por
  * responsável e busca por número, cliente ou serviço. A OS nasce no aceite do orçamento; não há criação manual.
  */
+import { proximaAcaoOs } from '../../domain/servicos.js';
 import { marcarNovas } from '../comunicacao/marcador.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
@@ -30,7 +31,12 @@ function linha(o) {
     el('p', {}, `${o.cliente_nome}${o.origem === 'interna' ? ' (balcão ou telefone)' : ''} · solicitação nº ${o.solicitacao_numero} · ${dinheiro(o.contratado_centavos)}`),
     el('p', {}, o.horario ? `Horário: ${textoHorario(o.horario.inicio, o.horario.fim)}` : 'Sem horário confirmado',
       o.responsavel ? ` · responsável: ${o.responsavel}` : ' · sem responsável definido', o.previsao_conclusao ? ` · previsão ${formatarData(o.previsao_conclusao)}` : ''),
-    pendencias.length ? el('p', { class: 'campo__ajuda', 'data-pendencias': '' }, `Pendências: ${pendencias.join('; ')}.`) : null);
+    pendencias.length ? el('p', { class: 'campo__ajuda', 'data-pendencias': '' }, `Pendências: ${pendencias.join('; ')}.`) : null,
+    (() => {
+      const acao = proximaAcaoOs(o, ctx.pode);
+      return acao ? el('p', { class: 'proxima-acao' }, el('span', { class: 'proxima-acao__rotulo' }, 'Próxima ação: '),
+        el('a', { class: `botao ${acao.agir ? '' : 'botao--secundario'}`, href: `${href}#${acao.aba}`, 'data-proxima-acao': acao.aba }, acao.texto)) : null;
+    })());
 }
 
 function formFiltros(equipe) {

@@ -13,7 +13,7 @@ import { lerValorEmReais } from '../../domain/moeda.js';
 import { instanteSaoPaulo } from '../../domain/servicos.js';
 import { produtosDaEmpresa } from '../../data/estoque.js';
 import { solicitacao as lerSolicitacao, assumir, salvarRascunho, enviarOrcamento, aprovarOrcamento, registrarMensagem, aceitarOrcamento,
-  recusarOrcamento, cancelarSolicitacao, confirmarHorario, TIPO_COMPONENTE, MOTIVO_RECUSA } from '../../data/servicos.js';
+  recusarOrcamento, cancelarSolicitacao, confirmarHorario, TIPO_COMPONENTE, MOTIVO_RECUSA , modelosOrcamento, salvarModeloOrcamento } from '../../data/servicos.js';
 import { carregarContexto, navegacaoEmpresa, criarAnunciador, criarExecutor, chipSolicitacao, blocoEstimativa, blocoRespostas, cartaoVersao,
   linhaDoTempo, blocoHorario, dialogoFormulario, dataDeHoje, somarDias } from './comum.js';
 import { botaoPdf, nomeDeQuemGera } from '../../pdf/baixar.js';
@@ -30,6 +30,8 @@ let ctx = null;
 let s = null;
 let materiais = null;
 let itens = [];
+let modelos = null;        // modelos de orçamento da empresa (carregados sob demanda)
+let modeloAplicado = null; // prazo e condições do modelo escolhido, até salvar
 const executar = criarExecutor({ area, anunciar, recarregar: () => carregar(), erroNoCampo });
 const aberta = () => ['nova', 'em_analise', 'orcamento_enviado', 'revisao_pedida'].includes(s.estado);
 const reais = (c) => (Number.isSafeInteger(c) ? (c / 100).toFixed(2).replace('.', ',') : '');
@@ -89,8 +91,8 @@ function editor() {
       ajuda: s.limite_desconto_percentual === null ? 'Seu perfil não tem limite de desconto.' : `Seu limite: ${s.limite_desconto_percentual}% do valor. Acima disso, a versão vai para aprovação.` }),
     campoTexto({ nome: 'valido_ate', rotulo: 'Válido até', tipo: 'date', valor: rasc?.valido_ate ?? somarDias(dataDeHoje(), s.servico_atual?.validade_dias ?? 15), id: 'orc-validade',
       ajuda: 'De hoje até 90 dias. Vencido, o cliente só aceita uma nova versão.' }),
-    campoTexto({ nome: 'prazo_execucao', rotulo: 'Prazo de execução', max: 120, valor: rasc?.prazo_execucao ?? '', id: 'orc-prazo' }),
-    campoTexto({ nome: 'condicoes', rotulo: 'Condições', linhas: 3, max: 1000, valor: rasc?.condicoes ?? '', id: 'orc-condicoes',
+    campoTexto({ nome: 'prazo_execucao', rotulo: 'Prazo de execução', max: 120, valor: modeloAplicado?.prazo_execucao ?? rasc?.prazo_execucao ?? '', id: 'orc-prazo' }),
+    campoTexto({ nome: 'condicoes', rotulo: 'Condições', linhas: 3, max: 1000, valor: modeloAplicado?.condicoes ?? rasc?.condicoes ?? '', id: 'orc-condicoes',
       ajuda: 'O que está e o que não está incluído. O cliente confirma estas condições ao aceitar.' }),
     el('p', { class: 'campo__ajuda' }, 'O total é calculado pelo sistema a partir dos itens. Uma versão enviada não muda: salvar de novo cria a próxima versão.'),
     el('div', { class: 'grupo-botoes' }, salvar));
@@ -106,10 +108,51 @@ function editor() {
     const dg = lerValorEmReais(d.desconto_geral || '0');
     if (!dg.ok) return erroNoCampo(form, 'desconto_geral', dg.erro);
     const dados = { componentes: r.itens, desconto_geral_centavos: dg.centavos, valido_ate: d.valido_ate || null, prazo_execucao: d.prazo_execucao || null, condicoes: d.condicoes || null };
-    return ocupado(salvar, () => executar('rascunho', form, (k) => salvarRascunho(s.id, dados, s.versao, k),
+    return ocupado(salvar, () => executar('rascunho', form, (k) => { modeloAplicado = null; return salvarRascunho(s.id, dados, s.versao, k); },
       (v) => anunciar('sucesso', `Rascunho da versão ${v.numero} salvo: ${reais(v.total_centavos)} reais.`, el('p', {}, 'Confira e envie ao cliente na versão abaixo.'))));
   });
-  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-editor' }, el('h2', { id: 'titulo-editor' }, rasc ? `Editar rascunho da versão ${rasc.numero}` : 'Preparar orçamento'), form);
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-editor' }, el('h2', { id: 'titulo-editor' }, rasc ? `Editar rascunho da versão ${rasc.numero}` : 'Preparar orçamento'),
+    barraModelos(form), form);
+}
+
+/** Modelos reutilizáveis (E05): preencher o rascunho com itens, prazo e condições salvos; ou guardar o atual como modelo. */
+function barraModelos(form) {
+  const escolha = el('select', { id: 'orc-modelo', 'aria-label': 'Modelo de orçamento' }, el('option', { value: '' }, 'Carregando modelos…'));
+  const usar = el('button', { type: 'button', class: 'botao botao--secundario', id: 'usar-modelo', disabled: true }, 'Usar modelo');
+  const guardar = el('button', { type: 'button', class: 'botao botao--secundario', id: 'salvar-modelo' }, 'Salvar como modelo');
+  const preencher = () => {
+    escolha.replaceChildren(el('option', { value: '' }, modelos?.length ? 'Escolha um modelo' : 'Nenhum modelo salvo ainda'),
+      ...(modelos ?? []).map((m) => el('option', { value: m.id }, `${m.nome} (${m.componentes.length} ${m.componentes.length === 1 ? 'item' : 'itens'})`)));
+    usar.disabled = true;
+  };
+  (modelos ? Promise.resolve(modelos) : modelosOrcamento(ctx.id)).then((l) => { modelos = Array.isArray(l) ? l : []; preencher(); }).catch(() => { modelos = []; preencher(); });
+  escolha.addEventListener('change', () => { usar.disabled = !escolha.value; });
+  usar.addEventListener('click', () => ocupado(usar, async () => {
+    const m = modelos.find((x) => x.id === escolha.value);
+    if (!m) return;
+    const atual = lerItens(form);
+    const temConteudo = (atual.itens ?? []).some((i) => i.descricao?.trim());
+    if (temConteudo && !(await abrirDialogo({ titulo: `Usar o modelo "${m.nome}"?`, rotuloConfirmar: 'Usar o modelo', rotuloCancelar: 'Manter os itens',
+      mensagens: ['Os itens que estão no rascunho serão trocados pelos do modelo. Nada é salvo até você clicar em "Salvar rascunho".'] }))) return;
+    itens = m.componentes.map((c) => ({ tipo: c.tipo, descricao: c.descricao, quantidade: Number(c.quantidade), valor_unitario_centavos: Number(c.valor_unitario_centavos), desconto_centavos: 0 }));
+    modeloAplicado = { prazo_execucao: m.prazo_execucao ?? '', condicoes: m.condicoes ?? '' };
+    desenhar();
+    anunciar('info', `Modelo "${m.nome}" aplicado ao rascunho. Confira os valores e salve.`);
+  }));
+  guardar.addEventListener('click', () => ocupado(guardar, async () => {
+    const r = lerItens(form);
+    if (r.erro) { erroNoCampo(form, r.erro[0], r.erro[1]); return; }
+    const d = valores(form);
+    const nome = await dialogoFormulario({ id: 'novo-modelo', titulo: 'Salvar como modelo', rotuloConfirmar: 'Salvar modelo',
+      campos: [campoTexto({ nome: 'nome', rotulo: 'Nome do modelo', obrigatorio: true, max: 80, id: 'modelo-nome', valor: s.servico_atual?.nome ?? '' })],
+      validar: (f) => { const n = valores(f).nome ?? ''; if (n.length < 2) { erroNoCampo(f, 'nome', 'Dê um nome ao modelo.'); return null; } return n; } });
+    if (!nome) return;
+    await executar('salvar-modelo', null, (k) => salvarModeloOrcamento(ctx.id, null, { nome, componentes: r.itens.map((i) => ({ tipo: i.tipo, descricao: i.descricao,
+      quantidade: i.quantidade, valor_unitario_centavos: i.valor_unitario_centavos })), prazo_execucao: d.prazo_execucao || null, condicoes: d.condicoes || null }, null, k),
+    () => { modelos = null; anunciar('sucesso', `Modelo "${nome}" salvo. Ele aparece em "Usar modelo" nos próximos orçamentos.`); });
+  }));
+  return el('div', { class: 'barra-consulta barra-modelos', role: 'group', 'aria-label': 'Modelos de orçamento' },
+    el('label', { for: 'orc-modelo', class: 'barra-modelos__rotulo' }, 'Modelos:'), escolha, usar, guardar);
 }
 
 function acoesVersao(v) {

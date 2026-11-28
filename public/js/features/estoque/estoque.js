@@ -5,6 +5,7 @@
  * a ação secundária "Ajustar estoque" (só com permissão, motivo e aprovação conforme a regra D5-04), para inventário
  * inicial, contagem, perda e exceções. Histórico com a origem de cada movimento (venda, compra, OS, ajuste) por produto.
  */
+import { dicaContextual } from '../../ui/onboarding.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -290,6 +291,7 @@ async function carregar() {
     dados = { produtos, alertas, pendentes, historico };
     document.getElementById('titulo-pagina').textContent = `Estoque de ${ctx.empresa?.nome_publico ?? 'empresa'}`;
     concluirCarregamento(area);
+    area.append(dicaContextual({ chave: 'business.estoque', titulo: 'Estoque', texto: 'Vendas e compras já movimentam o estoque. Use "Ajustar estoque" só para contagem, perda ou estoque inicial.', empresaId: ctx.id }));
     area.append(...[secaoSaldos(), secaoPendentes(), secaoHistorico()].filter(Boolean));
     desenharSaldos();
   } catch (erro) {

@@ -21,6 +21,7 @@ import { secoesModeracao } from './moderacao.js';
 import { montarMomento } from '../../ui/forja3d/momentos.js';
 import { urlDeImagem } from '../../data/arquivos.js';
 import { abas } from '../../ui/abas.js';
+import { ckFlags, ckDefinirFlag } from '../../data/flags.js';
 
 
 iniciarLayout();
@@ -410,6 +411,41 @@ const secao = (id, titulo, itens, vazio) => el('section', { class: 'pilha', 'ari
   el('h2', { id }, `${titulo} (${itens.length})`),
   itens.length ? el('ul', { class: 'lista-simples' }, ...itens) : el('p', {}, vazio));
 
+/**
+ * Feature flags (E09): recursos opcionais com padrão conservador. Ligar ou desligar exige motivo e fica na auditoria.
+ * Nenhuma flag controla permissão; desligar não apaga dados.
+ */
+function secaoFlags(lista) {
+  if (!Array.isArray(lista)) return el('p', {}, 'Não foi possível carregar os recursos opcionais.');
+  return el('section', { class: 'pilha', 'aria-labelledby': 'titulo-flags' },
+    el('h2', { id: 'titulo-flags' }, 'Recursos opcionais (feature flags)'),
+    el('p', { class: 'campo__ajuda' }, 'Mostram ou escondem recursos opcionais. Não mudam permissões e não apagam dados. Cada mudança pede motivo e entra na auditoria.'),
+    el('ul', { class: 'lista-simples', id: 'lista-flags' }, ...lista.map((f) => {
+      const motivo = campoTexto({ nome: 'motivo', rotulo: 'Motivo da mudança', max: 300, id: `flag-motivo-${f.chave}` });
+      const botao = el('button', { type: 'submit', class: f.ativa ? 'botao botao--perigo' : 'botao' }, f.ativa ? 'Desligar' : 'Ligar');
+      const form = el('form', { class: 'pilha', novalidate: true }, motivo, el('div', { class: 'grupo-botoes' }, botao));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        limparErros(form);
+        const m = valores(form).motivo ?? '';
+        if (m.length < 5) { erroNoCampo(form, 'motivo', 'Explique o motivo (pelo menos 5 caracteres).'); return; }
+        ocupado(botao, async () => {
+          try {
+            await ckDefinirFlag(f.chave, !f.ativa, m, f.versao, crypto.randomUUID());
+            await carregar();
+          } catch (erro) {
+            if (!erroNoCampo(form, erro.campo, erro.message)) erroNoCampo(form, 'motivo', erro.message);
+          }
+        });
+      });
+      return el('li', { class: 'cartao pilha', 'data-flag': f.chave },
+        el('h3', { class: 'cartao__titulo' }, f.nome, ' ', el('span', { class: `chip ${f.ativa ? 'chip--sucesso' : 'chip--neutro'}` }, f.ativa ? 'ligado' : 'desligado')),
+        el('p', {}, f.descricao),
+        el('p', { class: 'campo__ajuda' }, `Escopo: ${f.escopo === 'empresa' ? 'por empresa (o proprietário pode desligar na própria empresa)' : 'toda a plataforma'} · padrão: ${f.padrao ? 'ligado' : 'desligado'}${f.empresas_com_ajuste ? ` · ${f.empresas_com_ajuste} empresa(s) com ajuste próprio` : ''}`),
+        el('details', { class: 'detalhes-opcionais' }, el('summary', {}, f.ativa ? 'Desligar este recurso' : 'Ligar este recurso'), form));
+    })));
+}
+
 async function carregar() {
   mostrarCarregando(painel, 'Carregando o painel');
   try {
@@ -425,6 +461,7 @@ async function carregar() {
     const [empresas, fila, moderacoes, conts, cats, limites, historicoLimites, filaM12, saude, auditoria] = await Promise.all([ckEmpresas(), ckFila(), ckModeracoes(),
       ckContestacoes(), categorias(), ckLimites().catch(() => null), ckHistoricoLimites().catch(() => []), ckFilaModeracao().catch(() => null),
       neon.rpc('ck_saude', {}).catch(() => null), neon.rpc('ck_auditoria', { p_antes: null, p_limite: 40 }).catch(() => null)]);
+    const flagsCk = await ckFlags().catch(() => null);
     mapaCategorias = new Map(cats.map((c) => [c.id, c.nome]));
     const nomes = new Map(empresas.map((e) => [e.id, e.nome_publico]));
     const idsAlteracao = fila.filter((s) => s.tipo === 'alteracao').map((s) => s.empresa_id);
@@ -445,6 +482,7 @@ async function carregar() {
         { chave: 'empresas', titulo: 'Empresas', contador: empresas.length, painel: secao('titulo-empresas', 'Empresas', empresas.map(itemEmpresa), 'Nenhuma empresa cadastrada.') },
         { chave: 'parametros', titulo: 'Parâmetros', painel: secaoLimites(limites, historicoLimites) },
         { chave: 'saude', titulo: 'Saúde', painel: secaoSaude(saude) },
+        { chave: 'flags', titulo: 'Recursos opcionais', painel: secaoFlags(flagsCk) },
         { chave: 'auditoria', titulo: 'Auditoria', painel: secaoAuditoria(auditoria) },
       ] });
     painel.append(grupo.elemento);
