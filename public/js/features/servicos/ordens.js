@@ -2,6 +2,7 @@
  * Ordens de serviço da empresa (M09, RF-102 a RF-106; D9-01 a D9-05): fila por situação, filtro informativo por
  * responsável e busca por número, cliente ou serviço. A OS nasce no aceite do orçamento; não há criação manual.
  */
+import { barraConsulta } from '../../ui/consulta.js';
 import { proximaAcaoOs } from '../../domain/servicos.js';
 import { marcarNovas } from '../comunicacao/marcador.js';
 import { iniciarLayout } from '../../ui/layout.js';
@@ -40,21 +41,17 @@ function linha(o) {
 }
 
 function formFiltros(equipe) {
-  const form = el('form', { class: 'pilha', id: 'form-filtros', role: 'search', 'aria-label': 'Filtrar ordens de serviço' },
-    campoSelecao({ nome: 'estado', rotulo: 'Situação', opcoes: FILTROS, valor: filtros.estado ?? '', vazio: null, id: 'filtro-estado' }),
-    campoSelecao({ nome: 'responsavel', rotulo: 'Responsável', opcoes: equipe.map((m) => [m.auth_user_id, m.nome]), valor: filtros.responsavel ?? '', vazio: 'Qualquer', id: 'filtro-responsavel' }),
-    campoTexto({ nome: 'busca', rotulo: 'Buscar (número, cliente ou serviço)', valor: filtros.busca ?? '', id: 'filtro-busca', max: 80 }),
-    el('div', { class: 'grupo-botoes' }, el('button', { type: 'submit', class: 'botao botao--secundario' }, 'Filtrar')));
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const d = valores(form);
-    filtros = Object.fromEntries(Object.entries({ estado: d.estado, responsavel: d.responsavel, busca: d.busca?.trim() }).filter(([, v]) => v));
-    carregar();
-  });
-  return form;
+  const estado = campoSelecao({ nome: 'estado', rotulo: 'Situação', opcoes: FILTROS, valor: filtros.estado ?? '', vazio: null, id: 'filtro-estado' });
+  const resp = campoSelecao({ nome: 'responsavel', rotulo: 'Responsável', opcoes: equipe.map((m) => [m.auth_user_id, m.nome]), valor: filtros.responsavel ?? '', vazio: 'Qualquer', id: 'filtro-responsavel' });
+  for (const [c, k] of [[estado, 'estado'], [resp, 'responsavel']]) c.querySelector('select').addEventListener('change', (e) => { if (e.target.value) filtros[k] = e.target.value; else delete filtros[k]; carregar(); });
+  // Consulta primeiro (pacote 27/11): busca com espera curta e filtros compactos; a situação "Em andamento" continua o padrão.
+  return barraConsulta({ id: 'filtro-busca', rotulo: 'Buscar ordens de serviço', valor: filtros.busca ?? '', dica: 'Número, cliente ou serviço',
+    aoBuscar: (v) => { if (v) filtros.busca = v.slice(0, 80); else delete filtros.busca; carregar(); }, filtros: [estado, resp],
+    filtrosAbertos: Boolean(filtros.responsavel || (filtros.estado && filtros.estado !== 'ativas')) }).elemento;
 }
 
 async function carregar() {
+  const focarBusca = document.activeElement?.id === 'filtro-busca';
   mostrarCarregando(area, 'Carregando as ordens de serviço');
   try {
     ctx = ctx ?? await carregarContexto(area);
@@ -72,6 +69,7 @@ async function carregar() {
       r.itens.length ? el('ul', { class: 'pilha', id: 'ordens' }, ...r.itens.map(linha))
         : el('p', { id: 'ordens' }, 'Nenhuma ordem de serviço com estes filtros. A OS nasce quando o cliente aceita um orçamento.'),
       r.total > r.itens.length ? el('p', { class: 'campo__ajuda' }, `Mostrando ${r.itens.length} de ${r.total}. Use os filtros para encontrar as demais.`) : null].filter(Boolean));
+    if (focarBusca) { const b = document.getElementById('filtro-busca'); b?.focus(); b?.setSelectionRange(b.value.length, b.value.length); }
     marcarNovas(area, ctx.id);
   } catch (erro) {
     tratarErro(area, erro, carregar);

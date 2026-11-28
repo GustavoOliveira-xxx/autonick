@@ -2,6 +2,7 @@
  * Serviços oferecidos (M08, RF-084, RF-085, RF-092, RF-093; D8-04, D8-05, D8-08, D8-09, D8-12): cadastro, preço,
  * categoria empresarial opcional, validade padrão, modalidade (análise manual por padrão) e desativação sem apagar.
  */
+import { botaoCadastro } from '../../ui/consulta.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -122,10 +123,11 @@ function secaoPolitica() {
 let lista = [];
 function desenhar() {
   area.replaceChildren(...[
-    ctx.pode('catalogo_servicos.alterar') && !editando ? formServico() : null,
-    secaoPolitica(),
-    el('section', { class: 'pilha', 'aria-labelledby': 'titulo-lista' }, el('h2', { id: 'titulo-lista' }, 'Serviços cadastrados'),
-      lista.length ? el('ul', { class: 'pilha', id: 'lista-servicos' }, ...lista.map(cartao)) : el('p', { id: 'lista-servicos' }, 'Nenhum serviço cadastrado ainda.'))].filter(Boolean));
+    el('section', { class: 'pilha', 'aria-labelledby': 'titulo-lista' }, el('div', { class: 'barra-consulta' }, el('h2', { id: 'titulo-lista', class: 'barra-consulta__titulo' }, 'Serviços cadastrados'),
+      ctx.pode('catalogo_servicos.alterar') && !editando ? botaoCadastro({ id: 'novo-servico', rotulo: 'Novo serviço', titulo: 'Novo serviço', construir: formServico }) : null),
+      lista.length ? el('ul', { class: 'pilha', id: 'lista-servicos' }, ...lista.map(cartao)) : el('p', { id: 'lista-servicos' }, 'Nenhum serviço cadastrado ainda.')),
+    ctx.pode('catalogo_servicos.alterar') && editando ? formServico() : null,
+    secaoPolitica()].filter(Boolean));
 }
 
 async function carregar() {

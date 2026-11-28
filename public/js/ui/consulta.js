@@ -32,3 +32,27 @@ export function barraConsulta({ id, rotulo, valor = '', dica = '', aoBuscar, aco
 export function vazio(texto, acao = null, id = null) {
   return el('div', { class: 'estado-vazio', id }, el('p', {}, texto), acao);
 }
+
+/**
+ * Cadastro sob demanda: um botão abre o formulário existente da tela num modal. O formulário continua com as mesmas
+ * regras e chamadas; o modal fecha quando a tela anuncia sucesso, e avisos de erro aparecem também dentro dele.
+ */
+export async function abrirEmModal({ titulo, construir, origem = null, descricao = null }) {
+  const { abrirModal } = await import('./modal.js');
+  const avisosModal = el('div', { class: 'avisos-modal', 'aria-live': 'polite' });
+  const modal = abrirModal({ titulo, descricao, corpo: el('div', { class: 'pilha cadastro-em-modal' }, avisosModal, construir()), tamanho: 'grande', aoFechar: () => { observador.disconnect(); origem?.focus(); } });
+  const avisos = document.getElementById('avisos');
+  const observador = new MutationObserver(() => {
+    if (avisos.querySelector('.aviso--sucesso')) { observador.disconnect(); modal.fechar(); return; }
+    const problema = avisos.querySelector('.aviso--erro, .aviso--alerta');
+    avisosModal.replaceChildren(...(problema ? [problema.cloneNode(true)] : []));
+  });
+  if (avisos) { avisos.replaceChildren(); observador.observe(avisos, { childList: true, subtree: true }); }
+  return modal;
+}
+
+export function botaoCadastro({ id, rotulo, titulo, construir, descricao = null }) {
+  const b = el('button', { type: 'button', class: 'botao', id }, rotulo);
+  b.addEventListener('click', () => abrirEmModal({ titulo, construir, origem: b, descricao }));
+  return b;
+}

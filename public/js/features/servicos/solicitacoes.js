@@ -2,6 +2,7 @@
  * Solicitações e orçamentos da empresa (M08, RF-096, RF-097; D8-03, D8-17): fila por situação e solicitação interna
  * registrada pela equipe para um cliente do balcão ou do telefone.
  */
+import { botaoCadastro } from '../../ui/consulta.js';
 import { marcarNovas } from '../comunicacao/marcador.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
@@ -67,7 +68,7 @@ async function secaoInterna() {
       (r) => anunciar('sucesso', `Solicitação nº ${r.numero} registrada.`, el('p', {}, el('a', {
         href: `/business/solicitacao.html?id=${encodeURIComponent(ctx.id)}&solicitacao=${encodeURIComponent(r.id)}` }, 'Abrir e preparar o orçamento')))));
   });
-  return el('details', { class: 'cartao', id: 'nova-interna' }, el('summary', {}, 'Registrar solicitação do balcão ou do telefone'), form);
+  return el('div', { class: 'pilha', id: 'nova-interna' }, form);
 }
 
 // E05: funil em colunas sobre os estados reais. Mudar de etapa continua sendo pela tela do orçamento (regras do banco).
@@ -126,7 +127,8 @@ async function carregar() {
     const conteudo = visao === 'funil' ? [await funil(r.contagem)] : [filtros,
       r.itens.length ? el('ul', { class: 'pilha', id: 'lista-solicitacoes' }, ...r.itens.map(linha))
         : el('p', { id: 'lista-solicitacoes' }, `Nenhuma solicitação${filtro ? ` em "${(ESTADO_SOLICITACAO[filtro] ?? 'abertas').toLowerCase()}"` : ''}.`)];
-    area.replaceChildren(interna ?? el('span'), alternar, ...conteudo);
+    const novo = interna ? botaoCadastro({ id: 'abrir-nova-interna', rotulo: 'Registrar solicitação (balcão ou telefone)', titulo: 'Solicitação do balcão ou do telefone', construir: () => interna }) : null;
+    area.replaceChildren(el('div', { class: 'barra-consulta' }, alternar, novo), ...conteudo);
     marcarNovas(area, ctx.id);
   } catch (erro) {
     tratarErro(area, erro, carregar);

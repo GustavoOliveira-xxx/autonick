@@ -2,6 +2,7 @@
  * Produtos da empresa (M05, UI-027): lista com filtros, visão consolidada do estoque por
  * produto (D5-02) e cadastro com ou sem variações (D5-12). Finalidade sempre escolhida (D5-01).
  */
+import { botaoCadastro } from '../../ui/consulta.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -242,9 +243,9 @@ async function carregar() {
     concluirCarregamento(area);
     area.append(...[
       el('section', { class: 'pilha', 'aria-labelledby': 'titulo-lista-produtos' },
-        el('h2', { id: 'titulo-lista-produtos' }, `Produtos (${produtos.filter((p) => p.ativo).length} ativos)`),
+        el('div', { class: 'barra-consulta' }, el('h2', { id: 'titulo-lista-produtos', class: 'barra-consulta__titulo' }, `Produtos (${produtos.filter((p) => p.ativo).length} ativos)`),
+          ctx.pode('produtos.criar') ? botaoCadastro({ id: 'novo-produto', rotulo: 'Novo produto', titulo: 'Novo produto', construir: formularioNovo }) : null),
         filtros(), lista()),
-      ctx.pode('produtos.criar') ? formularioNovo() : null,
     ].filter(Boolean));
   } catch (erro) {
     if (erro.codigo === 'AUTH_REQUIRED') {

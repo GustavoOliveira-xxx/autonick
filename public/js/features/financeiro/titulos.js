@@ -3,6 +3,7 @@
  * lista com situação calculada pelo banco, conta nova com parcelas, baixa parcial na conta escolhida, estorno,
  * cancelamento com motivo e conta a pagar gerada a partir de uma compra registrada.
  */
+import { botaoCadastro } from '../../ui/consulta.js';
 import { iniciarLayout } from '../../ui/layout.js';
 import { el, parametro } from '../../ui/dom.js';
 import { aviso, mostrarCarregando, concluirCarregamento, tratarErro } from '../../ui/estados.js';
@@ -251,7 +252,8 @@ async function carregar() {
     categorias = cats;
     concluirCarregamento(area);
     area.append(...[avisoRegistro(), det ? secaoDetalhe(det) : null, secaoLista(lista),
-      ctx.pode('financeiro.criar') ? secaoNova() : el('p', {}, 'Seu perfil pode consultar, mas não lançar contas.'),
+      ctx.pode('financeiro.criar') ? el('div', { class: 'grupo-botoes' }, botaoCadastro({ id: 'nova-conta', rotulo: 'Nova conta a pagar ou receber', titulo: 'Nova conta', construir: secaoNova }))
+        : el('p', {}, 'Seu perfil pode consultar, mas não lançar contas.'),
       ctx.pode('financeiro.criar') ? secaoCompras(compras) : null].filter(Boolean));
     if (det) document.getElementById('detalhe-titulo')?.focus();
   } catch (erro) {
