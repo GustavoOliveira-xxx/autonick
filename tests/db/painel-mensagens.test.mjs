@@ -174,6 +174,6 @@ test('privilégios: tabela fechada, nenhuma função nova para o anônimo além 
   assert.equal(adm(`SELECT has_function_privilege('anonymous', 'public.mensagens_novas(uuid)', 'EXECUTE')`), 'f');
   assert.equal(adm(`SELECT has_function_privilege('anonymous', 'public.marcar_conversa_lida(text, uuid, timestamptz)', 'EXECUTE')`), 'f');
   assert.equal(adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`), 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* + leituras públicas de logos e imagens do E03 */);
+    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`), 'buscar_vitrine,filtros_vitrine,flags_ativas,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* flags_ativas (202612010002): só liga/desliga de recursos da plataforma */ /* + leituras públicas de logos e imagens do E03 */);
   assert.equal(adm('SELECT count(*) FROM public.permissoes_catalogo'), '55');
 });

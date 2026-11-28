@@ -53,7 +53,7 @@ test('saúde: banco, migrations, arquivos e filas; só a CK', opcoes, () => {
   assert.match(s.banco.versao, /^18/);
   assert.equal(s.migracoes.total, Number(adm('SELECT count(*) FROM app_private.historico_migracoes')));
   assert.ok(s.migracoes.total >= TODAS.length - 2, '202611250001 e 202611250002 não se registram no histórico (o AutoniCK local controla pela própria tabela)');
-  assert.equal(s.migracoes.ultimas[0].id, '202611300001');
+  assert.equal(s.migracoes.ultimas[0].id, TODAS.at(-1).slice(0, 12), 'a mais recente aplicada aparece primeiro');
   for (const c of ['ativos', 'bytes_ativos']) assert.ok(c in s.arquivos);
   for (const c of ['publicacao', 'contestacoes', 'moderacoes']) assert.ok(Number.isInteger(s.filas[c]));
   falha(rpc(P.O, 'ck_saude'), 'FORBIDDEN_ACTION|administração');

@@ -449,6 +449,6 @@ test('dados fictícios nunca na rota pública; privilégios: tabelas fechadas, 3
     assert.equal(adm(`SELECT relrowsecurity FROM pg_class WHERE oid = 'public.${t}'::regclass`), 't');
   }
   assert.equal(adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'execute')`), 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica');
+    WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'execute')`), 'buscar_vitrine,filtros_vitrine,flags_ativas,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* flags_ativas (202612010002): só liga/desliga de recursos da plataforma */);
   assert.equal(adm('SELECT count(*) FROM public.permissoes_catalogo'), '55');
 });

@@ -154,6 +154,6 @@ test('repetição com a mesma chave não registra de novo; nenhuma tabela, permi
   assert.equal(Number(adm('SELECT count(*) FROM public.permissoes_catalogo')), 55);
   const anon = adm(`SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND has_function_privilege('anonymous', p.oid, 'EXECUTE')`);
-  assert.equal(anon, 'buscar_vitrine,filtros_vitrine,imagens_publicas_de_produtos,logos_publicos,vitrine_publica');
+  assert.equal(anon, 'buscar_vitrine,filtros_vitrine,flags_ativas,imagens_publicas_de_produtos,logos_publicos,vitrine_publica' /* flags_ativas (202612010002): só liga/desliga de recursos da plataforma */);
   falha(comoPapel(banco.url, { papel: 'anonymous', sub: 'anon-m13' }, `SELECT public.registrar_exportacao_pdf(${q(E.a)}, 'os', ${q(R.os)}, NULL, NULL, ${q(k())})`), 'permission denied|negad');
 });

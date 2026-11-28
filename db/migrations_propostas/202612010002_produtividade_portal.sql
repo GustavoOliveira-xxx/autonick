@@ -407,7 +407,10 @@ CREATE TABLE public.modelos_orcamento (
   criado_em     timestamptz NOT NULL DEFAULT now(),
   atualizado_em timestamptz NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX modelos_orcamento_nome ON public.modelos_orcamento (empresa_id, app_private.sem_acento(nome)) WHERE ativo;
+-- Nome único por empresa, sem diferenciar acento e caixa. Expressão só com funções nativas (sem depender de app_private.sem_acento,
+-- para que migrations anteriores continuem reversíveis); é o mesmo mapeamento de app_private.sem_acento.
+CREATE UNIQUE INDEX modelos_orcamento_nome ON public.modelos_orcamento (empresa_id,
+  lower(translate(nome, 'ÁÀÂÃÄáàâãäÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn'))) WHERE ativo;
 ALTER TABLE public.modelos_orcamento ENABLE ROW LEVEL SECURITY;
 
 -- Valida e normaliza os componentes (mesmos tipos e limites do orçamento; o cálculo continua no salvar do rascunho).
